@@ -1,0 +1,46 @@
+message("src: ${CMAKE_CURRENT_SOURCE_DIR}")
+message("root_dir: ${ROOT_DIR}")
+message("src_dir: ${SRC_DIR}")
+message("deps_dir: ${DEPS_DIR}")
+
+set(Entry "benchsuite-core")
+set(Benchsuite_Library "${Entry}" PARENT_SCOPE)
+
+set (Needed_Libraries
+  "<CL/cl.h>"
+  "<pthread.h>"
+  "<omp.h>"
+  "<math.h>"
+)
+
+# include(SetFlags)
+
+# include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+# conan_basic_setup()
+
+include_directories ("${SRC_DIR}")
+# include_directories ("${DEPS_DIR}")
+include(SetLibraries)
+
+set(SOURCES
+  # semaphore.cpp
+  assign.cpp
+  vecadd.cpp
+  gaussian.cpp
+)
+
+set(HEADERS
+  assign.hpp
+  vecadd.hpp
+  gaussian.hpp
+)
+
+IncludeLibraries("${Entry}" "${Needed_Libraries}")
+
+# add_library("${Entry}" ${SOURCES} ${HEADERS})
+add_library("${Entry}" SHARED ${SOURCES} ${HEADERS})
+
+LinkLibraries("${Entry}" "${Needed_Libraries}")
+
+target_link_libraries("${Entry}" "${Base_Library}")
+# target_link_libraries("${Entry}" "${CONAN_LIBS}")

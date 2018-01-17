@@ -273,6 +273,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   if (m_prev_events.size() && m_works) {
     m_prev_events.clear();
   }
+
   cl::Event evkernel;
 
   auto gws = size;
@@ -454,7 +455,7 @@ Device::writeBuffers(bool /* dummy */)
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
   }
-}
+ }
 
 void
 Device::initKernel()

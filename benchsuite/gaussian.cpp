@@ -39,7 +39,7 @@ Gaussian::fill_image()
 }
 
 void
-Gaussian::fill_blurred(vector<cl_uchar4>& blurred)
+Gaussian::fill_blurred(vector<cl_uchar4,vecAlllocator<cl_uchar4>>& blurred)
 {
   int channels = 4;
   auto total = _total_size * channels;
@@ -116,9 +116,9 @@ Gaussian::omp_gaussian_blur()
   int cols = _width;
   int filterWidth = _filter_width;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  vector<cl_uchar4>& input = _a;
-  vector<cl_float>& filterWeight = _b;
-  vector<cl_uchar4>& blurred = _c;
+  vector<cl_uchar4,vecAllocator<cl_uchar4>>& input = _a;
+  vector<cl_float,vecAllocator<cl_float>>& filterWeight = _b;
+  vector<cl_uchar4,vecAllocator<cl_uchar4>>& blurred = _c;
 #pragma GCC diagnostic pop
 
   int total_size = _total_size;
@@ -318,6 +318,7 @@ Gaussian::compare_gaussian_blur_2loops(float /* threshold */)
   int rows = _height;
   int cols = _width;
   int filterWidth = _filter_width;
+
 
   int total_size = _total_size;
 
@@ -556,33 +557,19 @@ do_gaussian(int tscheduler,
   // auto platform = 1;
 
   vector<clb::Device> devices;
-  if (tdevices == 322) { // batel
+  if (tdevices == 0) {
+    clb::Device device(platform, 1);
+
+    devices.push_back(move(device));
+  } else if (tdevices == 1) {
+    clb::Device device2(platform, 0);
+    devices.push_back(move(device2));
+
+  } else {
     clb::Device device(platform, 1);
     clb::Device device2(platform, 0);
-    clb::Device device3(1, 0); // cpu
-    clb::Device device4(1, 1); // phi
     devices.push_back(move(device));
     devices.push_back(move(device2));
-    devices.push_back(move(device3));
-    devices.push_back(move(device4));
-  } else if (tdevices == 302) { // batel, cpu+phi
-    clb::Device device3(1, 0);  // cpu
-    clb::Device device4(1, 1);  // phi
-    devices.push_back(move(device3));
-    devices.push_back(move(device4));
-  } else {
-    if (tdevices == 0) {
-      clb::Device device(platform, 1);
-      devices.push_back(move(device));
-    } else if (tdevices == 1) {
-      clb::Device device2(platform, 0);
-      devices.push_back(move(device2));
-    } else {
-      clb::Device device(platform, 1);
-      clb::Device device2(platform, 0);
-      devices.push_back(move(device));
-      devices.push_back(move(device2));
-    }
   }
 
   clb::StaticScheduler stSched;
@@ -645,6 +632,8 @@ do_gaussian(int tscheduler,
   } else {
     cout << "Done\n";
   }
+
+  runtime.printStats();
 
   exit(0);
 }

@@ -89,7 +89,7 @@ public:
     b.set(array);
     m_out_clb_buffers.push_back(move(b));
 
-    auto address = array.get();
+      auto address = array.get();
     m_out_buffers_ptr.push_back(address);
 
     cout << "clb::Buffer out get: " << b.get() << "\n";

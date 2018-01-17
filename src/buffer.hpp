@@ -6,6 +6,10 @@
 #ifndef CLBALANCER_BUFFER_HPP
 #define CLBALANCER_BUFFER_HPP 1
 
+// #include "clutils.hpp"
+// #include "semaphore.hpp"
+// #include "sched.hpp"
+// #include "device.hpp"
 #include <memory>
 #include <typeinfo>
 #include <vector>
@@ -32,9 +36,11 @@ public:
   Buffer(Buffer const&) = delete;
   Buffer& operator=(Buffer const&) = delete;
 
+
   Buffer(Buffer&&) = default;
   Buffer& operator=(Buffer&&) = default;
 
+  
   Direction direction();
   size_t size();
   size_t itemSize();
@@ -59,14 +65,24 @@ public:
   void* dataWithOffset(size_t offset);
 
   size_t byBytes(size_t size);
+  // vector<int> getInt(){
+  //   return m_int;
+  // }
+  // vector<float> getFloat(){
+  //   return m_float;
+  // }
 
 private:
   Direction m_direction;
+  Type m_type;
   size_t m_item_size;
   size_t m_size;
   size_t m_bytes;
   void* m_data;
   void* m_address;
+  // vector<void*> m_values;
+  // vector<int> m_int;
+  // vector<float> m_float;
 };
 
 } // namespace clb

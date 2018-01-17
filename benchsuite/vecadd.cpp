@@ -235,19 +235,16 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   auto platform = 0;
   if (tdevices == 0) { // CPU
     clb::Device device(platform, 1);
-    // device.setKernel(kernelPlain1);
-    device.setKernel(kernelBin1);
+    
     devices.push_back(move(device));
   } else if (tdevices == 1) { // GPU
     clb::Device device2(platform, 0);
-    device2.setKernel(kernelBin0);
+
     devices.push_back(move(device2));
   } else { // CPU + GPU
     clb::Device device(platform, 1);
     clb::Device device2(platform, 0);
-    // device.setKernel(kernel2, false);
-    device.setKernel(kernelBin1);
-    device2.setKernel(kernelBin0);
+  
     devices.push_back(move(device));
     devices.push_back(move(device2));
   }
@@ -299,4 +296,6 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   } else {
     cout << "Done\n";
   }
+
+  
 }

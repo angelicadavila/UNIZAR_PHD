@@ -185,6 +185,7 @@ DynamicScheduler::splitWork(size_t size, float prop, size_t bound)
 {
   return { 0, 0 }; // NOTE(dyn)
   size_t given = bound * (static_cast<size_t>(prop * size) / bound);
+  // cout << "given: " << given << "\n";
   size_t rem = size - given;
   return { given, rem };
 }
@@ -382,6 +383,7 @@ DynamicScheduler::getNextRequest()
   lock_guard<mutex> guard(m_mutex_work);
   if (!m_requests.empty()) {
     int id = m_requests.front();
+
     m_requests.pop();
     dev = m_devices[id];
   }

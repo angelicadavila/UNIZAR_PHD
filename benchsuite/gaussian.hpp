@@ -1,17 +1,24 @@
 #ifndef CLBALANCER_BENCHS_GAUSSIAN_HPP
 #define CLBALANCER_BENCHS_GAUSSIAN_HPP
 
+#include "clbalancer.hpp"
+
 #include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
 
+#include <omp.h>
 #include <cmath>
 #include <cstdlib>
-#include <omp.h>
+
 
 #include "clbalancer.hpp"
 #include "utils/io.hpp"
+
+// #include "device.hpp"
+// #include "runtime.hpp"
+// #include "sched.hpp"
 
 using std::ostream;
 

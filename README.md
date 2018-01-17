@@ -75,6 +75,8 @@ Raúl Nozal <raul.nozal@unican.es>
 
 ## License
 
-Copyright 2017. Raúl Nozal <raul.nozal@unican.es>
+MIT License.
 
-To be specified.
+Copyright (c) 2017. Raúl Nozal <raul.nozal@unican.es>
+
+See LICENSE file.

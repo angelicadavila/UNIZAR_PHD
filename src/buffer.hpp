@@ -65,12 +65,6 @@ public:
   void* dataWithOffset(size_t offset);
 
   size_t byBytes(size_t size);
-  // vector<int> getInt(){
-  //   return m_int;
-  // }
-  // vector<float> getFloat(){
-  //   return m_float;
-  // }
 
 private:
   Direction m_direction;
@@ -80,9 +74,6 @@ private:
   size_t m_bytes;
   void* m_data;
   void* m_address;
-  // vector<void*> m_values;
-  // vector<int> m_int;
-  // vector<float> m_float;
 };
 
 } // namespace clb

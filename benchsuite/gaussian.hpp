@@ -2,7 +2,7 @@
 #define CLBALANCER_BENCHS_GAUSSIAN_HPP
 
 #include "clbalancer.hpp"
-
+#include "vecAllocator.hpp"
 #include <memory>
 #include <ostream>
 #include <string>
@@ -73,7 +73,7 @@ public:
   }
 
   void fill_image();
-  void fill_blurred(vector<cl_uchar4>& blurred);
+  void fill_blurred(vector<cl_uchar4,vecAllocator<cl_uchar4>>& blurred);
   void fill_filter();
   void omp_gaussian_blur();
   bool compare_gaussian_blur(float threshold = THRESHOLD);
@@ -87,9 +87,9 @@ public:
   int _filter_width;
   int _filter_total_size;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  vector<cl_uchar4> _a; // image
-  vector<cl_float> _b;  // filter
-  vector<cl_uchar4> _c; // blurred
+  vector<cl_uchar4,vecAllocator<cl_uchar4>> _a;  // image
+  vector<cl_float,vecAllocator<cl_float>> _b;   // filter
+  vector<cl_uchar4,vecAllocator<cl_uchar4>> _c;  // blurred
 #pragma GCC diagnostic pop
   // shared_ptr<vector<cl_uchar4>> _a; // image
   // shared_ptr<vector<cl_float>> _b; // filter

@@ -31,14 +31,14 @@ public:
   void run();
 
   template<typename T>
-  void setInBuffer(shared_ptr<vector<T>> array)
+  void setInBuffer(shared_ptr<T> array)
   {
     for (auto& device : m_devices) {
       device.setInBuffer(array);
     }
   }
   template<typename T>
-  void setOutBuffer(shared_ptr<vector<T>> array)
+  void setOutBuffer(shared_ptr<T> array)
   {
     for (auto& device : m_devices) {
       device.setOutBuffer(array);

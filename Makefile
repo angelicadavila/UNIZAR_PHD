@@ -1,6 +1,6 @@
 .PHONY: build/debug build/release
 
-CMAKE ?= /usr/bin/cmake
+CMAKE ?= /usr/bin/cmake3
 
 export CC=gcc
 export CXX=g++

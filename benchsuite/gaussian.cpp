@@ -39,7 +39,7 @@ Gaussian::fill_image()
 }
 
 void
-Gaussian::fill_blurred(vector<cl_uchar4,vecAlllocator<cl_uchar4>>& blurred)
+Gaussian::fill_blurred(vector<cl_uchar4,vecAllocator<cl_uchar4>>& blurred) 
 {
   int channels = 4;
   auto total = _total_size * channels;
@@ -210,9 +210,9 @@ Gaussian::compare_gaussian_blur(float threshold)
   int cols = _width;
   int filterWidth = _filter_width;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  vector<cl_uchar4>& input = _a;
-  vector<cl_float>& filterWeight = _b;
-  vector<cl_uchar4>& blurred = _c;
+  vector<cl_uchar4,vecAllocator<cl_uchar4>>& input = _a;
+  vector<cl_float,vecAllocator<cl_float>>& filterWeight = _b;
+  vector<cl_uchar4,vecAllocator<cl_uchar4>>& blurred = _c;
 #pragma GCC diagnostic pop
 
   int total_size = _total_size;
@@ -285,8 +285,8 @@ Gaussian::compare_gaussian_blur(float threshold)
         if (diffX >= threshold || diffY >= threshold || diffZ >= threshold) {
           if (showable) {
 #pragma omp critical
-            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX
-                 << "," << blurY << "," << blurZ << ")\n";
+            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX << "," << blurY
+                 << "," << blurZ << ")\n";
             showable = false;
             ok = ok & false;
           }
@@ -307,10 +307,10 @@ bool
 Gaussian::compare_gaussian_blur_2loops(float /* threshold */)
 {
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  vector<cl_uchar4> blurred(_total_size);
+  vector<cl_uchar4,vecAllocator<cl_uchar4>> blurred(_total_size);
   fill_blurred(blurred);
-  vector<cl_uchar4>& input = _a;
-  vector<cl_float>& filterWeight = _b;
+  vector<cl_uchar4,vecAllocator<cl_uchar4>>& input = _a;
+  vector<cl_float,vecAllocator<cl_float>>& filterWeight = _b;
 #pragma GCC diagnostic pop
 
   // gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
@@ -546,31 +546,35 @@ do_gaussian(int tscheduler,
   // auto b = make_shared<vector<cl_float>>(gaussian._b);
   // auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  auto a = shared_ptr<vector<cl_uchar4>>(&gaussian._a);
-  auto b = shared_ptr<vector<cl_float>>(&gaussian._b);
-  auto c = shared_ptr<vector<cl_uchar4>>(&gaussian._c);
+  auto a = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._a);
+  auto b = shared_ptr<vector<cl_float,vecAllocator<cl_float>>>(&gaussian._b);
+  auto c = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._c);
 #pragma GCC diagnostic pop
 
   int problem_size = gaussian._total_size;
 
-  auto platform = 0;
-  // auto platform = 1;
-
   vector<clb::Device> devices;
-  if (tdevices == 0) {
-    clb::Device device(platform, 1);
 
-    devices.push_back(move(device));
-  } else if (tdevices == 1) {
-    clb::Device device2(platform, 0);
-    devices.push_back(move(device2));
+  auto platform_cpu = 0;
+  auto platform_gpu = 1;
+  auto platform_fpga= 2;
 
-  } else {
-    clb::Device device(platform, 1);
-    clb::Device device2(platform, 0);
+
+  if (tdevices &0x01){  
+    clb::Device device(platform_cpu,0);
     devices.push_back(move(device));
+  }
+  if (tdevices &0x02){  
+    clb::Device device1(platform_gpu,0);
+    devices.push_back(move(device1));
+  }
+  if (tdevices &0x04){  
+    clb::Device device2(platform_fpga,0);
+    device2.setBinaryKernel("./benchsuite/myKernel.aocx");    
     devices.push_back(move(device2));
   }
+
+
 
   clb::StaticScheduler stSched;
   clb::DynamicScheduler dynSched;
@@ -621,7 +625,7 @@ do_gaussian(int tscheduler,
     //   cout << "out[" << i << "]: " << out[i] << "\n";
     // }
 
-    auto ok = gaussian.compare_gaussian_blur();
+    auto ok = gaussian.compare_gaussian_blur_2loops();
 
     auto time = 0;
     if (ok) {

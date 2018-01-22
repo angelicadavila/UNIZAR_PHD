@@ -16,6 +16,12 @@ set(DEPS_DIR "${ROOT_DIR}/deps")
 message("root_dir: ${ROOT_DIR}")
 message("src_dir: ${ROOT_DIR}")
 
+execute_process(COMMAND aocl compile-config OUTPUT_VARIABLE AOCL_COMPILE_CONFIG)
+include_directories(${AOCL_COMPILE_CONFIG})
+link_directories("/opt/intelFPGA/16.1/hld/board/terasic/de5net/linux64/lib" "/opt/intelFPGA/17.1/hld/host/linux64/lib")
+set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -lterasic_apb_16_1_mmd -lelf") 
+
+
 list(APPEND CMAKE_MODULE_PATH "${ROOT_DIR}/cmake/modules")
 
 set (Needed_Libraries
@@ -75,6 +81,7 @@ target_link_libraries("${Entry}"
   "${Deps_Library}"
   # Qt5::Core
 )
+target_link_libraries ("${Entry}" "${AOC_LINK_CONFIG}")
 LinkLibraries("${Entry}" "${Needed_Libraries}")
 
 # link_directories("${SRC_DIR}")

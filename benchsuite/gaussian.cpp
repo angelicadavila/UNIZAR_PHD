@@ -633,6 +633,13 @@ do_gaussian(int tscheduler,
     } else {
       cout << "Failure (" << time << ")\n";
     }
+    //file to save and compare data results
+      fstream myfile;
+      myfile.open ("gauss.txt");
+      for(int dat=0; dat<out.size(); dat++)
+	myfile <<out[dat]<<"\n" ;
+      myfile.close();
+
   } else {
     cout << "Done\n";
   }

@@ -68,7 +68,7 @@ public:
   void setBarrier(shared_ptr<semaphore> barrier);
 
   template<typename T>
-  void setInBuffer(shared_ptr<vector<T>> array)
+  void setInBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::In);
     b.set(array);
@@ -83,7 +83,7 @@ public:
     cout << "address: " << address << "\n";
   }
   template<typename T>
-  void setOutBuffer(shared_ptr<vector<T>> array)
+  void setOutBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::Out);
     b.set(array);
@@ -127,9 +127,9 @@ public:
   }
 
   template<typename T>
-  void setKernelArg(cl_uint index, const shared_ptr<vector<T>>& value)
+  void setKernelArg(cl_uint index, const shared_ptr<T>& value)
   {
-    cout << "setKernelArg shared_ptr T index: " << index << "\n";
+    cout << "setKernelArg shared_ptr T\n";
     m_arg_index.push_back(index);
     auto address = value.get();
 
@@ -141,7 +141,7 @@ public:
     cout << "bytes: " << bytes << "\n";
 
     m_arg_size.push_back(0);
-    m_arg_bytes.push_back(bytes);
+    m_arg_bytes.push_back(0);
     m_arg_ptr.push_back(address);
     m_nargs++;
   }
@@ -208,7 +208,6 @@ private:
   cl::CommandQueue m_queue;
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
-  string m_kernel_str;
 
   vector<cl::Event> m_prev_events;
 

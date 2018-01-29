@@ -5,11 +5,12 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+#include "utils/io.hpp"
 
 #include "clbalancer.hpp"
 
 // void do_vecadd(int tscheduler, int tdevices, bool check);
-void do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop);
+void
+do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop);
 
 #endif /* CLBALANCER_BENCHS_VECADD_HPP */

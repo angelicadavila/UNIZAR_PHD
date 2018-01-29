@@ -1,6 +1,8 @@
 #include "gaussian.hpp"
 
-void Gaussian::fill_image() {
+void
+Gaussian::fill_image()
+{
   srand(0);
 
   int channels = 4;
@@ -25,8 +27,8 @@ void Gaussian::fill_image() {
     }
     // if ( i < 15){
     //   cout << i << " " << mod << " " << " " << (uint8_t)value << "\n";
-    //   // cout << i << " " << mod << " " << (_total_size % 256) << " " << value << "\n";
-    //   cout << "fill_image: " << _a.at(i) << "\n";
+    //   // cout << i << " " << mod << " " << (_total_size % 256) << " " <<
+    //   value << "\n"; cout << "fill_image: " << _a.at(i) << "\n";
     // }
   }
   // cout << _a[0] << "\n";
@@ -36,7 +38,9 @@ void Gaussian::fill_image() {
   // cout << _a[3] << "\n";
 }
 
-void Gaussian::fill_blurred(vector<cl_uchar4>& blurred) {
+void
+Gaussian::fill_blurred(vector<cl_uchar4>& blurred)
+{
   int channels = 4;
   auto total = _total_size * channels;
 #pragma omp parallel for num_threads(omp_get_max_threads())
@@ -59,7 +63,9 @@ void Gaussian::fill_blurred(vector<cl_uchar4>& blurred) {
   }
 }
 
-void Gaussian::fill_filter() {
+void
+Gaussian::fill_filter()
+{
   const float sigma = 2.f;
 
   const int half = _filter_width / 2;
@@ -103,16 +109,20 @@ void Gaussian::fill_filter() {
   // cout << "\n";
 }
 
-void Gaussian::omp_gaussian_blur() {
+void
+Gaussian::omp_gaussian_blur()
+{
   int rows = _height;
   int cols = _width;
   int filterWidth = _filter_width;
+#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uchar4>& input = _a;
   vector<cl_float>& filterWeight = _b;
+  vector<cl_uchar4>& blurred = _c;
+#pragma GCC diagnostic pop
 
   int total_size = _total_size;
 
-  vector<cl_uchar4>& blurred = _c;
   // auto num_threads = omp_get_max_threads();
   auto num_threads = 8;
   auto part = total_size / num_threads;
@@ -129,20 +139,20 @@ void Gaussian::omp_gaussian_blur() {
     int tid = i;
 
     if (tid < total_size) {
-      int r = tid / cols;  // current row
-      int c = tid % cols;  // current column
+      int r = tid / cols; // current row
+      int c = tid % cols; // current column
 
       int middle = filterWidth / 2;
-      float blurX = 0.0f;  // will contained blurred value
-      float blurY = 0.0f;  // will contained blurred value
-      float blurZ = 0.0f;  // will contained blurred value
+      float blurX = 0.0f; // will contained blurred value
+      float blurY = 0.0f; // will contained blurred value
+      float blurZ = 0.0f; // will contained blurred value
       int width = cols - 1;
       int height = rows - 1;
 
-      for (int i = -middle; i <= middle; ++i)  // rows
+      for (int i = -middle; i <= middle; ++i) // rows
       {
         // #pragma omp simd
-        for (int j = -middle; j <= middle; ++j)  // columns
+        for (int j = -middle; j <= middle; ++j) // columns
         {
           // Clamp filter to the image border
           // int h=min(max(r+i, 0), height);
@@ -155,9 +165,9 @@ void Gaussian::omp_gaussian_blur() {
           }
 
           // Blur is a product of current pixel value and weight of that pixel.
-          // Remember that sum of all weights equals to 1, so we are averaging sum
-          // of all pixels by their weight.
-          int idx = w + cols * h;  // current pixel index
+          // Remember that sum of all weights equals to 1, so we are averaging
+          // sum of all pixels by their weight.
+          int idx = w + cols * h; // current pixel index
           float pixelX = input[idx].s[0];
           float pixelY = input[idx].s[1];
           float pixelZ = input[idx].s[2];
@@ -173,7 +183,8 @@ void Gaussian::omp_gaussian_blur() {
 
       // if (tid == 3921){
       // if (tid == 2592){
-      //   cout << blurZ << " " << setprecision(10) << blurZ << " " << round(blurZ) << " " <<  round_to_decimal(blurZ)
+      //   cout << blurZ << " " << setprecision(10) << blurZ << " " <<
+      //   round(blurZ) << " " <<  round_to_decimal(blurZ)
       //   << "\n";
       // }
 
@@ -187,22 +198,26 @@ void Gaussian::omp_gaussian_blur() {
       blurred[tid].s[1] = (unsigned char)round(blurY);
       blurred[tid].s[2] = (unsigned char)round(blurZ);
     }
-  }  // omp
+  } // omp
 
   // ANNOTATE_SITE_END();
 }
 
-bool Gaussian::compare_gaussian_blur(float threshold) {
+bool
+Gaussian::compare_gaussian_blur(float threshold)
+{
   int rows = _height;
   int cols = _width;
   int filterWidth = _filter_width;
+#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uchar4>& input = _a;
   vector<cl_float>& filterWeight = _b;
+  vector<cl_uchar4>& blurred = _c;
+#pragma GCC diagnostic pop
 
   int total_size = _total_size;
 
   auto num_threads = omp_get_max_threads();
-  vector<cl_uchar4>& blurred = _c;
   auto ok = true;
   vector<bool> oks(num_threads, true);
 
@@ -215,19 +230,19 @@ bool Gaussian::compare_gaussian_blur(float threshold) {
       int tid = i;
 
       if (tid < total_size) {
-        int r = tid / cols;  // current row
-        int c = tid % cols;  // current column
+        int r = tid / cols; // current row
+        int c = tid % cols; // current column
 
         int middle = filterWidth / 2;
-        float blurX = 0.0f;  // will contained blurred value
-        float blurY = 0.0f;  // will contained blurred value
-        float blurZ = 0.0f;  // will contained blurred value
+        float blurX = 0.0f; // will contained blurred value
+        float blurY = 0.0f; // will contained blurred value
+        float blurZ = 0.0f; // will contained blurred value
         int width = cols - 1;
         int height = rows - 1;
 
-        for (int i = -middle; i <= middle; ++i)  // rows
+        for (int i = -middle; i <= middle; ++i) // rows
         {
-          for (int j = -middle; j <= middle; ++j)  // columns
+          for (int j = -middle; j <= middle; ++j) // columns
           {
             // Clamp filter to the image border
             // int h=min(max(r+i, 0), height);
@@ -239,10 +254,10 @@ bool Gaussian::compare_gaussian_blur(float threshold) {
               continue;
             }
 
-            // Blur is a product of current pixel value and weight of that pixel.
-            // Remember that sum of all weights equals to 1, so we are averaging sum
-            // of all pixels by their weight.
-            int idx = w + cols * h;  // current pixel index
+            // Blur is a product of current pixel value and weight of that
+            // pixel. Remember that sum of all weights equals to 1, so we are
+            // averaging sum of all pixels by their weight.
+            int idx = w + cols * h; // current pixel index
             float pixelX = input[idx].s[0];
             float pixelY = input[idx].s[1];
             float pixelZ = input[idx].s[2];
@@ -258,7 +273,8 @@ bool Gaussian::compare_gaussian_blur(float threshold) {
 
         // if (tid == 3921){
         // if (tid == 2592){
-        //   cout << blurZ << " " << setprecision(10) << blurZ << " " << round(blurZ) << " " <<  round_to_decimal(blurZ)
+        //   cout << blurZ << " " << setprecision(10) << blurZ << " " <<
+        //   round(blurZ) << " " <<  round_to_decimal(blurZ)
         //   << "\n";
         // }
 
@@ -277,26 +293,31 @@ bool Gaussian::compare_gaussian_blur(float threshold) {
         }
       }
     }
-  }  // omp
+  } // omp
 
   // if (!ok){
-  //   cout << "oks: " << oks[0] << " " << oks[1] << " " << oks[2] << " " << oks[3] << "\n";
+  //   cout << "oks: " << oks[0] << " " << oks[1] << " " << oks[2] << " " <<
+  //   oks[3] << "\n";
   // }
 
   return ok;
 }
 
-bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
+bool
+Gaussian::compare_gaussian_blur_2loops(float /* threshold */)
+{
+#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uchar4> blurred(_total_size);
   fill_blurred(blurred);
+  vector<cl_uchar4>& input = _a;
+  vector<cl_float>& filterWeight = _b;
+#pragma GCC diagnostic pop
 
   // gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
   //               int cols, __global float* filterWeight, int filterWidth)
   int rows = _height;
   int cols = _width;
   int filterWidth = _filter_width;
-  vector<cl_uchar4>& input = _a;
-  vector<cl_float>& filterWeight = _b;
 
   int total_size = _total_size;
 
@@ -306,19 +327,19 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
     int tid = i;
 
     if (tid < total_size) {
-      int r = tid / cols;  // current row
-      int c = tid % cols;  // current column
+      int r = tid / cols; // current row
+      int c = tid % cols; // current column
 
       int middle = filterWidth / 2;
-      float blurX = 0.0f;  // will contained blurred value
-      float blurY = 0.0f;  // will contained blurred value
-      float blurZ = 0.0f;  // will contained blurred value
+      float blurX = 0.0f; // will contained blurred value
+      float blurY = 0.0f; // will contained blurred value
+      float blurZ = 0.0f; // will contained blurred value
       int width = cols - 1;
       int height = rows - 1;
 
-      for (int i = -middle; i <= middle; ++i)  // rows
+      for (int i = -middle; i <= middle; ++i) // rows
       {
-        for (int j = -middle; j <= middle; ++j)  // columns
+        for (int j = -middle; j <= middle; ++j) // columns
         {
           // Clamp filter to the image border
           // int h=min(max(r+i, 0), height);
@@ -331,9 +352,9 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
           }
 
           // Blur is a product of current pixel value and weight of that pixel.
-          // Remember that sum of all weights equals to 1, so we are averaging sum
-          // of all pixels by their weight.
-          int idx = w + cols * h;  // current pixel index
+          // Remember that sum of all weights equals to 1, so we are averaging
+          // sum of all pixels by their weight.
+          int idx = w + cols * h; // current pixel index
           float pixelX = input[idx].s[0];
           float pixelY = input[idx].s[1];
           float pixelZ = input[idx].s[2];
@@ -349,7 +370,8 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
 
       // if (tid == 3921){
       // if (tid == 2592){
-      //   cout << blurZ << " " << setprecision(10) << blurZ << " " << round(blurZ) << " " <<  round_to_decimal(blurZ)
+      //   cout << blurZ << " " << setprecision(10) << blurZ << " " <<
+      //   round(blurZ) << " " <<  round_to_decimal(blurZ)
       //   << "\n";
       // }
 
@@ -361,8 +383,10 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
       // blurred[tid].s[2] = (unsigned char)(blurZ);
       // for i = 49 (image size)
       // if (tid == 2031 || tid == 2032 || tid == 2033){
-      //   cout << "tid: " << tid << " " << blurred[tid] << " x: " << blurX << " y: " << blurY << " z: " << blurZ <<
-      //   "\n"; cout << "tid: " << tid << " " << blurred[tid] << " x: " << (int)blurX << " y: " << (int)blurY << " z: "
+      //   cout << "tid: " << tid << " " << blurred[tid] << " x: " << blurX << "
+      //   y: " << blurY << " z: " << blurZ <<
+      //   "\n"; cout << "tid: " << tid << " " << blurred[tid] << " x: " <<
+      //   (int)blurX << " y: " << (int)blurY << " z: "
       //   << (int)blurZ << "\n";
       // }
     }
@@ -374,10 +398,10 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
   // blurred[400000].s[1] = 33;
   auto ok = true;
   int channels = 4;
-  int threads = 24;
-  bool oks[24] = {true, true, true, true};
+  int threads = 4;
+  bool oks[24] = { true, true, true, true };
 
-#pragma omp parallel num_threads(4)
+#pragma omp parallel num_threads(threads)
   {
     int tid = omp_get_thread_num();
 #pragma omp critical
@@ -394,11 +418,13 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
 #pragma omp critical
         {
           if (showable) {
-            // cout << "i: " << (i-1)/channels << " mod: " << (i-1)%channels << " blurred: " << blurred[(i-1)/channels]
+            // cout << "i: " << (i-1)/channels << " mod: " << (i-1)%channels <<
+            // " blurred: " << blurred[(i-1)/channels]
             // << " _c: " << _c[(i-1)/channels] << "\n";
             cout << "i: " << i / channels << " mod: " << mod << " blurred: " << blurred[i / channels]
                  << " _c: " << _c[i / channels] << "\n";
-            // cout << "i: " << (i+1)/channels << " mod: " << (i+1)%channels << " blurred: " << blurred[(i+1)/channels]
+            // cout << "i: " << (i+1)/channels << " mod: " << (i+1)%channels <<
+            // " blurred: " << blurred[(i+1)/channels]
             // << " _c: " << _c[(i+1)/channels] << "\n";
             showable = false;
           }
@@ -406,7 +432,7 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
         ok = ok & lok;
       }
     }
-  }  // omp
+  } // omp
 
   if (!ok) {
     cout << "oks: " << oks[0] << " " << oks[1] << " " << oks[2] << " " << oks[3] << "\n";
@@ -415,7 +441,9 @@ bool Gaussian::compare_gaussian_blur_2loops(float threshold) {
   return ok;
 }
 
-string Gaussian::get_kernel_str() {
+string
+Gaussian::get_kernel_str()
+{
   string kernelstr = R"(
 
 // #pragma OPENCL EXTENSION cl_khr_select_fprounding_mode : enable
@@ -423,10 +451,15 @@ string Gaussian::get_kernel_str() {
 // #pragma OPENCL EXTENSION cl_amd_printf : enable
 
 __kernel void
+#if CL_SUPPORT_KERNEL_OFFSET == 1
 gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
-              int cols, __global float* filterWeight, int filterWidth)
-{
+              int cols, __global float* filterWeight, int filterWidth){
   int tid = get_global_id(0);
+#else
+gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
+              int cols, __global float* filterWeight, int filterWidth, uint offset){
+  int tid = get_global_id(0) + offset;
+#endif
 
   if (tid < rows * cols) {
     int r = tid / cols; // current row
@@ -491,8 +524,9 @@ gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
   return move(kernelstr);
 }
 
-void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int chunksize, float prop,
-                 uint filter_width) {
+void
+do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int chunksize, float prop, uint filter_width)
+{
   uint image_height = image_width;
 
   int worksize = chunksize;
@@ -503,9 +537,11 @@ void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int
   // auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
   // auto b = make_shared<vector<cl_float>>(gaussian._b);
   // auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
+#pragma GCC diagnostic ignored "-Wignored-attributes"
   auto a = shared_ptr<vector<cl_uchar4>>(&gaussian._a);
   auto b = shared_ptr<vector<cl_float>>(&gaussian._b);
   auto c = shared_ptr<vector<cl_uchar4>>(&gaussian._c);
+#pragma GCC diagnostic pop
 
   int problem_size = gaussian._total_size;
 
@@ -513,17 +549,33 @@ void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int
   // auto platform = 1;
 
   vector<clb::Device> devices;
-  if (tdevices == 0) {
+  if (tdevices == 322) { // batel
     clb::Device device(platform, 1);
-    devices.push_back(move(device));
-  } else if (tdevices == 1) {
     clb::Device device2(platform, 0);
+    clb::Device device3(1, 0); // cpu
+    clb::Device device4(1, 1); // phi
+    devices.push_back(move(device));
     devices.push_back(move(device2));
+    devices.push_back(move(device3));
+    devices.push_back(move(device4));
+  } else if (tdevices == 302) { // batel, cpu+phi
+    clb::Device device3(1, 0);  // cpu
+    clb::Device device4(1, 1);  // phi
+    devices.push_back(move(device3));
+    devices.push_back(move(device4));
   } else {
-    clb::Device device(platform, 1);
-    clb::Device device2(platform, 0);
-    devices.push_back(move(device));
-    devices.push_back(move(device2));
+    if (tdevices == 0) {
+      clb::Device device(platform, 1);
+      devices.push_back(move(device));
+    } else if (tdevices == 1) {
+      clb::Device device2(platform, 0);
+      devices.push_back(move(device2));
+    } else {
+      clb::Device device(platform, 1);
+      clb::Device device2(platform, 0);
+      devices.push_back(move(device));
+      devices.push_back(move(device2));
+    }
   }
 
   clb::StaticScheduler stSched;
@@ -533,14 +585,14 @@ void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({prop});
+    stSched.setRawProportions({ prop });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
-  } else {  // tscheduler == 2
+  } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({prop});
+    hgSched.setRawProportions({ prop });
   }
   runtime.setInBuffer(a);
   runtime.setInBuffer(b);
@@ -555,6 +607,8 @@ void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int
   runtime.setKernelArg(5, filter_width);
 
   runtime.run();
+
+  runtime.printStats();
 
   // auto ptr = reinterpret_cast<cl_uchar4*>(b.data());
   // cout << ptr[0].s[0] << "\n";
@@ -584,8 +638,6 @@ void do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int
   } else {
     cout << "Done\n";
   }
-
-  runtime.printStats();
 
   exit(0);
 }

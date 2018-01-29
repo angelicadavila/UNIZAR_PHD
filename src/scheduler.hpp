@@ -1,21 +1,31 @@
+/**
+ * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+ * This file is part of clbalancer which is released under MIT License.
+ * See file LICENSE for full license details.
+ */
 #ifndef CLBALANCER_SCHEDULER_HPP
 #define CLBALANCER_SCHEDULER_HPP 1
 
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #include "semaphore.hpp"
 #include "work.hpp"
 
-using namespace std;
+#define CL_LWS 128
+
+using std::tuple;
+using std::vector;
 
 namespace clb {
 class Device;
 
-class Scheduler {
- public:
+class Scheduler
+{
+public:
   virtual void start() = 0;
   virtual void calcProportions() = 0;
   virtual void waitCallbacks() = 0;
@@ -33,6 +43,6 @@ class Scheduler {
   virtual void preenq_work() = 0;
 };
 
-}  // namespace clb
+} // namespace clb
 
 #endif /* CLBALANCER_SCHEDULER_HPP */

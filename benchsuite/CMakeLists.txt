@@ -27,12 +27,14 @@ set(SOURCES
   assign.cpp
   vecadd.cpp
   gaussian.cpp
+  utils/io.cpp
 )
 
 set(HEADERS
   assign.hpp
   vecadd.hpp
   gaussian.hpp
+  utils/io.hpp
 )
 
 IncludeLibraries("${Entry}" "${Needed_Libraries}")

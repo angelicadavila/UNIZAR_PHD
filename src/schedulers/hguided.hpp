@@ -1,50 +1,57 @@
+/**
+ * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+ * This file is part of clbalancer which is released under MIT License.
+ * See file LICENSE for full license details.
+ */
 #ifndef CLBALANCER_SCHEDULER_HGUIDED_HPP
 #define CLBALANCER_SCHEDULER_HGUIDED_HPP 1
 
-#include <queue>
-#include <thread>
-#include <vector>
-// #include "device.hpp"
+#include <chrono>
 #include <iostream>
 #include <mutex>
+#include <queue>
+#include <thread>
+#include <tuple>
+#include <vector>
 
-// #include "rang.hpp"
+#include "inspector.hpp"
+#include "scheduler.hpp"
 #include "semaphore.hpp"
 #include "work.hpp"
 
-#include "scheduler.hpp"
-
-using namespace std;
+using std::lock_guard;
+using std::make_tuple;
+using std::mutex;
+using std::queue;
+using std::thread;
 
 namespace clb {
+enum class ActionType;
 class Device;
 class Scheduler;
 class HGuidedScheduler;
-// class Scheduler;
-// enum WorkSplit;
-void scheduler_thread_func(HGuidedScheduler& sched);
 
-class HGuidedScheduler : public Scheduler {
- public:
-  enum WorkSplit {
+void
+scheduler_thread_func(HGuidedScheduler& sched);
+
+class HGuidedScheduler : public Scheduler
+{
+public:
+  enum WorkSplit
+  {
     Raw = 0,
-    By_Devices = 1,  // work / ndevices
-                     //                 Decr2 = 2, // first 50%, second 50% * 50%, etc
-                     //                 Incr2 = 3, // last 50%, before last 50% * 50%, etc
+    // work / ndevices
+    By_Devices = 1,
+    // Decr2 = 2, // first 50%, second 50% * 50%, etc
+    // Incr2 = 3, // last 50%, before last 50% * 50%, etc
   };
 
-  // void run();
-
-  // HGuidedScheduler() = delete;
-  // HGuidedScheduler(WorkSplit wsplit);
   HGuidedScheduler(WorkSplit wsplit = WorkSplit::By_Devices);
   ~HGuidedScheduler();
 
-  // make it Noncopyable
   HGuidedScheduler(HGuidedScheduler const&) = delete;
   HGuidedScheduler& operator=(HGuidedScheduler const&) = delete;
 
-  // make it movable
   HGuidedScheduler(HGuidedScheduler&&) = default;
   HGuidedScheduler& operator=(HGuidedScheduler&&) = default;
 
@@ -70,24 +77,6 @@ class HGuidedScheduler : public Scheduler {
 
   tuple<size_t, size_t> splitWork(size_t size, float prop, size_t bound);
 
-  // void setRawProportions(const vector<float>& props);
-  // void setRawProportions(const vector<float>& props){
-  // cout << "HGuidedScheduler::setRawProportions\n";
-  // // vector<tuple<size_t, size_t>> proportions;
-  // auto last = m_ndevices - 1;
-  // if (props.size() < last){
-  //   throw runtime_error("proportions < number of devices - 1");
-  // }
-
-  // for (auto prop : props){
-  //   if (prop <= 0.0f || prop >= 1.0f){
-  //     throw runtime_error("proportion should be between (0.0f, 1.0f)");
-  //   }
-  // }
-  // m_raw_proportions = move(props);
-  // m_wsplit = WorkSplit::Raw;
-  // }
-  // void setDevices(int ndevices){ m_ndevices = ndevices; }
   void setDevices(vector<Device*>&& devices);
 
   void calcProportions() override;
@@ -102,30 +91,28 @@ class HGuidedScheduler : public Scheduler {
 
   void printStats() override;
 
-  // void callbackDevice(Device* device) override;
+  void saveDuration(ActionType action);
+  void saveDurationOffset(ActionType action);
+
   void callback(int queue_index) override;
   void req_work(Device* device) override;
   void enq_work(Device* device) override;
   void preenq_work() override;
-  // private:
-  // Device& m_device;
-  // semaphore m_barrier;
- private:
+
+private:
   thread m_thread;
   size_t m_size;
-  vector<Device*> m_devices;  // maybe Device*?
+  vector<Device*> m_devices;
   uint m_ndevices;
   mutex m_mutex_work;
   vector<Work> m_queue_work;
   vector<vector<uint>> m_queue_id_work;
-  uint m_queue_work_size;  // should be atomic
+  uint m_queue_work_size;
   vector<uint> m_chunk_todo;
   vector<uint> m_chunk_given;
   vector<uint> m_chunk_done;
   uint m_devices_working;
   vector<float> m_raw_proportions;
-  // vector<vector<uint>> m_chunk_id_todo;
-  // vector<vector<uint>> m_chunk_id_done;
 
   // new
   WorkSplit m_wsplit;
@@ -137,11 +124,17 @@ class HGuidedScheduler : public Scheduler {
   size_t m_size_rem;
   size_t m_size_rem_given;
   size_t m_size_rem_completed;
-  size_t m_size_given;  // used for the offset
+  size_t m_size_given;
   size_t m_worksize;
-  size_t m_work_last;  // when there is a rest
+  size_t m_work_last;
+
+  mutex* m_mutex_duration;
+  std::chrono::duration<double> m_time_init;
+  std::chrono::duration<double> m_time;
+  vector<tuple<size_t, ActionType>> m_duration_actions;
+  vector<tuple<size_t, ActionType>> m_duration_offset_actions;
 };
 
-}  // namespace clb
+} // namespace clb
 
 #endif /* CLBALANCER_SCHEDULER_HGUIDED_HPP */

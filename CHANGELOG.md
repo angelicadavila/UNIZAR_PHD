@@ -1,11 +1,52 @@
 # ChangeLog
 
+## v0.2.3 (2018-01-29)
+
+**Enhancements**:
+
+- Benchsuite with file reader (source and binary) via `io` compile unit.
+- Device supports custom kernels (source and binary).
+- Dynamic scheduler with ATOMIC support (`callbacks / get_next_request`).
+
+**News**
+
+- New tool to build kernels: clkernel.
+
+## v0.2.2 (2018-01-22)
+
+**Enhancements**:
+
+- Added support for offset in kernel via last args.
+- Removed `using namespace std`.
+- Added scheduler durations.
+- Member vars `size_given` and `size_rem` inside the mutex.
+
+## v0.2.1 (2018-01-17)
+
+**Enhancements**:
+
+- Comments cleaned.
+- Inspector created with printActionTypeDuration.
+- No warnings in compilation (debug and release).
+
+**News**
+
+- MIT Licensed.
+- Clang-format style changed to Mozilla.
+- Tested in AMD APU, Intel CPU+IGPU, NVIDIA GPU, AMD CPU+GPU and Xeon Phi.
+- Static, Dynamic and HGuided working.
+- Makefile improved with clang-tidy and targets refactored.
+
+**Stats**
+
+- 2498 C++ lines of code in `src` (744 C/C++ header)
+
 ## v0.2.0 (2018-01-14)
 
 **Enhancements**:
 
 - HGuided load balancer created.
-- Callbacks contain connection with the Work package: `callback` receives the queue index (not the `Device*`)
+- Callbacks contain connection with the Work package: `callback` receives the queue index (not the `Device*`).
 - Assign, Vecadd and Gaussian benchsuite with an unified structure.
 
 ## v0.1.10 (2018-01-03)

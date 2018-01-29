@@ -4,9 +4,11 @@ This repository is a basic mirror of `clbalancer`. Only the minimal runnable par
 
 **Work In Progress**.
 
+**Disclaimer**: This library is private until the author releases it.
+
 ## Hits
 
-1. New API (+ maintanability). 20 vs 250 Maat lines.
+1. New API (+ maintanability). 33 simple lines vs 105 more complex Maat lines (eg. in gaussian).
 1. New Architecture (robust and flexible).
 1. Pure Library (can be reused). Maat it is not.
 1. Achieved LBA: Static, Dynamic and HGuided.
@@ -19,6 +21,23 @@ make build/release
 
 # legacy:
 OPENCL_VERSION=1.2 make build/release
+```
+
+## Tools: clkernel
+
+To build binary kernels and be able to use them directly with the new feature of Devices (custom kernel).
+
+```sh
+make build/debug-clkernel
+
+# discovery:
+./build/debug/tools/clkernel
+
+# build:
+./build/debug/tools/clkernel 0 0 support/kernels/vecadd_offset.cl
+# Writting to support/kernels/vecadd_offset_station:0:0.cl.bin
+HOSTNAME=xxx ./build/debug/tools/clkernel 0 1 support/kernels/vecadd_offset.cl
+# Writting to support/kernels/vecadd_offset_xxx:0:1.cl.bin
 ```
 
 ## Run

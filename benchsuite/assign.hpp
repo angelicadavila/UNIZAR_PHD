@@ -11,14 +11,13 @@
 
 #include "clbalancer.hpp"
 
-using namespace std;
-
 // namespace clb {
 //   class Runtime;
 //   class Scheduler;
 //   class Device;
 // }
 
-void do_assign(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop);
+void
+do_assign(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop);
 
 #endif /* CLBALANCER_BENCHS_ASSIGN_HPP */

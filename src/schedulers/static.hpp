@@ -1,41 +1,49 @@
+/**
+ * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+ * This file is part of clbalancer which is released under MIT License.
+ * See file LICENSE for full license details.
+ */
 #ifndef CLBALANCER_SCHEDULER_STATIC_HPP
 #define CLBALANCER_SCHEDULER_STATIC_HPP 1
 
-#include <thread>
-#include <vector>
-// #include "device.hpp"
 #include <iostream>
 #include <mutex>
+#include <thread>
+#include <tuple>
+#include <vector>
 
+#include "inspector.hpp"
+#include "scheduler.hpp"
 #include "semaphore.hpp"
 #include "work.hpp"
 
-#include "scheduler.hpp"
-
-using namespace std;
+using std::lock_guard;
+using std::make_tuple;
+using std::mutex;
+using std::thread;
+using std::tie;
 
 namespace clb {
-// class Device;
+enum class ActionType;
 class StaticScheduler;
-// class Scheduler;
-// enum WorkSplit;
 
-void scheduler_thread_func(StaticScheduler& sched);
+void
+scheduler_thread_func(StaticScheduler& sched);
 
-class StaticScheduler : public Scheduler {
- public:
-  enum WorkSplit {
+class StaticScheduler : public Scheduler
+{
+public:
+  enum WorkSplit
+  {
     Raw = 0,
-    By_Devices = 1,  // work / ndevices
-                     // Decr2 = 2, // first 50%, second 50% * 50%, etc
-                     // Incr2 = 3, // last 50%, before last 50% * 50%, etc
+    By_Devices = 1, // work / ndevices
+                    // Decr2 = 2, // first 50%, second 50% * 50%, etc
+                    // Incr2 = 3, // last 50%, before last 50% * 50%, etc
   };
 
-  // make it Noncopyable
   StaticScheduler(StaticScheduler const&) = delete;
   StaticScheduler& operator=(StaticScheduler const&) = delete;
 
-  // make it movable
   StaticScheduler(StaticScheduler&&) = default;
   StaticScheduler& operator=(StaticScheduler&&) = default;
 
@@ -56,7 +64,6 @@ class StaticScheduler : public Scheduler {
   void calcProportions();
 
   void setRawProportions(const vector<float>& props);
-  // void setDevices(int ndevices){ m_ndevices = ndevices; }
   void setDevices(vector<Device*>&& devices);
 
   int getWorkIndex(Device* device) override;
@@ -67,23 +74,24 @@ class StaticScheduler : public Scheduler {
 
   void printStats() override;
 
+  void saveDuration(ActionType action);
+  void saveDurationOffset(ActionType action);
+
   void callback(int queue_index) override;
   void req_work(Device* device) override;
   void enq_work(Device* device) override;
   void preenq_work() override;
-  // private:
-  // Device& m_device;
-  // semaphore m_barrier;
- private:
+
+private:
   thread m_thread;
   size_t m_size;
-  vector<Device*> m_devices;  // maybe Device*?
+  vector<Device*> m_devices;
   uint m_ndevices;
   semaphore m_sema;
   mutex m_mutex_work;
   vector<Work> m_queue_work;
   vector<vector<uint>> m_queue_id_work;
-  uint m_queue_work_size;  // should be atomic
+  uint m_queue_work_size;
   vector<uint> m_chunk_todo;
   vector<uint> m_chunk_given;
   vector<uint> m_chunk_done;
@@ -92,8 +100,14 @@ class StaticScheduler : public Scheduler {
   vector<tuple<size_t, size_t>> m_proportions;
   vector<float> m_raw_proportions;
   WorkSplit m_wsplit;
+
+  mutex* m_mutex_duration;
+  std::chrono::duration<double> m_time_init;
+  std::chrono::duration<double> m_time;
+  vector<tuple<size_t, ActionType>> m_duration_actions;
+  vector<tuple<size_t, ActionType>> m_duration_offset_actions;
 };
 
-}  // namespace clb
+} // namespace clb
 
 #endif /* CLBALANCER_SCHEDULER_STATIC_HPP */

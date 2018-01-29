@@ -1,11 +1,14 @@
+/**
+ * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+ * This file is part of clbalancer which is released under MIT License.
+ * See file LICENSE for full license details.
+ */
 #ifndef SEMAPHORE_HPP
 #define SEMAPHORE_HPP 1
 
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
-
-using namespace std;
 
 /*!
  * Semaphore use cases:
@@ -28,7 +31,8 @@ using namespace std;
  * }
  * ```
  *
- * It works if main reaches `notify` before t1 the `wait` and if t1 reaches `wait` before main the `notify`.
+ * It works if main reaches `notify` before t1 the `wait` and if t1 reaches
+ * `wait` before main the `notify`.
  *
  * **4-1-1-2 as a releaser**
  *
@@ -78,9 +82,10 @@ using namespace std;
  *
  */
 
-template <typename Mutex, typename CondVar>
-class basic_semaphore {
- public:
+template<typename Mutex, typename CondVar>
+class basic_semaphore
+{
+public:
   using native_handle_type = typename CondVar::native_handle_type;
 
   explicit basic_semaphore(int count = 0);
@@ -93,14 +98,14 @@ class basic_semaphore {
   void wait(int count = 1);
   bool available();
   bool try_wait();
-  template <class Rep, class Period>
+  template<class Rep, class Period>
   bool wait_for(const std::chrono::duration<Rep, Period>& d);
-  template <class Clock, class Duration>
+  template<class Clock, class Duration>
   bool wait_until(const std::chrono::time_point<Clock, Duration>& t);
 
   native_handle_type native_handle();
 
- private:
+private:
   Mutex mMutex;
   CondVar mCv;
   int mCount;
@@ -108,32 +113,22 @@ class basic_semaphore {
 
 using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
 
-template <typename Mutex, typename CondVar>
+template<typename Mutex, typename CondVar>
 basic_semaphore<Mutex, CondVar>::basic_semaphore(int count)
-    // : mCount{count - 1} // RNOZ -1
-    : mCount{-count}  // RNOZ -1
-{
-  // cout << "init sem\n";
-}
+  : mCount{ -count }
+{}
 
 /*!
-  \brief consume `count` resources and notify one/all threads (all if count > 1).
-  \param count number of resources to consume
+  \brief consume `count` resources and notify one/all threads (all if count >
+  1). \param count number of resources to consume
 */
-template <typename Mutex, typename CondVar>
-void basic_semaphore<Mutex, CondVar>::notify(int count) {
-  std::lock_guard<Mutex> lock{mMutex};
-  // cout << "N\n";
-  // cout << "N[" << mCount << "]+= ";
-  mCount += count;  // RNOZ ++mCount;
-  // if (mCount > 0){
-  //   cout << "all\n";
-  //   mCv.notify_all();
-  // }else{
-  //   mCv.notify_one();
-  // }
+template<typename Mutex, typename CondVar>
+void
+basic_semaphore<Mutex, CondVar>::notify(int count)
+{
+  std::lock_guard<Mutex> lock{ mMutex };
+  mCount += count;
   if (count > 1) {
-    // cout << "all\n";
     mCv.notify_all();
   } else {
     mCv.notify_one();
@@ -150,26 +145,26 @@ void basic_semaphore<Mutex, CondVar>::notify(int count) {
 // }
 
 /*!
-  \brief wait if no free resources and release `count` resources after being awaken.
-  \param count number of resources to free
+  \brief wait if no free resources and release `count` resources after being
+  awaken. \param count number of resources to free
  */
-template <typename Mutex, typename CondVar>
-void basic_semaphore<Mutex, CondVar>::wait(int count) {
-  std::unique_lock<Mutex> lock{mMutex};
-  // cout << "AB\n";
+template<typename Mutex, typename CondVar>
+void
+basic_semaphore<Mutex, CondVar>::wait(int count)
+{
+  std::unique_lock<Mutex> lock{ mMutex };
   // releases the lock when waiting (waits always when mCount is <= 0)
-  // mCv.wait(lock, [&]{ return mCount > 0; });
   mCv.wait(lock, [&] { return mCount >= 0; });
-  // cout << "W[" << mCount << "]-= ";
-  mCount -= count;  // RNOZ --mCount;
+  mCount -= count; // RNOZ --mCount;
 }
 
-template <typename Mutex, typename CondVar>
-bool basic_semaphore<Mutex, CondVar>::try_wait() {
-  std::lock_guard<Mutex> lock{mMutex};
+template<typename Mutex, typename CondVar>
+bool
+basic_semaphore<Mutex, CondVar>::try_wait()
+{
+  std::lock_guard<Mutex> lock{ mMutex };
 
   if (mCount > 0) {
-    // mCv.wait(lock, [&]{ return mCount > 0; }); // REVIEW: RNOZ added??
     --mCount;
     return true;
   }
@@ -178,38 +173,48 @@ bool basic_semaphore<Mutex, CondVar>::try_wait() {
 }
 
 // RNOZ:
-template <typename Mutex, typename CondVar>
-bool basic_semaphore<Mutex, CondVar>::available() {
-  std::lock_guard<Mutex> lock{mMutex};
+template<typename Mutex, typename CondVar>
+bool
+basic_semaphore<Mutex, CondVar>::available()
+{
+  std::lock_guard<Mutex> lock{ mMutex };
 
   return mCount > 0;
 }
 
-template <typename Mutex, typename CondVar>
-template <class Rep, class Period>
-bool basic_semaphore<Mutex, CondVar>::wait_for(const std::chrono::duration<Rep, Period>& d) {
-  std::unique_lock<Mutex> lock{mMutex};
+template<typename Mutex, typename CondVar>
+template<class Rep, class Period>
+bool
+basic_semaphore<Mutex, CondVar>::wait_for(const std::chrono::duration<Rep, Period>& d)
+{
+  std::unique_lock<Mutex> lock{ mMutex };
   auto finished = mCv.wait_for(lock, d, [&] { return mCount > 0; });
 
-  if (finished) --mCount;
+  if (finished)
+    --mCount;
 
   return finished;
 }
 
-template <typename Mutex, typename CondVar>
-template <class Clock, class Duration>
-bool basic_semaphore<Mutex, CondVar>::wait_until(const std::chrono::time_point<Clock, Duration>& t) {
-  std::unique_lock<Mutex> lock{mMutex};
+template<typename Mutex, typename CondVar>
+template<class Clock, class Duration>
+bool
+basic_semaphore<Mutex, CondVar>::wait_until(const std::chrono::time_point<Clock, Duration>& t)
+{
+  std::unique_lock<Mutex> lock{ mMutex };
   auto finished = mCv.wait_until(lock, t, [&] { return mCount > 0; });
 
-  if (finished) --mCount;
+  if (finished)
+    --mCount;
 
   return finished;
 }
 
-template <typename Mutex, typename CondVar>
-typename basic_semaphore<Mutex, CondVar>::native_handle_type basic_semaphore<Mutex, CondVar>::native_handle() {
+template<typename Mutex, typename CondVar>
+typename basic_semaphore<Mutex, CondVar>::native_handle_type
+basic_semaphore<Mutex, CondVar>::native_handle()
+{
   return mCv.native_handle();
 }
 
-#endif  // SEMAPHORE_HPP
+#endif // SEMAPHORE_HPP

@@ -1,3 +1,7 @@
+# Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+# This file is part of clbalancer which is released under MIT License.
+# See file LICENSE for full license details.
+
 cmake_minimum_required(VERSION 3.3)
 
 set(PROJECT clbalancer)
@@ -81,7 +85,8 @@ LinkLibraries("${Entry}" "${Needed_Libraries}")
 # target_link_libraries("${Entry}" "${Base_Library}" "${CONAN_LIBS}")
 
 
-# add_subdirectory(support/src/semaphore)
+# add_subdirectory(support/semaphore)
+# add_subdirectory(support/clkernel)
 
 # tests
 

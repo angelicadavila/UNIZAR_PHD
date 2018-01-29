@@ -4,7 +4,9 @@
 // #include "scheduler.hpp"
 // #include "device.hpp"
 
-auto check_assign(vector<int> in1, vector<int> out, int size) {
+auto
+check_assign(vector<int> in1, vector<int> out, int size)
+{
   auto pos = -1;
   for (auto i = 0; i < size; ++i) {
     if (in1[i] != out[i]) {
@@ -15,7 +17,9 @@ auto check_assign(vector<int> in1, vector<int> out, int size) {
   return pos;
 }
 
-void do_assign(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop) {
+void
+do_assign(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop)
+{
   string kernel = R"(
 __kernel void
 assign(__global int* in1, __global int* out, int size){
@@ -76,10 +80,11 @@ assign(__global int* in1, __global int* out, int size){
   clb::StaticScheduler stSched;
   clb::DynamicScheduler dynSched;
   clb::HGuidedScheduler hgSched;
-  // clb::Runtime runtime(move(vector<clb::Device>{device, device2}), scheduler);
-  // clb::Runtime runtime(move(vector<clb::Device>{{
-  //                                                clb::Device(0, 1, 0, size / 2 ),
-  //                                                clb::Device(0, 0, size / 2, size / 2)
+  // clb::Runtime runtime(move(vector<clb::Device>{device, device2}),
+  // scheduler); clb::Runtime runtime(move(vector<clb::Device>{{
+  //                                                clb::Device(0, 1, 0, size /
+  //                                                2 ), clb::Device(0, 0, size
+  //                                                / 2, size / 2)
   //       }}), scheduler);
   // clb::Runtime runtime({device, device2}, scheduler);
   // clb::Runtime runtime(device, device2, scheduler);
@@ -88,14 +93,14 @@ assign(__global int* in1, __global int* out, int size){
     runtime.setScheduler(&stSched);
     // vector<float> props;
     // stSched.setRawProportions({0.45});
-    stSched.setRawProportions({prop});
+    stSched.setRawProportions({ prop });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
-  } else {  // tscheduler == 2
+  } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({prop});
+    hgSched.setRawProportions({ prop });
   }
   runtime.setInBuffer(in1_array);
   runtime.setOutBuffer(out_array);
@@ -106,6 +111,8 @@ assign(__global int* in1, __global int* out, int size){
   runtime.setKernelArg(2, size);
 
   runtime.run();
+
+  runtime.printStats();
 
   if (check) {
     auto in1 = *in1_array.get();
@@ -127,6 +134,4 @@ assign(__global int* in1, __global int* out, int size){
   } else {
     cout << "Done\n";
   }
-
-  runtime.printStats();
 }

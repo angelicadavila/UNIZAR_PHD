@@ -1,52 +1,55 @@
+/**
+ * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+ * This file is part of clbalancer which is released under MIT License.
+ * See file LICENSE for full license details.
+ */
 #ifndef CLBALANCER_RUNTIME_HPP
 #define CLBALANCER_RUNTIME_HPP 1
 
+#include <chrono>
+#include <memory>
+#include <mutex>
+
 #include "clutils.hpp"
+#include "device.hpp"
 #include "semaphore.hpp"
 
-// #include "scheduler.hpp"
-#include "device.hpp"
-// #include "buffer.hpp"
-#include <memory>
+using std::lock_guard;
+using std::make_shared;
+using std::make_tuple;
+using std::make_unique;
+using std::shared_ptr;
+using std::string;
+using std::vector;
 
 namespace clb {
-// class Device;
 class Scheduler;
 
-class Runtime {
- public:
+class Runtime
+{
+public:
   void run();
 
-  // template <typename T>
-  // void setInBuffer(shared_ptr<vector<int>> array);
-  // void setInBuffer(shared_ptr<vector<int>> array);
-  // void setInBuffer(shared_ptr<vector<float>> array);
-  // void setInBuffer(shared_ptr<vector<cl_uchar4>> array);
-  // // template <typename T>
-  // void setOutBuffer(shared_ptr<vector<int>> array);
-  // void setOutBuffer(shared_ptr<vector<float>> array);
-  // void setOutBuffer(shared_ptr<vector<cl_uchar4>> array);
-
-  template <typename T>
-  void setInBuffer(shared_ptr<vector<T>> array) {
+  template<typename T>
+  void setInBuffer(shared_ptr<vector<T>> array)
+  {
     for (auto& device : m_devices) {
       device.setInBuffer(array);
     }
   }
-  template <typename T>
-  void setOutBuffer(shared_ptr<vector<T>> array) {
+  template<typename T>
+  void setOutBuffer(shared_ptr<vector<T>> array)
+  {
     for (auto& device : m_devices) {
       device.setOutBuffer(array);
     }
   }
-  // void setInBuffer(Buffer& buffer);
-  // void setOutBuffer(Buffer& buffer);
 
   void setKernel(const string& source, const string& kernel);
 
-  // TODO cl_int instead void
-  template <typename T>
-  void setKernelArg(cl_uint index, const T& value) {
+  template<typename T>
+  void setKernelArg(cl_uint index, const T& value)
+  {
     for (auto& device : m_devices) {
       device.setKernelArg(index, value);
     }
@@ -71,7 +74,7 @@ class Runtime {
 
   Runtime(vector<Device>&& devices, size_t size);
 
- private:
+private:
   void configDevices();
 
   vector<cl::Platform> m_platforms;
@@ -79,7 +82,6 @@ class Runtime {
 
   shared_ptr<semaphore> m_barrier;
   vector<Device> m_devices;
-  // Device& m_device2;
   Scheduler* m_scheduler;
 
   size_t m_size;
@@ -87,12 +89,12 @@ class Runtime {
   semaphore m_sema_all_ready;
 
   mutex* m_mutex_duration;
-  chrono::duration<double> m_time_init;
-  chrono::duration<double> m_time;
+  std::chrono::duration<double> m_time_init;
+  std::chrono::duration<double> m_time;
   vector<tuple<size_t, ActionType>> m_duration_actions;
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
 };
 
-}  // namespace clb
+} // namespace clb
 
 #endif /* CLBALANCER_RUNTIME_HPP */

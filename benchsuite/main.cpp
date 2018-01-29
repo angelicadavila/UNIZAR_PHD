@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <string>
 
 #include "assign.hpp"
 #include "gaussian.hpp"
@@ -22,21 +23,30 @@
 // using namespace std::chrono_literals;
 // using namespace std;
 
-void usage(){
-  std::cout <<
-    "needs (scheduler = 0,1,2) (devices = 0,1,2) (bench = 0,1,2) (check 0,1) (size * 128|size * 128|image_width) (chunksize * "
-    "128|min chunksize) (prop .f) (filter_width)\n"
-    "  - scheduler: 0 (static), 1 (dynamic), 2 (hguided)\n"
-    "  - devices: 0 (first, maybe CPU), 1 (second, maybe GPU), 2 (2 devices, first and second)\n"
-    "  - bench: 0 (assign), 1 (vecadd), 2 (gaussian)\n"
-    "  - check: 0 (no), 1 (yes)"
-    "  - problem size (use a multiple of 128 for gaussian)\n"
-    "  - chunk size (use a multiple of 128 for gaussian)\n"
-    "  - proportion (proportion for the first device between 0.0 and 1.0)\n"
-    "  - filter width (for gaussian)\n";
+using std::stof;
+using std::stoi;
+
+void
+usage()
+{
+  std::cout << "needs (scheduler = 0,1,2) (devices = 0,1,2) (bench = 0,1,2) (check "
+               "0,1) (size * 128|size * "
+               "128|image_width) (chunksize * "
+               "128|min chunksize) (prop .f) (filter_width)\n"
+               "  - scheduler: 0 (static), 1 (dynamic), 2 (hguided)\n"
+               "  - devices: 0 (first, maybe CPU), 1 (second, maybe GPU), 2 (2 "
+               "devices, first and second)\n"
+               "  - bench: 0 (assign), 1 (vecadd), 2 (gaussian)\n"
+               "  - check: 0 (no), 1 (yes)"
+               "  - problem size (use a multiple of 128 for gaussian)\n"
+               "  - chunk size (use a multiple of 128 for gaussian)\n"
+               "  - proportion (proportion for the first device between 0.0 and 1.0)\n"
+               "  - filter width (for gaussian)\n";
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char* argv[])
+{
   if (argc <= 7) {
     usage();
     throw runtime_error("wrong number of arguments");

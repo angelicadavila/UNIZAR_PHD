@@ -5,13 +5,27 @@ CMAKE ?= /usr/bin/cmake
 export CC=gcc
 export CXX=g++
 
+DIR_DEBUG = build/debug
+DIR_RELEASE = build/release
+
 clean:
 	rm -rf build;
 
-build/debug:
-	mkdir -p build/debug; cd build/debug; \
-	$(CMAKE) ../.. -DCMAKE_BUILD_TYPE=Debug && make
+dir/debug:
+	mkdir -p $(DIR_DEBUG)
 
-build/release:
-	mkdir -p build/release; cd build/release; \
-	$(CMAKE) ../.. -DCMAKE_BUILD_TYPE=Release && make
+dir/release:
+	mkdir -p $(DIR_RELEASE)
+
+build/debug-clkernel: dir/debug
+	cd $(DIR_DEBUG); \
+	$(CMAKE) ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && make clkernel
+
+build/debug: dir/debug
+	cd $(DIR_DEBUG); \
+	$(CMAKE) ../.. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && make
+
+build/release: dir/release
+	cd $(DIR_RELEASE); \
+	$(CMAKE) ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && make
+

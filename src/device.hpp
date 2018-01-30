@@ -183,6 +183,7 @@ private:
   Runtime* m_runtime;
 
   shared_ptr<semaphore> m_barrier;
+  shared_ptr<semaphore> m_init_barrier;
 
   thread m_thread;
   string m_info_buffer;

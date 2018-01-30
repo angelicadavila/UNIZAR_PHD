@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+#include "vecAllocator.hpp"
 #include "assign.hpp"
 #include "gaussian.hpp"
 #include "ray.hpp"

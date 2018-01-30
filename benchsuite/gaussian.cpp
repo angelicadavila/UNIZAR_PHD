@@ -559,6 +559,13 @@ do_gaussian(int tscheduler,
   auto platform_gpu = 1;
   auto platform_fpga= 2;
 
+  if (tdevices &0x04){  
+    clb::Device device2(platform_fpga,0,1);
+    string binfileKernel="./benchsuite/myKernel.aocx";
+
+    device2.setBinaryKernel(binfileKernel,1);    
+    devices.push_back(move(device2));
+  }
 
   if (tdevices &0x01){  
     clb::Device device(platform_cpu,0);
@@ -568,12 +575,6 @@ do_gaussian(int tscheduler,
     clb::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
-  if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
-    device2.setBinaryKernel("./benchsuite/myKernel.aocx");    
-    devices.push_back(move(device2));
-  }
-
 
 
   clb::StaticScheduler stSched;

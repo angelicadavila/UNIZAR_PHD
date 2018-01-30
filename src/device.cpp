@@ -10,6 +10,9 @@
 #include "runtime.hpp"
 #include "scheduler.hpp"
 
+#include <chrono>
+#include <thread>
+
 struct CBData
 {
   int queue_index;
@@ -37,7 +40,10 @@ void
 device_thread_func(Device& device)
 {
   auto time1 = std::chrono::system_clock::now().time_since_epoch();
+
   device.init();
+//  if (device.getID()==1)
+//	  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   Scheduler* sched = device.getScheduler();
   device.saveDuration(ActionType::deviceStart);
   device.saveDurationOffset(ActionType::deviceStart);

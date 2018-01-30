@@ -1,6 +1,7 @@
 #ifndef CLBALANCER_BENCHS_VECADD_HPP
 #define CLBALANCER_BENCHS_VECADD_HPP
 
+#include "vecAllocator.hpp"
 #include <memory>
 #include <string>
 #include <vector>

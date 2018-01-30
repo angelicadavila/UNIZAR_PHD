@@ -240,13 +240,21 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   } else if (tdevices == 1) { // GPU
     clb::Device device2(platform, 0);
 
+  if (tdevices &0x04){  
+    clb::Device device2(platform_fpga,0,1);
+    string binfileKernel="./benchsuite/myKernelAddEmu.aocx";
+
+    device2.setBinaryKernel(binfileKernel,1);    
     devices.push_back(move(device2));
-  } else { // CPU + GPU
-    clb::Device device(platform, 1);
-    clb::Device device2(platform, 0);
-  
-    devices.push_back(move(device));
-    devices.push_back(move(device2));
+  }
+
+  if (tdevices &0x01){  
+    clb::Device device(platform_cpu,0,0);
+     devices.push_back(move(device));
+  }
+  if (tdevices &0x02){  
+    clb::Device device1(platform_gpu,0,0);
+    devices.push_back(move(device1));
   }
 
   clb::StaticScheduler stSched;

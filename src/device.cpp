@@ -276,9 +276,13 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   cl::Event evkernel;
 
   auto gws = size;
-#if CL_SUPPORT_KERNEL_OFFSET == 1
-  m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NDRange(offset), cl::NDRange(gws), cl::NDRange(CL_LWS), &m_prev_events, &evkernel);
+#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
+  m_queue.enqueueNDRangeKernel(m_kernel,
+                               cl::NDRange(offset),
+                               cl::NDRange(gws),
+                               cl::NDRange(CL_LWS),
+                               &m_prev_events,
+                               &evkernel);
 #else
   m_kernel.setArg(m_nargs, (uint)offset);
   m_queue.enqueueNDRangeKernel(
@@ -295,8 +299,17 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     Buffer& b = m_out_clb_buffers[i];
     size_t size_bytes = b.byBytes(size);
     auto offset_bytes = b.byBytes(offset);
-    m_queue.enqueueReadBuffer(
-      m_out_buffers[i], CL_FALSE, offset_bytes, size_bytes, b.dataWithOffset(offset), &levents, &levread);
+    m_queue.enqueueReadBuffer(m_out_buffers[i],
+#if CLB_OPERATION_BLOCKING_READ == 1
+                              CL_TRUE,
+#else
+                              CL_FALSE,
+#endif
+                              offset_bytes,
+                              size_bytes,
+                              b.dataWithOffset(offset),
+                              &levents,
+                              &levread);
     events.push_back(levread);
     evread = levread;
   }
@@ -436,10 +449,10 @@ Device::writeBuffers(bool /* dummy */)
     Buffer& b = m_in_clb_buffers[i];
     auto data = b.data();
     auto size = b.size();
-    cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: " << &m_in_buffers[i]
-         << " size: " << size << " bytes: " << b.bytes() << "\n";
-    CL_CHECK_ERROR(
-      m_queue.enqueueWriteBuffer(m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
+    cout << "writeBuffers [array] " << b.get() << " data: " << data
+         << " buffer: " << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n";
+    CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+      m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
   }
 }
 
@@ -468,16 +481,20 @@ Device::initKernel()
   }
   string options;
   options.reserve(32);
-  options += "-DCL_SUPPORT_KERNEL_OFFSET=" + to_string(CL_SUPPORT_KERNEL_OFFSET);
+  options += "-DCLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+             to_string(CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
 
-#if CL_SUPPORT_KERNEL_OFFSET == 0
-  cout << "Kernel should receive the last argument as 'uint offset' (CL_SUPPORT_KERNEL_OFFSET == 0)\n";
+#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0
+  cout << "Kernel should receive the last argument as 'uint offset' "
+          "(CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0)\n";
 #endif
 
   cl_err = program.build({ m_device }, options.c_str());
   if (cl_err != CL_SUCCESS) {
     cout << " Error building: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device) << "\n";
     CL_CHECK_ERROR(cl_err);
+  } else {
+    cout << " Building info: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device) << "\n";
   }
 
   cl::Kernel kernel(program, m_kernel_str.c_str(), &cl_err);
@@ -492,6 +509,7 @@ Device::initKernel()
     if (size == 0) {
       int pos = -1;
       auto address = m_arg_ptr[i];
+      auto assigned = false;
       cout << "[value] " << m_arg_ptr[i] << "\n";
       cout << "[address] " << address << "\n";
       if (unassigned > 0) { // usually more in buffers than out
@@ -499,10 +517,12 @@ Device::initKernel()
         cout << "it: " << *it << "\n";
         if (it != end(m_in_buffers_ptr)) {
           pos = distance(m_in_buffers_ptr.begin(), it);
-          cout << "address: " << address << " position: " << pos << " buffer: " << &m_in_buffers[pos] << "\n";
+          cout << "address: " << address << " position: " << pos
+               << " buffer: " << &m_in_buffers[pos] << "\n";
           cl_err = kernel.setArg(index, m_in_buffers[pos]);
           CL_CHECK_ERROR(cl_err, "kernel arg in buffer " + to_string(i));
           unassigned--;
+          assigned = true;
         }
       }
 
@@ -510,9 +530,23 @@ Device::initKernel()
         auto it = find(begin(m_out_buffers_ptr), end(m_out_buffers_ptr), address);
         if (it != end(m_out_buffers_ptr)) {
           auto pos = distance(m_out_buffers_ptr.begin(), it);
-          cout << "address: " << address << " position: " << pos << " buffer: " << &m_out_buffers[pos] << "\n";
+          cout << "address: " << address << " position: " << pos
+               << " buffer: " << &m_out_buffers[pos] << "\n";
           cl_err = kernel.setArg(index, m_out_buffers[pos]);
           CL_CHECK_ERROR(cl_err, "kernel arg out buffer " + to_string(i));
+          assigned = true;
+        }
+      }
+
+      if (!assigned) { // maybe empty space (__local)
+        if (m_arg_bytes[i] > 0) {
+          cout << "[bytes] " << m_arg_bytes[i] << "\n";
+          size_t bytes = m_arg_bytes[i];
+          // void* ptr = m_arg_ptr[i];
+          cl_err = kernel.setArg((cl_uint)i, bytes, NULL);
+          CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+        } else {
+          throw runtime_error("unknown kernel arg address " + to_string(i));
         }
       }
     } else {

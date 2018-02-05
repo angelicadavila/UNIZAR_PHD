@@ -285,8 +285,8 @@ Gaussian::compare_gaussian_blur(float threshold)
         if (diffX >= threshold || diffY >= threshold || diffZ >= threshold) {
           if (showable) {
 #pragma omp critical
-            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX << "," << blurY
-                 << "," << blurZ << ")\n";
+            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX
+                 << "," << blurY << "," << blurZ << ")\n";
             showable = false;
             ok = ok & false;
           }
@@ -421,8 +421,8 @@ Gaussian::compare_gaussian_blur_2loops(float /* threshold */)
             // cout << "i: " << (i-1)/channels << " mod: " << (i-1)%channels <<
             // " blurred: " << blurred[(i-1)/channels]
             // << " _c: " << _c[(i-1)/channels] << "\n";
-            cout << "i: " << i / channels << " mod: " << mod << " blurred: " << blurred[i / channels]
-                 << " _c: " << _c[i / channels] << "\n";
+            cout << "i: " << i / channels << " mod: " << mod
+                 << " blurred: " << blurred[i / channels] << " _c: " << _c[i / channels] << "\n";
             // cout << "i: " << (i+1)/channels << " mod: " << (i+1)%channels <<
             // " blurred: " << blurred[(i+1)/channels]
             // << " _c: " << _c[(i+1)/channels] << "\n";
@@ -448,7 +448,7 @@ Gaussian::get_kernel_str()
 
 // #pragma OPENCL EXTENSION cl_khr_select_fprounding_mode : enable
 // #pragma OPENCL EXTENSION cl_intel_printf : enable
-// #pragma OPENCL EXTENSION cl_amd_printf : enable
+#pragma OPENCL EXTENSION cl_amd_printf : enable
 
 __kernel void
 #if CL_SUPPORT_KERNEL_OFFSET == 1
@@ -525,7 +525,13 @@ gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
 }
 
 void
-do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int chunksize, float prop, uint filter_width)
+do_gaussian(int tscheduler,
+            int tdevices,
+            bool check,
+            uint image_width,
+            int chunksize,
+            float prop,
+            uint filter_width)
 {
   uint image_height = image_width;
 
@@ -533,7 +539,8 @@ do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int chun
 
   Gaussian gaussian(image_width, image_height, filter_width);
 
-  string kernel = gaussian.get_kernel_str();
+  // string kernel = gaussian.get_kernel_str();
+  string kernel = file_read("support/kernels/gaussian.cl");
   // auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
   // auto b = make_shared<vector<cl_float>>(gaussian._b);
   // auto c = make_shared<vector<cl_uchar4>>(gaussian._c);

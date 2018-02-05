@@ -10,7 +10,9 @@
 
 #include "assign.hpp"
 #include "gaussian.hpp"
+#include "ray.hpp"
 #include "vecadd.hpp"
+// #include "binomial.hpp"
 
 // #include <omp.h>
 
@@ -29,14 +31,14 @@ using std::stoi;
 void
 usage()
 {
-  std::cout << "needs (scheduler = 0,1,2) (devices = 0,1,2) (bench = 0,1,2) (check "
+  std::cout << "needs (scheduler = 0,1,2) (devices = 0,1,2) (bench = 0,1,2,3,4) (check "
                "0,1) (size * 128|size * "
                "128|image_width) (chunksize * "
                "128|min chunksize) (prop .f) (filter_width)\n"
                "  - scheduler: 0 (static), 1 (dynamic), 2 (hguided)\n"
                "  - devices: 0 (first, maybe CPU), 1 (second, maybe GPU), 2 (2 "
                "devices, first and second)\n"
-               "  - bench: 0 (assign), 1 (vecadd), 2 (gaussian)\n"
+               "  - bench: 0 (assign), 1 (vecadd), 2 (gaussian), 3 (ray), 4 (binomial)\n"
                "  - check: 0 (no), 1 (yes)"
                "  - problem size (use a multiple of 128 for gaussian)\n"
                "  - chunk size (use a multiple of 128 for gaussian)\n"
@@ -67,7 +69,8 @@ main(int argc, char* argv[])
   auto prop = stof(argv[7]);
 
   if (tbench == 0) {
-    do_assign(tscheduler, tdevices, check, size, chunksize, prop);
+    // do_assign(tscheduler, tdevices, check, size, chunksize, prop);
+    do_vecadd_base(check, size);
   } else if (tbench == 1) {
     do_vecadd(tscheduler, tdevices, check, size, chunksize, prop);
     // thread t1(do_vecadd, tscheduler, tdevices, check, size, chunksize, prop);
@@ -80,6 +83,15 @@ main(int argc, char* argv[])
     auto filter_width = atoi(argv[8]);
 
     do_gaussian(tscheduler, tdevices, check, image_width, chunksize, prop, filter_width);
+  } else if (tbench == 3) {
+    auto image_width = size;
+    auto scene_path = string(argv[8]);
+    do_ray(tscheduler, tdevices, check, image_width, chunksize, prop, move(scene_path));
+    // // }else if (tbench == 4){
+    // //   auto samples = size;
+    // //   samples = (samples / 4) ? (samples / 4) * 4 : 4; // convierte a multiplo de 4
+    // //   auto steps = atoi(argv[8]);
+    // //   do_binomial(tscheduler, tdevices, check, samples, chunksize, prop, steps;
   }
   return 0;
 }

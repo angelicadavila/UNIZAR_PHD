@@ -7,6 +7,7 @@
 #define CLBALANCER_BUFFER_HPP 1
 
 #include <memory>
+#include <typeinfo>
 #include <vector>
 
 #include <CL/cl.h>
@@ -15,16 +16,6 @@ using std::shared_ptr;
 using std::vector;
 
 namespace clb {
-
-enum class Type
-{
-  Null = 0,
-  Int = 1,
-  Float = 2,
-  ClUchar4 = 3,
-  ClFloat = 4,
-  // String = 2,
-};
 
 enum class Direction
 {
@@ -44,14 +35,24 @@ public:
   Buffer(Buffer&&) = default;
   Buffer& operator=(Buffer&&) = default;
 
-  Type type();
   Direction direction();
   size_t size();
   size_t itemSize();
   size_t bytes();
-  void set(shared_ptr<vector<int>>& in);
-  void set(shared_ptr<vector<cl_uchar4>>& in);
-  void set(shared_ptr<vector<float>>& in);
+
+  template<typename T>
+  std::string type_name();
+
+  template<typename T>
+  void set(shared_ptr<vector<T>> in)
+  {
+    vector<T>* v = in.get();
+    m_item_size = sizeof(T);
+    m_size = v->size();
+    m_bytes = sizeof(T) * m_size;
+    m_data = reinterpret_cast<void*>(v->data());
+    m_address = reinterpret_cast<void*>(v);
+  }
 
   void* get();
   void* data();
@@ -61,7 +62,6 @@ public:
 
 private:
   Direction m_direction;
-  Type m_type;
   size_t m_item_size;
   size_t m_size;
   size_t m_bytes;

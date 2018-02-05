@@ -17,6 +17,7 @@
 
 #include "buffer.hpp"
 #include "clutils.hpp"
+#include "config.hpp"
 #include "semaphore.hpp"
 
 using std::cout;
@@ -126,13 +127,21 @@ public:
   }
 
   template<typename T>
-  void setKernelArg(cl_uint index, const shared_ptr<T>& value)
+  void setKernelArg(cl_uint index, const shared_ptr<vector<T>>& value)
   {
     cout << "setKernelArg shared_ptr T index: " << index << "\n";
     m_arg_index.push_back(index);
     auto address = value.get();
+
+    // auto size = OpenCL::KernelArgumentHandler<T>::size(address);
+    // auto bytes = OpenCL::KernelArgumentHandler<T>::size(address);
+    // cout << "size: " << address->size() << "\n";
+    // cout << "bytes (item): " << sizeof(T) << "\n";
+    auto bytes = sizeof(T) * address->size();
+    cout << "bytes: " << bytes << "\n";
+
     m_arg_size.push_back(0);
-    m_arg_bytes.push_back(0);
+    m_arg_bytes.push_back(bytes);
     m_arg_ptr.push_back(address);
     m_nargs++;
   }

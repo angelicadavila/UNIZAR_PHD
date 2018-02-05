@@ -23,10 +23,10 @@ include_directories ("${SRC_DIR}")
 include(SetLibraries)
 
 set(SOURCES
-  # semaphore.cpp
   assign.cpp
   vecadd.cpp
   gaussian.cpp
+  ray.cpp
   utils/io.cpp
 )
 
@@ -34,6 +34,7 @@ set(HEADERS
   assign.hpp
   vecadd.hpp
   gaussian.hpp
+  ray.hpp
   utils/io.hpp
 )
 

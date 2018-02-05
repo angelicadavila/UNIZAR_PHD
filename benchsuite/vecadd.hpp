@@ -10,6 +10,10 @@
 #include "clbalancer.hpp"
 
 // void do_vecadd(int tscheduler, int tdevices, bool check);
+
+void
+do_vecadd_base(bool check, int wsize);
+
 void
 do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop);
 

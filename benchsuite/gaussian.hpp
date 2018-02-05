@@ -1,8 +1,6 @@
 #ifndef CLBALANCER_BENCHS_GAUSSIAN_HPP
 #define CLBALANCER_BENCHS_GAUSSIAN_HPP
 
-#include "clbalancer.hpp"
-
 #include <memory>
 #include <ostream>
 #include <string>
@@ -12,12 +10,21 @@
 #include <cstdlib>
 #include <omp.h>
 
+#include "clbalancer.hpp"
+#include "utils/io.hpp"
+
 using std::ostream;
 
 #define THRESHOLD 0.51
 
 void
-do_gaussian(int tscheduler, int tdevices, bool check, uint image_width, int chunksize, float prop, uint filter_width);
+do_gaussian(int tscheduler,
+            int tdevices,
+            bool check,
+            uint image_width,
+            int chunksize,
+            float prop,
+            uint filter_width);
 // void do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int
 // chunksize, float prop);
 

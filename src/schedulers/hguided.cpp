@@ -271,7 +271,8 @@ HGuidedScheduler::enq_work(Device* device)
 
     size = new_size;
 
-    // cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop: " << prop << " lws: " << lws
+    // cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop: " << prop
+    // << " lws: " << lws
     // << " new_size: " << new_size << " m_worksize: " << m_worksize << "\n";
 
     size_t index = -1;

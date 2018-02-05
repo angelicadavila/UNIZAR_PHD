@@ -37,6 +37,7 @@ set(SOURCES
 )
 
 set(HEADERS
+  config.hpp
   buffer.hpp
   clbalancer.hpp
   semaphore.hpp

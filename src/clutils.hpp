@@ -27,17 +27,6 @@ using std::string;
 
 #define CL_CHECK_ERROR(...) CONCAT(CL_CHECK_ERROR_, VARGS(__VA_ARGS__))(__VA_ARGS__)
 
-// uncomment to force unsupport:
-// #define CL_SUPPORT_KERNEL_OFFSET 0
-#ifndef CL_SUPPORT_KERNEL_OFFSET
-// enable if CL_VERSION_1_1 or higher
-#if CL_VERSION_1_1 == 1
-#define CL_SUPPORT_KERNEL_OFFSET 1
-#else // CL_VERSION_1_0 == 1
-#define CL_SUPPORT_KERNEL_OFFSET 0
-#endif
-#endif // CL_SUPPORT_KERNEL_OFFSET defined
-
 class CLUtils
 {
 public:

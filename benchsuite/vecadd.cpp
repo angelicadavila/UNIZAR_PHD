@@ -14,11 +14,161 @@ check_vecadd(vector<int> in1, vector<int> in2, vector<int> out, int size)
 }
 
 void
+do_vecadd_base(bool check, int wsize)
+{
+  string m_kernel_str = R"(
+__kernel void
+#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
+vecadd(__global int* in1, __global int* in2, __global int* out, int size){
+  int idx = get_global_id(0);
+#else
+vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint offset){
+  int idx = get_global_id(0) + offset;
+#endif
+  if (idx >= 0 && idx < size){
+    out[idx] = in1[idx] + in2[idx];
+  }
+}
+)";
+
+  int size = 128 * wsize;
+  // int worksize = 128 * chunksize;
+
+  auto in1_array = make_shared<vector<int>>(size, 1);
+  auto in2_array = make_shared<vector<int>>(size, 2);
+  auto out_array = make_shared<vector<int>>(size, 0);
+
+  auto sel_platform = 0;
+  auto sel_device = 0;
+
+  vector<cl::Platform> m_platforms;
+  vector<vector<cl::Device>> m_platform_devices;
+  cl::Device m_device;
+
+  cout << "discoverDevices\n";
+  cl::Platform::get(&m_platforms);
+  cout << "platforms: " << m_platforms.size() << "\n";
+  auto i = 0;
+  for (auto& platform : m_platforms) {
+    vector<cl::Device> devices;
+    platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    cout << "platform: " << i++ << " devices: " << devices.size() << "\n";
+    m_platform_devices.push_back(move(devices));
+  }
+
+  auto last_platform = m_platforms.size() - 1;
+  if (sel_platform > last_platform) {
+    throw runtime_error("invalid platform selected");
+  }
+
+  auto last_device = m_platform_devices[sel_platform].size() - 1;
+  if (sel_device > last_device) {
+    throw runtime_error("invalid device selected");
+  }
+
+  m_device = move(m_platform_devices[sel_platform][sel_device]);
+
+  cl_int cl_err = CL_SUCCESS;
+  cl::Context m_context(m_device);
+
+  cl::CommandQueue m_queue(m_context, m_device, 0, &cl_err);
+  CL_CHECK_ERROR(cl_err, "CommandQueue queue");
+
+  cout << "initBuffers\n";
+
+  cl_int buffer_in_flags = CL_MEM_READ_WRITE;
+  cl_int buffer_out_flags = CL_MEM_READ_WRITE;
+
+  cl::Buffer in1_buffer(m_context, buffer_in_flags, sizeof(int) * in1_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "in1 buffer ");
+  cl::Buffer in2_buffer(m_context, buffer_in_flags, sizeof(int) * in2_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "in2 buffer ");
+  cl::Buffer out_buffer(m_context, buffer_out_flags, sizeof(int) * out_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "out buffer ");
+
+  CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+    in1_buffer, CL_FALSE, 0, sizeof(int) * in1_array.get()->size(), in1_array.get()->data(), NULL));
+
+  CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+    in2_buffer, CL_FALSE, 0, sizeof(int) * in2_array.get()->size(), in2_array.get()->data(), NULL));
+
+  cout << "initKernel\n";
+
+  cl::Program::Sources sources;
+  cl::Program::Binaries binaries;
+
+  sources.push_back({ m_kernel_str.c_str(), m_kernel_str.length() });
+  cl::Program m_program(m_context, sources);
+
+  string options;
+  options.reserve(32);
+  options += "-DCLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+             to_string(CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
+
+  cl_err = m_program.build({ m_device }, options.c_str());
+  if (cl_err != CL_SUCCESS) {
+    cout << " Error building: " << m_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device) << "\n";
+    CL_CHECK_ERROR(cl_err);
+  }
+
+  cl::Kernel m_kernel(m_program, "vecadd", &cl_err);
+  CL_CHECK_ERROR(cl_err, "kernel");
+
+  cl_err = m_kernel.setArg(0, in1_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 0 in1 buffer");
+
+  cl_err = m_kernel.setArg(1, in2_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 1 in2 buffer");
+
+  cl_err = m_kernel.setArg(2, out_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 2 out buffer");
+
+  cl_err = m_kernel.setArg(3, size);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  // cl_int cl_err;
+  cl::UserEvent end(m_context, &cl_err);
+  CL_CHECK_ERROR(cl_err, "user event end");
+
+  cl::Event evkernel;
+
+  auto lws = 128;
+
+  auto offset = 0;
+  auto gws = size;
+  m_queue.enqueueNDRangeKernel(
+    m_kernel, cl::NDRange(offset), cl::NDRange(gws), cl::NDRange(lws), NULL, NULL);
+
+  cl::Event evread;
+  vector<cl::Event> events({ evkernel });
+
+  m_queue.enqueueReadBuffer(out_buffer, CL_TRUE, 0, sizeof(int) * size, out_array.get()->data());
+
+  if (check) {
+    auto in1 = *in1_array.get();
+    auto in2 = *in2_array.get();
+    auto out = *out_array.get();
+
+    auto pos = check_vecadd(in1, in2, out, size);
+    auto ok = pos == -1;
+
+    auto time = 0;
+    if (ok) {
+      cout << "Success (" << time << ")\n";
+    } else {
+      cout << "Failure (" << time << " in pos " << pos << ")\n";
+    }
+  } else {
+    cout << "Done\n";
+  }
+}
+
+void
 do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int chunksize, float prop)
 {
   string kernel = R"(
 __kernel void
-#if CL_SUPPORT_KERNEL_OFFSET == 1
+#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 vecadd(__global int* in1, __global int* in2, __global int* out, int size){
   int idx = get_global_id(0);
 #else
@@ -33,7 +183,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
 
   string kernelPlain1 = R"(
 __kernel void
-#if CL_SUPPORT_KERNEL_OFFSET == 1
+#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 vecadd(__global int* in1, __global int* in2, __global int* out, int size){
   int idx = get_global_id(0);
 #else

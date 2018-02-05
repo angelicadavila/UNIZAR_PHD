@@ -8,6 +8,7 @@
 #define CLBALANCER_HPP 1
 
 #include "buffer.hpp"
+#include "config.hpp"
 #include "device.hpp"
 #include "runtime.hpp"
 #include "scheduler.hpp"

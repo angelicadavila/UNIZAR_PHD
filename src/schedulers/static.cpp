@@ -232,7 +232,8 @@ StaticScheduler::enq_work(Device* device)
 
     m_chunk_todo[id]++;
     // cout << "device_id: " << id << " chunk_todo: " << m_chunk_todo[id] << " index: " << index
-    // << " work.offset: " << m_queue_work[index].offset << " work.size: " << m_queue_work[index].size << "\n";
+    // << " work.offset: " << m_queue_work[index].offset << " work.size: " <<
+    // m_queue_work[index].size << "\n";
   } else {
     cout << "StaticScheduler::enq_work  not enqueuing\n";
   }

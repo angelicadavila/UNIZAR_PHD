@@ -1,5 +1,19 @@
 # ChangeLog
 
+## v0.2.4 (2018-02-05)
+
+**Enhancements**
+
+- New bench: raytracer.
+- Runtime with support of arguments of vector type without buffer initialization (memory allocation for `__local`).
+- Buffer simplified and improved with template-based support of data types.
+- Flags (`define`) renamed and organized into `config.hpp` file.
+- Operations allow blocking reads.
+
+**Stats**
+
+- 2918 C++ lines of code in `src` (852 C/C++ header)
+
 ## v0.2.3 (2018-01-29)
 
 **Enhancements**:

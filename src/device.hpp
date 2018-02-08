@@ -66,6 +66,7 @@ public:
   void setScheduler(Scheduler* sched);
   Scheduler* getScheduler();
   void setBarrier(shared_ptr<semaphore> barrier);
+  void setBarrier_init(shared_ptr<semaphore> barrier_init);
 
   template<typename T>
   void setInBuffer(shared_ptr<T> array)
@@ -158,11 +159,13 @@ public:
   void init();
   void show();
   void notifyBarrier();
+  void barrier_init();
   string& getBuffer();
   void showInfo();
 
   void do_work(size_t offset, size_t size, int queue_index);
 
+  void waitFinish();
   Runtime* getRuntime();
   void setRuntime(Runtime* runtime);
 
@@ -183,7 +186,7 @@ private:
   Runtime* m_runtime;
 
   shared_ptr<semaphore> m_barrier;
-  shared_ptr<semaphore> m_init_barrier;
+  shared_ptr<semaphore> m_barrier_init;
 
   thread m_thread;
   string m_info_buffer;

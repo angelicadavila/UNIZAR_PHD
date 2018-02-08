@@ -81,6 +81,7 @@ private:
   vector<vector<cl::Device>> m_platform_devices;
 
   shared_ptr<semaphore> m_barrier;
+  shared_ptr<semaphore> m_barrier_init;
   vector<Device> m_devices;
   Scheduler* m_scheduler;
 

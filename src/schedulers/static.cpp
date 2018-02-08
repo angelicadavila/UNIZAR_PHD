@@ -176,29 +176,7 @@ StaticScheduler::calcProportions()
       }
       proportions.push_back(make_tuple(wsize_rem, wsize_given_acc));
       break;
-      // case WorkSplit::Decr2:
-      //   for (uint i=1; i<len; ++i){
-      //     // proportions.push_back(  );
-      //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
-      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
-      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
-      //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
-      //     wsize_given_acc += wsize_given;
-      //   }
-      //   proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the
-      //   last break;
-      // case WorkSplit::Incr2:
-      //   for (uint i=1; i<len; ++i){
-      //     // proportions.push_back(  );
-      //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
-      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
-      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
-      //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
-      //     wsize_given_acc += wsize_given;
-      //   }
-      //   proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the
-      //   last break;
-  }
+   }
   m_proportions = move(proportions);
   for (auto prop : m_proportions) {
     cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop) << "\n";
@@ -226,14 +204,12 @@ StaticScheduler::enq_work(Device* device)
     tie(size, offset) = prop;
     // cout << "proportion for me id: " << id << " size: " << size << " offset: " << offset << "\n";
 
+   lock_guard<mutex> guard(m_mutex_work);
     auto index = m_queue_work.size();
     m_queue_work.push_back(Work(id, offset, size));
     m_queue_id_work[id].push_back(index);
 
     m_chunk_todo[id]++;
-    // cout << "device_id: " << id << " chunk_todo: " << m_chunk_todo[id] << " index: " << index
-    // << " work.offset: " << m_queue_work[index].offset << " work.size: " <<
-    // m_queue_work[index].size << "\n";
   } else {
     cout << "StaticScheduler::enq_work  not enqueuing\n";
   }
@@ -251,6 +227,7 @@ void
 StaticScheduler::req_work(Device* device)
 {
   cout << "StaticScheduler::req_work\n";
+  //can be called for more than one threa
   enq_work(device);
   device->notifyWork();
 }

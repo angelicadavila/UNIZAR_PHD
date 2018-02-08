@@ -43,6 +43,7 @@ callbackRead2(void* data)
   sched->callback(cbdata->queue_index);
   delete cbdata;
 }
+
 namespace clb {
 
 void
@@ -53,6 +54,8 @@ device_thread_func(Device& device)
   device.init();
 //  if (device.getID()==1)
 //	  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  device.barrier_init();
+  cout<<"----------init device:"<<device.getID()<<"\n";
   Scheduler* sched = device.getScheduler();
   device.saveDuration(ActionType::deviceStart);
   device.saveDurationOffset(ActionType::deviceStart);
@@ -80,6 +83,7 @@ device_thread_func(Device& device)
       device.do_work(work.offset, work.size, queue_index);
     } else {
       cout << "device id " << device.getID() << " finished\n";
+//      device.waitFinish();
       device.notifyBarrier();
       cont = false;
     }
@@ -280,6 +284,12 @@ Device::setBarrier(shared_ptr<semaphore> barrier)
 }
 
 void
+Device::setBarrier_init(shared_ptr<semaphore> barrier)
+{
+  m_barrier_init = barrier;
+}
+
+void
 Device::do_work(size_t offset, size_t size, int queue_index)
 {
   if (!size) {
@@ -330,12 +340,12 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     evread = levread;
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
- // clb::Scheduler* sched = getScheduler();
- // saveDuration(clb::ActionType::completeWork);
- // int queue_copy=queue_index;
- auto cbdata = new CBData(queue_index, this); 
-  std::thread t(callbackRead2,cbdata);
-  t.join();
+  clb::Scheduler* sched = getScheduler();
+  saveDuration(clb::ActionType::completeWork);
+  sched->callback(queue_index);
+// auto cbdata = new CBData(queue_index, this); 
+//  std::thread t(callbackRead2,cbdata);
+//  t.join();
 #else
   auto cbdata = new CBData(queue_index, this);
   evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
@@ -343,6 +353,11 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif  
   m_works++;
   m_works_size += size;
+}
+
+void
+Device::waitFinish(){
+	m_queue.finish();
 }
 
 void
@@ -379,7 +394,13 @@ Device::notifyBarrier()
 {
   m_barrier.get()->notify(1);
 }
-
+//wait all device initialization
+void
+Device::barrier_init()
+{
+  m_barrier_init.get()->notify(1);
+  m_barrier_init.get()->wait(0);
+}
 /**
  * \brief Does not check bounds
  */

@@ -345,11 +345,11 @@ int
 DynamicScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
+      lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem_given > 0) {
     uint next = 0;
     int index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
       next = m_chunk_given[id]++;
       m_size_rem_given -= m_worksize;
       index = m_queue_id_work[id][next];

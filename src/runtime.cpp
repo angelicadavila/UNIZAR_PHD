@@ -17,6 +17,7 @@ Runtime::Runtime(vector<Device>&& devices, size_t size)
   , m_sema_all_ready(m_devices.size())
 {
   m_barrier = make_shared<semaphore>(m_devices.size());
+  m_barrier_init = make_shared<semaphore>(m_devices.size());
   m_sema_ready = make_unique<semaphore>(1);
 
   m_mutex_duration = new mutex();
@@ -120,6 +121,7 @@ Runtime::run()
 
   for (auto& device : m_devices) {
     device.setBarrier(m_barrier);
+    device.setBarrier_init(m_barrier_init);
     device.start();
     cout << "Runtime is waitReady\n";
     // NOTE OCL1.2 fails when multi-threaded discovery

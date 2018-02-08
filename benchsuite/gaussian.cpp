@@ -1,4 +1,6 @@
 #include "gaussian.hpp"
+#include <iostream>
+#include <fstream>
 
 void
 Gaussian::fill_image()
@@ -542,13 +544,13 @@ do_gaussian(int tscheduler,
 
   // string kernel = gaussian.get_kernel_str();
   string kernel = file_read("support/kernels/gaussian.cl");
-  // auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
-  // auto b = make_shared<vector<cl_float>>(gaussian._b);
-  // auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
+//   auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
+//   auto b = make_shared<vector<cl_float>>(gaussian._b);
+//   auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
 #pragma GCC diagnostic ignored "-Wignored-attributes"
-  auto a = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._a);
-  auto b = shared_ptr<vector<cl_float,vecAllocator<cl_float>>>(&gaussian._b);
-  auto c = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._c);
+ auto a = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._a);
+ auto b = shared_ptr<vector<cl_float,vecAllocator<cl_float>>>(&gaussian._b);
+ auto c = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._c);
 #pragma GCC diagnostic pop
 
   int problem_size = gaussian._total_size;
@@ -559,11 +561,11 @@ do_gaussian(int tscheduler,
   auto platform_gpu = 1;
   auto platform_fpga= 2;
 
+  vector <char> binary_file;
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0,1);
-    string binfileKernel="./benchsuite/myKernel.aocx";
-
-    device2.setBinaryKernel(binfileKernel,1);    
+    clb::Device device2(platform_fpga,0);
+    binary_file	=file_read_binary("./benchsuite/myKernel.aocx"); 
+    device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }
 
@@ -626,7 +628,7 @@ do_gaussian(int tscheduler,
     //   cout << "out[" << i << "]: " << out[i] << "\n";
     // }
 
-    auto ok = gaussian.compare_gaussian_blur_2loops();
+    auto ok = gaussian.compare_gaussian_blur();
 
     auto time = 0;
     if (ok) {
@@ -635,17 +637,15 @@ do_gaussian(int tscheduler,
       cout << "Failure (" << time << ")\n";
     }
     //file to save and compare data results
-      fstream myfile;
+      std::ofstream myfile;
       myfile.open ("gauss.txt");
       for(int dat=0; dat<out.size(); dat++)
-	myfile <<out[dat]<<"\n" ;
-      myfile.close();
+      		myfile<<(int)out[dat].s[0]<<"-"<<(int)out[dat].s[1]<<"-"<<(int)out[dat].s[2]<<"\n";
+ 			myfile.close();
 
   } else {
     cout << "Done\n";
   }
-
-  runtime.printStats();
 
   exit(0);
 }

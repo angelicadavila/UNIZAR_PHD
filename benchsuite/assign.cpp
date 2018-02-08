@@ -64,14 +64,14 @@ assign(__global int* in1, __global int* out, int size){
   // }
   auto platform = 0;
   if (tdevices == 0) {
-    clb::Device device(platform, 1,0);
+    clb::Device device(platform, 1);
     devices.push_back(move(device));
   } else if (tdevices == 1) {
-    clb::Device device2(platform, 0,0);
+    clb::Device device2(platform, 0);
     devices.push_back(move(device2));
   } else {
-    clb::Device device(platform, 1,0);
-    clb::Device device2(platform, 0,0);
+    clb::Device device(platform, 1);
+    clb::Device device2(platform, 0);
     devices.push_back(move(device));
     devices.push_back(move(device2));
   }

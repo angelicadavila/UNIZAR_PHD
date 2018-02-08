@@ -33,7 +33,16 @@ callbackRead(cl_event /*event*/, cl_int /*status*/, void* data)
   sched->callback(cbdata->queue_index);
   delete cbdata;
 }
-
+void 
+callbackRead2(void* data)
+{
+  CBData* cbdata = reinterpret_cast<CBData*>(data);
+  clb::Device* device = cbdata->device;
+  clb::Scheduler* sched = device->getScheduler();
+  device->saveDuration(clb::ActionType::completeWork);
+  sched->callback(cbdata->queue_index);
+  delete cbdata;
+}
 namespace clb {
 
 void
@@ -320,10 +329,18 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     events.push_back(levread);
     evread = levread;
   }
+#if CLB_OPERATION_BLOCKING_READ == 1
+ // clb::Scheduler* sched = getScheduler();
+ // saveDuration(clb::ActionType::completeWork);
+ // int queue_copy=queue_index;
+ auto cbdata = new CBData(queue_index, this); 
+  std::thread t(callbackRead2,cbdata);
+  t.join();
+#else
   auto cbdata = new CBData(queue_index, this);
-
   evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
   m_queue.flush();
+#endif  
   m_works++;
   m_works_size += size;
 }

@@ -25,7 +25,7 @@ set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -lterasic_apb_16_1_
 list(APPEND CMAKE_MODULE_PATH "${ROOT_DIR}/cmake/modules")
 
 set (Needed_Libraries
-  "<CL/cl.h>"
+#  "<CL/cl.h>"
   "<pthread.h>"
   "<omp.h>"
   "<math.h>"
@@ -34,7 +34,7 @@ set (Needed_Libraries
 # include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 # conan_basic_setup()
 
-include(OpenCL)
+#include(OpenCL)
 include(SetLibraries)
 include(FindNode)
 include(SetFlags)
@@ -43,7 +43,7 @@ include(SetFlags)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-configOpenCL()
+#configOpenCL()
 message("OPENCL_VERSION: ${OPENCL_VERSION}")
 # find_package(Qt5Core REQUIRED)
 

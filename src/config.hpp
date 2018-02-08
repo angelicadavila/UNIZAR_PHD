@@ -2,7 +2,7 @@
 #define CLBALANCER_CONFIG_H
 
 // uncomment to use blocking calls:
-// #define CLB_OPERATION_BLOCKING_READ 1
+//#define CLB_OPERATION_BLOCKING_READ 1
 #ifndef CLB_OPERATION_BLOCKING_READ
 #define CLB_OPERATION_BLOCKING_READ 0
 #endif

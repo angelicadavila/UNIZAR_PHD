@@ -11,7 +11,7 @@ set(Entry "clbalancer-base")
 set(Base_Library "${Entry}" PARENT_SCOPE)
 
 set (Needed_Libraries
-  "<CL/cl.h>"
+#  "<CL/cl.h>"
   "<pthread.h>"
   "<omp.h>"
   # "<math.h>"
@@ -65,7 +65,7 @@ LinkLibraries("${Entry}" "${Needed_Libraries}")
 set(clkernel_Entry clkernel)
 
 set (clkernel_Needed_Libraries
-  "<CL/cl.h>"
+ # "<CL/cl.h>"
 )
 
 set(clkernel_SOURCES

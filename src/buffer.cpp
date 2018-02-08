@@ -12,7 +12,6 @@ namespace clb {
 
 Buffer::Buffer(Direction direction)
   : m_direction(direction)
-  , m_type(Type::Null)
 {
 }
 

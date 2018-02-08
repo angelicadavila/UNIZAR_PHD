@@ -49,10 +49,10 @@ public:
   template<typename T>
   std::string type_name();
 
-  template<typename T>
-  void set(shared_ptr<vector<T>> in)
+  template<typename T, typename Ta>
+  void set(shared_ptr<vector<T,Ta>> in)
   {
-    vector<T>* v = in.get();
+    vector<T,Ta>* v = in.get();
     m_item_size = sizeof(T);
     m_size = v->size();
     m_bytes = sizeof(T) * m_size;
@@ -68,7 +68,6 @@ public:
 
 private:
   Direction m_direction;
-  Type m_type;
   size_t m_item_size;
   size_t m_size;
   size_t m_bytes;

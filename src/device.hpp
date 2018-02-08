@@ -209,6 +209,7 @@ private:
   cl::CommandQueue m_queue;
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
+  string m_kernel_str;
 
   vector<cl::Event> m_prev_events;
 

@@ -232,28 +232,24 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   auto out_array = make_shared<vector<int>>(size, 0);
 
   vector<clb::Device> devices;
-  auto platform = 0;
-  if (tdevices == 0) { // CPU
-    clb::Device device(platform, 1);
-    
-    devices.push_back(move(device));
-  } else if (tdevices == 1) { // GPU
-    clb::Device device2(platform, 0);
+  int platform_fpga=2;
+  int platform_cpu=0;
+  int platform_gpu=1;  
 
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0,1);
+    clb::Device device2(platform_fpga,0);
     string binfileKernel="./benchsuite/myKernelAddEmu.aocx";
 
-    device2.setBinaryKernel(binfileKernel,1);    
+//    device2.setBinaryKernel(binfileKernel,1);    
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0,0);
+    clb::Device device(platform_cpu,0);
      devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0,0);
+    clb::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
 

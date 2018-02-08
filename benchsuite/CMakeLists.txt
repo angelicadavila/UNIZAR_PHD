@@ -7,7 +7,7 @@ set(Entry "benchsuite-core")
 set(Benchsuite_Library "${Entry}" PARENT_SCOPE)
 
 set (Needed_Libraries
-  "<CL/cl.h>"
+#  "<CL/cl.h>"
   "<pthread.h>"
   "<omp.h>"
   "<math.h>"

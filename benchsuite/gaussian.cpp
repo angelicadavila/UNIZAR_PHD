@@ -637,12 +637,12 @@ do_gaussian(int tscheduler,
       cout << "Failure (" << time << ")\n";
     }
     //file to save and compare data results
-      std::ofstream myfile;
+/*      std::ofstream myfile;
       myfile.open ("gauss.txt");
       for(int dat=0; dat<out.size(); dat++)
       		myfile<<(int)out[dat].s[0]<<"-"<<(int)out[dat].s[1]<<"-"<<(int)out[dat].s[2]<<"\n";
  			myfile.close();
-
+*/
   } else {
     cout << "Done\n";
   }

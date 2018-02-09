@@ -14,7 +14,6 @@
 #include <thread>
 #include <tuple>
 #include <utility>
-
 #include "buffer.hpp"
 #include "clutils.hpp"
 #include "config.hpp"

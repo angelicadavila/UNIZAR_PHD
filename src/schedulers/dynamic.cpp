@@ -6,12 +6,12 @@
 #include "schedulers/dynamic.hpp"
 
 #include <tuple>
-
+#include <cassert>
 #include "device.hpp"
 #include "scheduler.hpp"
 
-#define ATOMIC 1
-// #define ATOMIC 0
+//#define ATOMIC 1
+ #define ATOMIC 0
 
 namespace clb {
 
@@ -142,6 +142,7 @@ DynamicScheduler::setWorkSize(size_t size)
 bool
 DynamicScheduler::hasWork()
 {
+  lock_guard<mutex> guard(m_mutex_work);
   return m_size_rem_completed != 0;
 }
 
@@ -269,13 +270,15 @@ void
 DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
-  if (m_size_rem > 0) {
-
+  lock_guard<mutex> guard(m_mutex_work);
+//  if (m_size_rem > 0) {
+if (m_size_given<m_size){
     size_t size = m_worksize;
     size_t index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
+//      lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
+//      cout<<"offset_given"<<offset<<"\n";
       m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
@@ -283,7 +286,10 @@ DynamicScheduler::enq_work(Device* device)
       m_queue_id_work[id].push_back(index);
       m_chunk_todo[id]++;
     }
-  } else {
+  } else 
+ {
+    
+    //assert(m_size_rem==0);
     cout << "DynamicScheduler::enq_work  not enqueuing\n";
   }
 }
@@ -345,8 +351,10 @@ int
 DynamicScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
-      lock_guard<mutex> guard(m_mutex_work);
-  if (m_size_rem_given > 0) {
+ //----------------------------------------------------
+  cout<<"+"<<m_size_rem_given<<"\n";
+  lock_guard<mutex> guard(m_mutex_work);
+  if (m_size_rem_given > 0 )  {
     uint next = 0;
     int index = -1;
     {

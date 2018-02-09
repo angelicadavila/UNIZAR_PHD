@@ -83,8 +83,7 @@ device_thread_func(Device& device)
       device.do_work(work.offset, work.size, queue_index);
     } else {
       cout << "device id " << device.getID() << " finished\n";
-//      device.waitFinish();
-      device.notifyBarrier();
+			device.notifyBarrier();
       cont = false;
     }
   }
@@ -292,40 +291,36 @@ Device::setBarrier_init(shared_ptr<semaphore> barrier)
 void
 Device::do_work(size_t offset, size_t size, int queue_index)
 {
-  if (!size) {
+/*  if (!size) {
     return callbackRead(nullptr, CL_COMPLETE, this);
   }
   if (m_prev_events.size() && m_works) {
     m_prev_events.clear();
   }
-
-  cl::Event evkernel;
-
+*/
+  cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
+  cl_int status;
   auto gws = size;
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
                                cl::NDRange(gws),
                                cl::NDRange(CL_LWS),
-                               &m_prev_events,
-                               &evkernel);
+                               nullptr,
+                               nullptr);
 #else
   m_kernel.setArg(m_nargs, (uint)offset);
   m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), &m_prev_events, &evkernel);
+    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), nullptr,nullptr);
 #endif
-  cl::Event evread;
-  vector<cl::Event> events({ evkernel });
 
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
-    vector<cl::Event> levents = events;
-    cl::Event levread;
 
     Buffer& b = m_out_clb_buffers[i];
     size_t size_bytes = b.byBytes(size);
     auto offset_bytes = b.byBytes(offset);
-    m_queue.enqueueReadBuffer(m_out_buffers[i],
+    status= m_queue.enqueueReadBuffer(m_out_buffers[i],
 #if CLB_OPERATION_BLOCKING_READ == 1
                               CL_TRUE,
 #else
@@ -334,12 +329,13 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                               offset_bytes,
                               size_bytes,
                               b.dataWithOffset(offset),
-                              &levents,
-                              &levread);
-    events.push_back(levread);
-    evread = levread;
+                              nullptr,
+                              nullptr);
+    CL_CHECK_ERROR(status,"Reading memory problem");
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
+  
+//  waitFinish();
   clb::Scheduler* sched = getScheduler();
   saveDuration(clb::ActionType::completeWork);
   sched->callback(queue_index);
@@ -387,6 +383,9 @@ Device::init()
   saveDuration(ActionType::writeBuffers);
   saveDurationOffset(ActionType::writeBuffers);
   // work();
+
+  //file debug
+   //std::string namefile="index_dev_";//+getID();
 }
 
 void

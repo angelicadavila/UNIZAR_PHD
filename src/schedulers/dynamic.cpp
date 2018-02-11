@@ -10,8 +10,8 @@
 #include "device.hpp"
 #include "scheduler.hpp"
 
-//#define ATOMIC 1
- #define ATOMIC 0
+#define ATOMIC 1
+// #define ATOMIC 0
 
 namespace clb {
 
@@ -199,6 +199,7 @@ DynamicScheduler::setDevices(vector<Device*>&& devices)
   m_chunk_todo = vector<uint>(m_ndevices, 0);
   m_chunk_given = vector<uint>(m_ndevices, 0);
   m_chunk_done = vector<uint>(m_ndevices, 0);
+  m_device_enable = vector<uint>(m_ndevices, 1);
 
   m_requests_max = m_ndevices * 2;
   m_requests_list = move(vector<uint>(m_requests_max, 0));
@@ -271,14 +272,13 @@ DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
   lock_guard<mutex> guard(m_mutex_work);
-//  if (m_size_rem > 0) {
-if (m_size_given<m_size){
+  if (m_size_rem > 0 ) {
+//if (m_size_given<m_size){
     size_t size = m_worksize;
     size_t index = -1;
     {
 //      lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
-//      cout<<"offset_given"<<offset<<"\n";
       m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
@@ -288,9 +288,7 @@ if (m_size_given<m_size){
     }
   } else 
  {
-    
-    //assert(m_size_rem==0);
-    cout << "DynamicScheduler::enq_work  not enqueuing\n";
+   m_device_enable[id]=0; 
   }
 }
 
@@ -328,7 +326,7 @@ DynamicScheduler::callback(int queue_index)
   if (m_size_rem_completed > 0) {
     auto idx = m_requests_idx++ % m_requests_max;
     m_requests_list[idx] = id + 1;
-  }
+ }
 #else
   {
     lock_guard<mutex> guard(m_mutex_work);
@@ -351,17 +349,13 @@ int
 DynamicScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
- //----------------------------------------------------
-  cout<<"+"<<m_size_rem_given<<"\n";
   lock_guard<mutex> guard(m_mutex_work);
-  if (m_size_rem_given > 0 )  {
+   if (m_size_rem_given > 0 && m_device_enable[id])  {
     uint next = 0;
     int index = -1;
-    {
-      next = m_chunk_given[id]++;
-      m_size_rem_given -= m_worksize;
-      index = m_queue_id_work[id][next];
-    }
+    next = m_chunk_given[id]++;
+    m_size_rem_given -= m_worksize;
+    index = m_queue_id_work[id][next];
     return index;
   } else {
     return -1;
@@ -391,7 +385,6 @@ DynamicScheduler::getNextRequest()
   lock_guard<mutex> guard(m_mutex_work);
   if (!m_requests.empty()) {
     int id = m_requests.front();
-
     m_requests.pop();
     dev = m_devices[id];
   }

@@ -111,7 +111,8 @@ private:
   vector<uint> m_chunk_todo;
   vector<uint> m_chunk_given;
   vector<uint> m_chunk_done;
-  uint m_devices_working;
+  vector<uint>m_device_enable;
+  int m_devices_working;
   vector<tuple<size_t, size_t>> m_proportions;
   vector<float> m_raw_proportions;
 

@@ -582,7 +582,7 @@ do_gaussian(int tscheduler,
   clb::StaticScheduler stSched;
   clb::DynamicScheduler dynSched;
   clb::HGuidedScheduler hgSched;
-
+cout<<"Manual proportions!";
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);

@@ -298,7 +298,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     m_prev_events.clear();
   }
 */
-  cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
+ // cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
   cl_int status;
   auto gws = size;
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
@@ -399,6 +399,7 @@ Device::barrier_init()
 {
   m_barrier_init.get()->notify(1);
   m_barrier_init.get()->wait(0);
+  m_barrier_init.get()->notify(1);
 }
 /**
  * \brief Does not check bounds

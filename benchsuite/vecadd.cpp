@@ -1,7 +1,7 @@
 #include "vecadd.hpp"
 
 auto
-check_vecadd(vector<int> in1, vector<int> in2, vector<int> out, int size)
+check_vecadd(vector<int,vecAllocator<int>> in1, vector<int,vecAllocator<int>> in2, vector<int,vecAllocator<int>> out, int size)
 {
   auto pos = -1;
   for (auto i = 0; i < size; ++i) {
@@ -19,13 +19,13 @@ do_vecadd_base(bool check, int wsize)
   string m_kernel_str = R"(
 __kernel void
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-vecadd(__global int* in1, __global int* in2, __global int* out, int size){
+vecadd_kernel(__global int* in1, __global int* in2, __global int* out, int size){
   int idx = get_global_id(0);
 #else
 vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint offset){
   int idx = get_global_id(0) + offset;
 #endif
-  if (idx >= 0 && idx < size){
+  if (idx < size){
     out[idx] = in1[idx] + in2[idx];
   }
 }
@@ -34,9 +34,9 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   int size = 128 * wsize;
   // int worksize = 128 * chunksize;
 
-  auto in1_array = make_shared<vector<int>>(size, 1);
-  auto in2_array = make_shared<vector<int>>(size, 2);
-  auto out_array = make_shared<vector<int>>(size, 0);
+  auto in1_array = make_shared<vector<int,vecAllocator<int>>>(size, 1);
+  auto in2_array = make_shared<vector<int,vecAllocator<int>>>(size, 2);
+  auto out_array = make_shared<vector<int,vecAllocator<int>>>(size, 0);
 
   auto sel_platform = 0;
   auto sel_device = 0;
@@ -111,7 +111,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
     CL_CHECK_ERROR(cl_err);
   }
 
-  cl::Kernel m_kernel(m_program, "vecadd", &cl_err);
+  cl::Kernel m_kernel(m_program, "vecadd_kernel", &cl_err);
   CL_CHECK_ERROR(cl_err, "kernel");
 
   cl_err = m_kernel.setArg(0, in1_buffer);
@@ -169,13 +169,13 @@ do_vecadd(int tscheduler, int tdevices, bool check, int wsize, int chunksize, fl
   string kernel = R"(
 __kernel void
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-vecadd(__global int* in1, __global int* in2, __global int* out, int size){
+vecadd_kernel(__global int* in1, __global int* in2, __global int* out, int size){
   int idx = get_global_id(0);
 #else
-vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint offset){
+vecadd_kernel(__global int* in1, __global int* in2, __global int* out, int size, uint offset){
   int idx = get_global_id(0) + offset;
 #endif
-  if (idx >= 0 && idx < size){
+  if (idx < size){
     out[idx] = in1[idx] + in2[idx];
   }
 }
@@ -190,7 +190,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size){
 vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint offset){
   int idx = get_global_id(0) + offset;
 #endif
-  if (idx >= 0 && idx < size){
+  if (idx < size){
     out[idx] = in1[idx] + in2[idx];
   }
 }
@@ -227,20 +227,19 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   int size = 128 * wsize;
   int worksize = 128 * chunksize;
 
-  auto in1_array = make_shared<vector<int>>(size, 1);
-  auto in2_array = make_shared<vector<int>>(size, 2);
-  auto out_array = make_shared<vector<int>>(size, 0);
+  auto in1_array = make_shared<vector<int,vecAllocator<int>>>(size, 1);
+  auto in2_array = make_shared<vector<int,vecAllocator<int>>>(size, 2);
+  auto out_array = make_shared<vector<int,vecAllocator<int>>>(size, 0);
 
   vector<clb::Device> devices;
   int platform_fpga=2;
   int platform_cpu=0;
   int platform_gpu=1;  
-
+  vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    string binfileKernel="./benchsuite/myKernelAddEmu.aocx";
-
-//    device2.setBinaryKernel(binfileKernel,1);    
+    binary_file =file_read_binary("./benchsuite/vecadd.aocx");
+    device2.setKernel(binary_file);
     devices.push_back(move(device2));
   }
 
@@ -272,7 +271,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   runtime.setInBuffer(in1_array);
   runtime.setInBuffer(in2_array);
   runtime.setOutBuffer(out_array);
-  runtime.setKernel(kernel, "vecadd");
+  runtime.setKernel(kernel, "vecadd_kernel");
 
   runtime.setKernelArg(0, in1_array);
   runtime.setKernelArg(1, in2_array);
@@ -293,7 +292,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
 
     auto time = 0;
     if (ok) {
-      cout << "Success (" << time << ")\n";
+      cout << "Success Vecadd (" << time << ")\n";
     } else {
       cout << "Failure (" << time << " in pos " << pos << ")\n";
     }

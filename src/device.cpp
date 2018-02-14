@@ -33,16 +33,6 @@ callbackRead(cl_event /*event*/, cl_int /*status*/, void* data)
   sched->callback(cbdata->queue_index);
   delete cbdata;
 }
-void 
-callbackRead2(void* data)
-{
-  CBData* cbdata = reinterpret_cast<CBData*>(data);
-  clb::Device* device = cbdata->device;
-  clb::Scheduler* sched = device->getScheduler();
-  device->saveDuration(clb::ActionType::completeWork);
-  sched->callback(cbdata->queue_index);
-  delete cbdata;
-}
 
 namespace clb {
 
@@ -291,7 +281,7 @@ Device::setBarrier_init(shared_ptr<semaphore> barrier)
 void
 Device::do_work(size_t offset, size_t size, int queue_index)
 {
-/*  if (!size) {
+  if (!size) {
     return callbackRead(nullptr, CL_COMPLETE, this);
   }
   if (m_prev_events.size() && m_works) {
@@ -334,75 +324,16 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     CL_CHECK_ERROR(status,"Reading memory problem");
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
-  
-//  waitFinish();
   clb::Scheduler* sched = getScheduler();
   saveDuration(clb::ActionType::completeWork);
   sched->callback(queue_index);
-// auto cbdata = new CBData(queue_index, this); 
-//  std::thread t(callbackRead2,cbdata);
-//  t.join();
 #else
   auto cbdata = new CBData(queue_index, this);
   evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
   m_queue.flush();
 #endif  
   m_works++;
-  m_works_size += size;*/
-
-if (!size) {
-    return callbackRead(nullptr, CL_COMPLETE, this);
-  }
-  if (m_prev_events.size() && m_works) {
-    m_prev_events.clear();
-  }
-  cl::Event evkernel;
-
-  auto gws = size;
-#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-  m_queue.enqueueNDRangeKernel(m_kernel,
-                               cl::NDRange(offset),
-                               cl::NDRange(gws),
-                               cl::NDRange(CL_LWS),
-                               &m_prev_events,
-                               &evkernel);
-#else
-  m_kernel.setArg(m_nargs, (uint)offset);
-  m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), &m_prev_events, &evkernel);
-#endif
-  cl::Event evread;
-  vector<cl::Event> events({ evkernel });
-
-  auto len = m_out_clb_buffers.size();
-  for (uint i = 0; i < len; ++i) {
-    vector<cl::Event> levents = events;
-    cl::Event levread;
-
-    Buffer& b = m_out_clb_buffers[i];
-    size_t size_bytes = b.byBytes(size);
-    auto offset_bytes = b.byBytes(offset);
-    m_queue.enqueueReadBuffer(m_out_buffers[i],
-#if CLB_OPERATION_BLOCKING_READ == 1
-                              CL_TRUE,
-#else
-                              CL_FALSE,
-#endif
-                              offset_bytes,
-                              size_bytes,
-                              b.dataWithOffset(offset),
-                              &levents,
-                              &levread);
-    events.push_back(levread);
-    evread = levread;
-  }
-  auto cbdata = new CBData(queue_index, this);
-
-  evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
-  m_queue.flush();
-  m_works++;
   m_works_size += size;
-
 }
 
 void

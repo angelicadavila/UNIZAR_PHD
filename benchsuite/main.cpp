@@ -13,6 +13,7 @@
 #include "gaussian.hpp"
 #include "ray.hpp"
 #include "vecadd.hpp"
+#include "mersenne.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -93,6 +94,11 @@ main(int argc, char* argv[])
     // //   samples = (samples / 4) ? (samples / 4) * 4 : 4; // convierte a multiplo de 4
     // //   auto steps = atoi(argv[8]);
     // //   do_binomial(tscheduler, tdevices, check, samples, chunksize, prop, steps;
+  }else if (tbench == 4){
+   cout<<"mersenne size*64\n";
+   auto N_rand = size*64;
+   do_mersenne(tscheduler, tdevices, check, N_rand, chunksize, prop);
   }
+
   return 0;
 }

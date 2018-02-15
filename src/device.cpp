@@ -288,9 +288,11 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     m_prev_events.clear();
   }
 
- // cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
-  cl_int status;
+ cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
+ cout<<"size:"<<size<<"\n";
+ cl_int status;
   auto gws = size;
+#if CLB_KERNEL_TASK == 0
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
@@ -303,13 +305,19 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   m_queue.enqueueNDRangeKernel(
     m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), nullptr,nullptr);
 #endif
-
+#else
+ auto gws2=gws*64;
+ m_kernel.setArg(m_nargs, (ulong)gws2 );
+ m_kernel.setArg(m_nargs+1, (uint)offset*64);
+  m_queue.enqueueNDRangeKernel(
+    m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
+#endif
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
 
     Buffer& b = m_out_clb_buffers[i];
-    size_t size_bytes = b.byBytes(size);
-    auto offset_bytes = b.byBytes(offset);
+    size_t size_bytes = b.byBytes(size)*64;
+    auto offset_bytes = b.byBytes(offset)*64;
     status= m_queue.enqueueReadBuffer(m_out_buffers[i],
 #if CLB_OPERATION_BLOCKING_READ == 1
                               CL_TRUE,
@@ -318,7 +326,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif
                               offset_bytes,
                               size_bytes,
-                              b.dataWithOffset(offset),
+                              b.dataWithOffset(offset*64),
                               nullptr,
                               nullptr);
     CL_CHECK_ERROR(status,"Reading memory problem");
@@ -334,6 +342,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif  
   m_works++;
   m_works_size += size;
+  
 }
 
 void

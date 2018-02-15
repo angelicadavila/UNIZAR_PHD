@@ -238,7 +238,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file =file_read_binary("./benchsuite/vecadd.aocx");
+    binary_file =file_read_binary("./benchsuite/vecadd_l.aocx");
     device2.setKernel(binary_file);
     devices.push_back(move(device2));
   }
@@ -292,7 +292,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
 
     auto time = 0;
     if (ok) {
-      cout << "Success Vecadd (" << time << ")\n";
+      cout << "Success Vecadd2 (" << time << ")\n";
     } else {
       cout << "Failure (" << time << " in pos " << pos << ")\n";
     }

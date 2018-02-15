@@ -27,6 +27,7 @@ set(SOURCES
   vecadd.cpp
   gaussian.cpp
   ray.cpp
+  mersenne.cpp
   utils/io.cpp
 )
 
@@ -35,6 +36,7 @@ set(HEADERS
   vecadd.hpp
   gaussian.hpp
   ray.hpp
+  mersenne.hpp
   utils/io.hpp
 )
 

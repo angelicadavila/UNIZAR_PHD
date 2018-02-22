@@ -19,6 +19,9 @@ Runtime::Runtime(vector<Device>&& devices, size_t size)
   m_barrier = make_shared<semaphore>(m_devices.size());
   m_barrier_init = make_shared<semaphore>(m_devices.size());
   m_sema_ready = make_unique<semaphore>(1);
+  
+  //If the internal chunk size its not set asumme 1 data per kernel execution
+  m_internal_chunk=1;
 
   m_mutex_duration = new mutex();
   m_time_init = std::chrono::system_clock::now().time_since_epoch();
@@ -123,6 +126,7 @@ Runtime::run()
     device.setBarrier(m_barrier);
     device.setBarrier_init(m_barrier_init);
     device.start();
+    device.setInternalChunk(m_internal_chunk);
     cout << "Runtime is waitReady\n";
     // NOTE OCL1.2 fails when multi-threaded discovery
   }

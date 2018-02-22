@@ -168,6 +168,7 @@ public:
   Runtime* getRuntime();
   void setRuntime(Runtime* runtime);
 
+  void setInternalChunk(int internal_chunk);
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);
@@ -230,6 +231,9 @@ private:
   string m_program_source;
   vector<char> m_program_binary;
   ProgramType m_program_type;
+
+  //internal chunk size execute in the kernel
+  int m_internal_chunk;
 };
 
 } // namespace clb

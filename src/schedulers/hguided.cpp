@@ -137,6 +137,7 @@ HGuidedScheduler::setWorkSize(size_t size)
 bool
 HGuidedScheduler::hasWork()
 {
+  lock_guard<mutex> guard(m_mutex_work);
   return m_size_rem_completed != 0;
 }
 
@@ -260,6 +261,7 @@ void
 HGuidedScheduler::enq_work(Device* device)
 {
   int id = device->getID();
+  lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem > 0) {
     size_t offset = m_size_given;
     size_t size = m_worksize;
@@ -277,7 +279,6 @@ HGuidedScheduler::enq_work(Device* device)
 
     size_t index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
       m_size_rem -= new_size;
       m_size_given += new_size;
       index = m_queue_work.size();
@@ -333,11 +334,11 @@ int
 HGuidedScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
+  lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem_given > 0) {
     uint next = 0;
     int index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
       next = m_chunk_given[id]++;
       index = m_queue_id_work[id][next];
       Work work = m_queue_work[index];

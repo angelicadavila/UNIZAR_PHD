@@ -14,6 +14,7 @@
 #include "ray.hpp"
 #include "vecadd.hpp"
 #include "mersenne.hpp"
+#include "sobel.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -98,6 +99,8 @@ main(int argc, char* argv[])
    cout<<"mersenne size*64\n";
    auto N_rand = size*64;
    do_mersenne(tscheduler, tdevices, check, N_rand, chunksize, prop);
+  }else if (tbench == 5){
+   do_sobel(tscheduler, tdevices, check, 1, chunksize, prop);
   }
 
   return 0;

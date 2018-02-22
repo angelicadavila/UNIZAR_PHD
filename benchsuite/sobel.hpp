@@ -47,6 +47,7 @@ public:
     init_image();
   }
   void init_image();
+  void outFrame(unsigned *frameData);
   string get_kernel_str();
 
   // private:

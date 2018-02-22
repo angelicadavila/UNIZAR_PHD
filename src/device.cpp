@@ -288,13 +288,14 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     m_prev_events.clear();
   }
 
- cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
- cout<<"size:"<<size<<"\n";
- cl_int status;
-  auto gws = size;
+ //cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
+  auto offset_for_bytes=offset;//use to read offset_bytes
+  offset*=m_internal_chunk;
+  cl_int status;
+  auto gws = size*m_internal_chunk;
 #if CLB_KERNEL_TASK == 0
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-  m_queue.enqueueNDRangeKernel(m_kernel,
+  status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
                                cl::NDRange(gws),
                                cl::NDRange(CL_LWS),
@@ -302,22 +303,22 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                                nullptr);
 #else
   m_kernel.setArg(m_nargs, (uint)offset);
-  m_queue.enqueueNDRangeKernel(
+  status=m_queue.enqueueNDRangeKernel(
     m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), nullptr,nullptr);
 #endif
 #else
- auto gws2=gws*64;
- m_kernel.setArg(m_nargs, (ulong)gws2 );
- m_kernel.setArg(m_nargs+1, (uint)offset*64);
-  m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
+ m_kernel.setArg(m_nargs,(uint) gws );//iterations
+ m_kernel.setArg(m_nargs+1, (uint)offset);
+ status= m_queue.enqueueNDRangeKernel(m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
 #endif
+  CL_CHECK_ERROR(status,"NDRange problem");
+//  status= m_queue.finish();
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
 
     Buffer& b = m_out_clb_buffers[i];
-    size_t size_bytes = b.byBytes(size)*64;
-    auto offset_bytes = b.byBytes(offset)*64;
+    size_t size_bytes = b.byBytes(size)*m_internal_chunk;
+    auto offset_bytes = b.byBytes(offset_for_bytes);
     status= m_queue.enqueueReadBuffer(m_out_buffers[i],
 #if CLB_OPERATION_BLOCKING_READ == 1
                               CL_TRUE,
@@ -326,7 +327,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif
                               offset_bytes,
                               size_bytes,
-                              b.dataWithOffset(offset*64),
+                              b.dataWithOffset(offset),
                               nullptr,
                               nullptr);
     CL_CHECK_ERROR(status,"Reading memory problem");
@@ -455,7 +456,7 @@ Device::initBuffers()
     cout << "in [address] " << b.get() << "\n";
     cout << "in [size] " << b.size() << "\n";
     cout << "in [bytes] " << b.bytes() << "\n";
-    cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL);
+    cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
     m_in_buffers.push_back(move(tmp_buffer));
     cout << "in buffer: " << &m_in_buffers[i] << "\n";
@@ -469,7 +470,7 @@ Device::initBuffers()
     cout << "out [address] " << b.get() << "\n";
     cout << "out [size] " << b.size() << "\n";
     cout << "out [bytes] " << b.bytes() << "\n";
-    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL);
+    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));
     cout << "out buffer: " << &m_out_buffers[i] << "\n";
@@ -640,5 +641,11 @@ Device::setRuntime(Runtime* runtime)
 {
   m_runtime = runtime;
 }
+
+void
+Device::setInternalChunk(int internal_chunk){
+    m_internal_chunk=internal_chunk;
+}
+
 
 } // namespace clb

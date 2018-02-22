@@ -6,16 +6,17 @@
 #include <fstream>
 
 #define threshold_test 32
-#define COLS 1920
+
 #define ROWS 1080
+#define COLS 1920
 void
 Sobel::init_image()
 {
     std::string imageFilename = "butterflies.ppm";
     
-/*    if (!parse_ppm(imageFilename.c_str(), COLS, ROWS,(unsigned char *)_input_img.data())) {
+  if (!parse_ppm(imageFilename.c_str(),COLS,ROWS,(unsigned char *)_input_img.data())) {
         std::cerr << "Error: could not load " << std::endl;
-    }*/
+    }
 }
 
 string
@@ -23,6 +24,27 @@ Sobel::get_kernel_str()
 {
 
 }
+
+// Dump frame data in PPM format.
+void 
+Sobel::outFrame(unsigned *frameData) {
+  char fname[256];
+  sprintf(fname, "frame.ppm");
+  printf("Dumping %s\n", fname);
+
+  FILE *f = fopen(fname, "wb");
+  fprintf(f, "P6 %d %d %d\n", COLS, ROWS, 255);
+  for(unsigned y = 0; y < ROWS; ++y) {
+    for(unsigned x = 0; x < COLS; ++x) {
+      // This assumes byte-order is little-endian.
+      unsigned pixel = frameData[y * COLS + x];
+      fwrite(&pixel, 1, 3, f);
+    }
+    fprintf(f, "\n");
+  }
+  fclose(f);
+}
+
 
 void
 do_sobel(int tscheduler,
@@ -38,7 +60,7 @@ do_sobel(int tscheduler,
 
   Sobel sobel(COLS*ROWS);
 
-  string kernel = file_read("support/kernels/sobel.cl");
+  string kernel = file_read("support/kernels/sobel_med.cl");
 
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._input_img);
@@ -56,7 +78,7 @@ do_sobel(int tscheduler,
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_load.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_1024.aocx"); 
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }
@@ -103,12 +125,7 @@ do_sobel(int tscheduler,
 
   if (check) {
     auto out = *output.get();
-
-      std::ofstream myfile;
-      myfile.open ("sobel.txt");
-      for(int dat=0; dat<out.size(); dat++)
-      		myfile<<out[dat]<<"\n";
- 			myfile.close();
+    sobel.outFrame((unsigned int*)out.data());
 
   } else {
     cout << "Done\n";
@@ -116,3 +133,6 @@ do_sobel(int tscheduler,
 
   exit(0);
 }
+
+
+

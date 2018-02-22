@@ -564,7 +564,7 @@ do_gaussian(int tscheduler,
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/myKernel.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/gaussian_unroll.aocx"); 
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }
@@ -632,9 +632,9 @@ cout<<"Manual proportions!";
 
     auto time = 0;
     if (ok) {
-      cout << "Success (" << time << ")\n";
+      cout << "Success gauss(" << time << ")\n";
     } else {
-      cout << "Failure (" << time << ")\n";
+      cout << "Failure gauss(" << time << ")\n";
     }
     //file to save and compare data results
 /*      std::ofstream myfile;
@@ -644,7 +644,7 @@ cout<<"Manual proportions!";
  			myfile.close();
 */
   } else {
-    cout << "Done\n";
+    cout << "Done gauss\n";
   }
 
   exit(0);

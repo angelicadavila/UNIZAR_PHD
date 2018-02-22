@@ -55,6 +55,11 @@ public:
     }
   }
 
+  void setInternalChunk(int internal_chunk)
+  {
+     m_internal_chunk=internal_chunk;
+   }
+
   void discoverDevices();
 
   void saveDuration(ActionType action);
@@ -94,6 +99,8 @@ private:
   std::chrono::duration<double> m_time;
   vector<tuple<size_t, ActionType>> m_duration_actions;
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
+
+  int m_internal_chunk;
 };
 
 } // namespace clb

@@ -53,7 +53,7 @@ public:
   int _total_size;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_seed;  // image
-  vector<int,vecAllocator<int>> _out;  // blurred
+  vector<float,vecAllocator<float>> _out;  // blurred
 #pragma GCC diagnostic pop
 };
 

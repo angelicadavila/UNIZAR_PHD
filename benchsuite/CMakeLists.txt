@@ -28,6 +28,8 @@ set(SOURCES
   gaussian.cpp
   ray.cpp
   mersenne.cpp
+  sobel.cpp
+  parse_ppm.cpp
   utils/io.cpp
 )
 
@@ -37,6 +39,8 @@ set(HEADERS
   gaussian.hpp
   ray.hpp
   mersenne.hpp
+  sobel.hpp
+  parse_ppm.hpp
   utils/io.hpp
 )
 

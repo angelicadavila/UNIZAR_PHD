@@ -10,6 +10,32 @@ Mersenne::init_seed()
      _input_seed[i]=rand();
      _out[i]=0;
   }
+
+/*    unsigned int state = 777;
+    uint ival[VECTOR];
+    #pragma unroll VECTOR
+    for (int i=0; i<64; i++) {
+       ival[i] = 777;
+    }
+    for (unsigned int n=0; n<MT_N; n++) {
+       #pragma unroll
+       for (int i=0; i<VECTOR-1; i++) {
+          ival[i] = ival[i+1];
+       }
+       ival[VECTOR-1] = state;
+       state = (1812433253U * (state ^ (state >> 30)) + n) & 0xffffffffUL;
+       if ((n & (VECTOR-1)) == 47) {
+          vec_uint_ty I0, I1, I2, I3;
+          #pragma unroll VECTOR_DIV4
+          for (int i=0; i<VECTOR_DIV4; i++) {
+             I0[i]=ival[i];
+             I1[i]=ival[i+1*VECTOR_DIV4];
+             I2[i]=ival[i+2*VECTOR_DIV4];
+             I3[i]=ival[i+3*VECTOR_DIV4];
+          }
+       }
+    }
+*/
 }
 
 
@@ -36,7 +62,7 @@ do_mersenne(int tscheduler,
   string kernel = file_read("support/kernels/mersenne_kernel.cl");
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&mersenne._input_seed);
- auto output = shared_ptr<vector<int,vecAllocator<int>>>(&mersenne._out);
+ auto output = shared_ptr<vector<float,vecAllocator<float>>>(&mersenne._out);
 #pragma GCC diagnostic pop
   
   int problem_size = mersenne._total_size/64;
@@ -50,7 +76,7 @@ do_mersenne(int tscheduler,
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/mersenne_kernel.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/mersenne_kernel_2cu.aocx"); 
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }
@@ -78,7 +104,7 @@ cout<<"Manual proportions!";
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({ prop });
+   hgSched.setRawProportions({0.9, 0.2});
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);
@@ -86,7 +112,8 @@ cout<<"Manual proportions!";
 
   runtime.setKernelArg(0, input);//in
   runtime.setKernelArg(1, output);//out
-
+  
+  runtime.setInternalChunk(64);
   runtime.run();
 
   runtime.printStats();

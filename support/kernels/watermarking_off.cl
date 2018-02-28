@@ -46,7 +46,7 @@ Description:
 #define WATERMARK_WIDTH 16
 
 //Using Datatype uint16 to get the full memory datawidth 512
-#define TYPE uint
+#define TYPE int
 
 //Per Memory Access getting 16 pixels
 #define DATA_SIZE 16
@@ -98,8 +98,8 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
         tmp[i]=input[i+index];
       }
       
-      uint rows_y= index%width;
-      uint y = rows_y%WATERMARK_WIDTH;
+     // uint rows_y= index%width;
+    //  uint y = rows_y%WATERMARK_WIDTH;
              
       // Row Boundary Check for x 
       if (x >= width){

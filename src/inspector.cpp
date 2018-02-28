@@ -12,52 +12,52 @@ Inspector::printActionTypeDuration(ActionType action, size_t d)
 {
   switch (action) {
     case ActionType::init:
-      cout << " init: " << d << " ms.\n";
+      cout << " init: " << d << " us.\n";
       break;
     case ActionType::useDiscovery:
-      cout << " useDiscovery: " << d << " ms.\n";
+      cout << " useDiscovery: " << d << " us.\n";
       break;
     case ActionType::initDiscovery:
-      cout << " initDiscovery: " << d << " ms.\n";
+      cout << " initDiscovery: " << d << " us.\n";
       break;
     case ActionType::initContext:
-      cout << " initContext: " << d << " ms.\n";
+      cout << " initContext: " << d << " us.\n";
       break;
     case ActionType::initQueue:
-      cout << " initQueue: " << d << " ms.\n";
+      cout << " initQueue: " << d << " us.\n";
       break;
     case ActionType::initBuffers:
-      cout << " initBuffers: " << d << " ms.\n";
+      cout << " initBuffers: " << d << " us.\n";
       break;
     case ActionType::initKernel:
-      cout << " initKernel: " << d << " ms.\n";
+      cout << " initKernel: " << d << " us.\n";
       break;
     case ActionType::writeBuffersDummy:
-      cout << " writeBuffersDummy: " << d << " ms.\n";
+      cout << " writeBuffersDummy: " << d << " us.\n";
       break;
     case ActionType::writeBuffers:
-      cout << " writeBuffers: " << d << " ms.\n";
+      cout << " writeBuffers: " << d << " us.\n";
       break;
     case ActionType::deviceStart:
-      cout << " deviceStart: " << d << " ms.\n";
+      cout << " deviceStart: " << d << " us.\n";
       break;
     case ActionType::schedulerStart:
-      cout << " schedulerStart: " << d << " ms.\n";
+      cout << " schedulerStart: " << d << " us.\n";
       break;
     case ActionType::deviceReady:
-      cout << " deviceReady: " << d << " ms.\n";
+      cout << " deviceReady: " << d << " us.\n";
       break;
     case ActionType::deviceRun:
-      cout << " deviceRun: " << d << " ms.\n";
+      cout << " deviceRun: " << d << " us.\n";
       break;
     case ActionType::completeWork:
-      cout << " completeWork: " << d << " ms.\n";
+      cout << " completeWork: " << d << " us.\n";
       break;
     case ActionType::deviceEnd:
-      cout << " deviceEnd: " << d << " ms.\n";
+      cout << " deviceEnd: " << d << " us.\n";
       break;
     case ActionType::schedulerEnd:
-      cout << " schedulerEnd: " << d << " ms.\n";
+      cout << " schedulerEnd: " << d << " us.\n";
       break;
   }
 }

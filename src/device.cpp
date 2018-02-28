@@ -39,12 +39,13 @@ namespace clb {
 void
 device_thread_func(Device& device)
 {
-  auto time1 = std::chrono::system_clock::now().time_since_epoch();
 
   device.init();
 //  if (device.getID()==1)
 //	  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   device.barrier_init();
+
+  auto time1 = std::chrono::system_clock::now().time_since_epoch();
   cout<<"----------init device:"<<device.getID()<<"\n";
   Scheduler* sched = device.getScheduler();
   device.saveDuration(ActionType::deviceStart);
@@ -130,8 +131,8 @@ Device::printStats()
     }
     total += d;
   }
-  cout << " completeWork: " << acc << " ms.\n";
-  cout << " total: " << total << " ms.\n";
+  cout << " completeWork: " << acc << " us.\n";
+  cout << " total: " << total << " us.\n";
   cout << "duration offsets from init:\n";
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
@@ -143,7 +144,7 @@ Device::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
 }
@@ -152,7 +153,7 @@ Device::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
 
@@ -288,11 +289,11 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     m_prev_events.clear();
   }
 
- //cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
+//  cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
   auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
-  auto gws = size*m_internal_chunk;
+  auto gws = size;
 #if CLB_KERNEL_TASK == 0
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
@@ -307,6 +308,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
     m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), nullptr,nullptr);
 #endif
 #else
+// m_kernel.setSVMPointers(m_out_clb_buffers );
  m_kernel.setArg(m_nargs,(uint) gws );//iterations
  m_kernel.setArg(m_nargs+1, (uint)offset);
  status= m_queue.enqueueNDRangeKernel(m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
@@ -318,7 +320,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 
     Buffer& b = m_out_clb_buffers[i];
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-    auto offset_bytes = b.byBytes(offset_for_bytes);
+    auto offset_bytes = b.byBytes(offset_for_bytes)*m_internal_chunk;
     status= m_queue.enqueueReadBuffer(m_out_buffers[i],
 #if CLB_OPERATION_BLOCKING_READ == 1
                               CL_TRUE,
@@ -647,5 +649,8 @@ Device::setInternalChunk(int internal_chunk){
     m_internal_chunk=internal_chunk;
 }
 
-
+int
+Device::getInternalChunk(){
+    return m_internal_chunk;
+}
 } // namespace clb

@@ -169,6 +169,7 @@ public:
   void setRuntime(Runtime* runtime);
 
   void setInternalChunk(int internal_chunk);
+  int  getInternalChunk();
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);

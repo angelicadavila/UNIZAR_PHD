@@ -238,7 +238,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file =file_read_binary("./benchsuite/vecadd_l.aocx");
+    binary_file =file_read_binary("./benchsuite/altera_kernel/vecadd_l.aocx");
     device2.setKernel(binary_file);
     devices.push_back(move(device2));
   }

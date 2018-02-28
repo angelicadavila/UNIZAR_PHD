@@ -18,10 +18,10 @@ namespace clb {
 void
 scheduler_thread_func(DynamicScheduler& sched)
 {
-  auto time1 = std::chrono::system_clock::now().time_since_epoch();
-  sched.saveDuration(ActionType::schedulerStart);
-  sched.saveDurationOffset(ActionType::schedulerStart);
-  sched.preenq_work();
+//  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+//  sched.saveDuration(ActionType::schedulerStart);
+//  sched.saveDurationOffset(ActionType::schedulerStart);
+//  sched.preenq_work();
   while (sched.hasWork()) {
     auto moreReqs = true;
     do {
@@ -80,6 +80,10 @@ DynamicScheduler::printStats()
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
+  auto last_item=m_duration_offset_actions.size()-1; 
+  auto init_time=(std::get<0>(m_duration_offset_actions[0]));
+  auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
+  cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
 }
 
 void
@@ -98,7 +102,7 @@ DynamicScheduler::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
 }
@@ -107,7 +111,7 @@ DynamicScheduler::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
 
@@ -126,6 +130,7 @@ DynamicScheduler::setWorkSize(size_t size)
     given = (times + 1) * bound;
   } else {
     given = size;
+    cout<<"--------give"<<given<<"\n";
   }
   if (total < given) {
     given = total;
@@ -271,6 +276,7 @@ void
 DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
+  int final_chunk=m_size_rem_completed;
   lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem > 0 ) {
 //if (m_size_given<m_size){
@@ -279,6 +285,12 @@ DynamicScheduler::enq_work(Device* device)
     {
 //      lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
+      if(offset+size>m_size)
+      {
+       size=final_chunk;
+       m_worksize=size;   
+      }
+      
       m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
@@ -299,6 +311,11 @@ DynamicScheduler::preenq_work()
 void
 DynamicScheduler::req_work(Device* device)
 {
+
+  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+  saveDuration(ActionType::schedulerStart);
+  saveDurationOffset(ActionType::schedulerStart);
+
 #if ATOMIC == 1
   if (m_size_rem_completed > 0) {
     auto idx = m_requests_idx++ % m_requests_max;

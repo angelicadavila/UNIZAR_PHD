@@ -35,7 +35,7 @@ Runtime::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
 }
@@ -45,7 +45,7 @@ Runtime::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
 
@@ -57,7 +57,7 @@ Runtime::printStats()
     auto d = std::get<0>(t);
     auto action = std::get<1>(t);
     if (action == ActionType::initDiscovery) {
-      cout << " initDiscovery: " << d << " ms.\n";
+      cout << " initDiscovery: " << d << " us.\n";
     }
   }
   for (auto& device : m_devices) {

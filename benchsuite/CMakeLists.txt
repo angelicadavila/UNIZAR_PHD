@@ -30,6 +30,7 @@ set(SOURCES
   mersenne.cpp
   sobel.cpp
   parse_ppm.cpp
+  watermarking.cpp
   utils/io.cpp
 )
 
@@ -40,6 +41,7 @@ set(HEADERS
   ray.hpp
   mersenne.hpp
   sobel.hpp
+  watermarking.hpp
   parse_ppm.hpp
   utils/io.hpp
 )

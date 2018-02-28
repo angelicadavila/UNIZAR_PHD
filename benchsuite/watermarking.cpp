@@ -56,7 +56,7 @@ do_watermarking(int tscheduler,
 
   int worksize = chunksize;
 
-  Watermarking watermarking(COLS*ROWS);
+  Watermarking watermarking(COLS*ROWS+256);
 
   string kernel = file_read("support/kernels/watermarking_off.cl");
 
@@ -65,7 +65,7 @@ do_watermarking(int tscheduler,
  auto output = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out);
 #pragma GCC diagnostic pop
   
-  int problem_size = watermarking._total_size/64;
+  int problem_size =watermarking._total_size/16;//floor(watermarking._total_size/(16*chunksize))*chunksize;
 
   vector<clb::Device> devices;
 
@@ -116,7 +116,7 @@ do_watermarking(int tscheduler,
   runtime.setKernelArg(2, COLS);// width
   runtime.setKernelArg(3, ROWS);//height
   //works with 1 per chunk in this version 
-  runtime.setInternalChunk(64); //procesing the size of watermark
+  runtime.setInternalChunk(16); //procesing the size of watermark
   runtime.run();
 
   runtime.printStats();

@@ -14,9 +14,9 @@ namespace clb {
 void
 scheduler_thread_func(StaticScheduler& sched)
 {
-  auto time1 = std::chrono::system_clock::now().time_since_epoch();
-  sched.saveDuration(ActionType::schedulerStart);
-  sched.saveDurationOffset(ActionType::schedulerStart);
+//  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+//  sched.saveDuration(ActionType::schedulerStart);
+//  sched.saveDurationOffset(ActionType::schedulerStart);
   sched.preenq_work();
   cout << "sched thread: wait callbacks\n";
   sched.waitCallbacks();
@@ -31,8 +31,8 @@ StaticScheduler::StaticScheduler(WorkSplit wsplit)
   , m_wsplit(wsplit)
 {
   m_mutex_duration = new mutex();
-  m_time_init = std::chrono::system_clock::now().time_since_epoch();
-  m_time = std::chrono::system_clock::now().time_since_epoch();
+  m_time_init = std::chrono::high_resolution_clock::now().time_since_epoch();
+  m_time = std::chrono::high_resolution_clock::now().time_since_epoch();
   m_duration_actions.reserve(8);        // NOTE to improve
   m_duration_offset_actions.reserve(8); // NOTE to improve
 }
@@ -55,9 +55,14 @@ StaticScheduler::printStats()
   cout << "StaticScheduler:\n";
   cout << "chunks: " << sum << "\n";
   cout << "duration offsets from init:\n";
+  
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
+  auto last_item=m_duration_offset_actions.size()-1; 
+  auto init_time=(std::get<0>(m_duration_offset_actions[0]));
+  auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
+  cout<< "executionKernel: "<<time_run_sched<<" us.\n";
 }
 
 void
@@ -126,7 +131,7 @@ void
 StaticScheduler::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
-  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  auto t2 = std::chrono::high_resolution_clock::now().time_since_epoch();
   size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
@@ -135,7 +140,7 @@ void
 StaticScheduler::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
-  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  auto t2 = std::chrono::high_resolution_clock::now().time_since_epoch();
   size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
@@ -226,7 +231,11 @@ StaticScheduler::preenq_work()
 void
 StaticScheduler::req_work(Device* device)
 {
-  cout << "StaticScheduler::req_work\n";
+  auto time1 = std::chrono::high_resolution_clock::now().time_since_epoch(); 
+//  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+  saveDuration(ActionType::schedulerStart);
+  saveDurationOffset(ActionType::schedulerStart);
+ cout << "StaticScheduler::req_work\n";
   //can be called for more than one threa
   enq_work(device);
   device->notifyWork();

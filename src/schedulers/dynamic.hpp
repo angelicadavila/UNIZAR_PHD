@@ -139,8 +139,8 @@ private:
   size_t m_work_last;
 
   mutex* m_mutex_duration;
-  std::chrono::duration<double> m_time_init;
-  std::chrono::duration<double> m_time;
+  std::chrono::duration<double,std::micro> m_time_init;
+  std::chrono::duration<double,std::micro> m_time;
   vector<tuple<size_t, ActionType>> m_duration_actions;
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
 };

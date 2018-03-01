@@ -85,9 +85,12 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
     uint size = iterations;//total number of pixels by rows 
 
     TYPE tmp [DATA_SIZE];
+   
+    uint y =0;
+    uint x=(offset/width)%WATERMARK_HEIGHT;
     // Process the whole image 
     #pragma unroll
-    for (uint idx = 0, x = 0 , y = 0  ; idx < size ; ++idx, x+= DATA_SIZE)
+    for (uint idx = 0 ; idx < size ; ++idx, x+= DATA_SIZE)
     {
       //index with offset
       uint index=offset+idx*DATA_SIZE;
@@ -98,8 +101,6 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
         tmp[i]=input[i+index];
       }
       
-     // uint rows_y= index%width;
-    //  uint y = rows_y%WATERMARK_WIDTH;
              
       // Row Boundary Check for x 
       if (x >= width){

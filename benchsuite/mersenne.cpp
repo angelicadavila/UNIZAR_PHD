@@ -76,7 +76,7 @@ do_mersenne(int tscheduler,
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_2cu.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel.aocx"); 
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }

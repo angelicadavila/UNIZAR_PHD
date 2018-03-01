@@ -128,12 +128,12 @@ private:
   atomic<uint> m_requests_idx_done;
   vector<uint> m_requests_list;
 
-  size_t m_size_rem_given;
+  int m_size_rem_given;
 
-  size_t m_size_rem;
+  int m_size_rem;
 
 //  size_t m_size_rem_completed;
-  atomic<size_t>  m_size_rem_completed;
+  atomic<int>  m_size_rem_completed;
   size_t m_size_given;
   size_t m_worksize;
   size_t m_work_last;

@@ -305,7 +305,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #else
   m_kernel.setArg(m_nargs, (uint)offset);
   status=m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(CL_LWS), nullptr,nullptr);
+    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(BLOCK_SIZE_X,BLOCK_SIZE_Y), nullptr,nullptr);
 #endif
 #else
 // m_kernel.setSVMPointers(m_out_clb_buffers );

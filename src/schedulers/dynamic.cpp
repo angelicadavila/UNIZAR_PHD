@@ -276,7 +276,6 @@ void
 DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
-  int final_chunk=m_size_rem_completed;
   lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem > 0 ) {
 //if (m_size_given<m_size){
@@ -287,8 +286,8 @@ DynamicScheduler::enq_work(Device* device)
       size_t offset = m_size_given;
       if(offset+size>m_size)
       {
-       size=final_chunk;
-       m_worksize=size;   
+         size=m_size_rem;
+     //    m_worksize=size;
       }
       
       m_size_rem -= size;

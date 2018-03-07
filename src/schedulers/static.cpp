@@ -132,7 +132,7 @@ StaticScheduler::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::high_resolution_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
 }
@@ -141,7 +141,7 @@ StaticScheduler::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::high_resolution_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
 

@@ -26,12 +26,13 @@
 #define ROWS 1080
 #define COLS 1920
 #define DCOLS 3 
+#define BLOCK_SIZE 128
 // Sobel filter kernel
 // frame_in and frame_out are different buffers. Specify restrict on
 // them so that the compiler knows they do not alias each other.
 __kernel
 void sobel(global unsigned int * restrict frame_in, global unsigned int * restrict frame_out,
-           const unsigned int threshold, const int iterations,const int offset)
+           const unsigned int threshold, int iterations, int offset)
 {
     // Filter coefficients
     int Gx[3][3] = {{-1,-2,-1},{0,0,0},{1,2,1}};
@@ -40,12 +41,19 @@ void sobel(global unsigned int * restrict frame_in, global unsigned int * restri
     // Pixel buffer of 2 rows and 3 extra pixels
     int rows[DCOLS*2+3];
     // The initial iterations are used to initialize the pixel buffer.
-    int count = -(2*DCOLS+3); 
     
+    int count = -(2*DCOLS+3); 
+    iterations=1;
+    offset+=get_local_id(0)+get_group_id(0)*BLOCK_SIZE;
     while (count != iterations) {
         // Each cycle, shift a new pixel into the buffer.
         // Unrolling this loop allows the compile to infer a shift register.
-        #pragma unroll
+    
+        for (int i = DCOLS*2; i > 0; --i) {
+            rows[i] = frame_in[count+offset+COLS];
+        }
+      
+       #pragma unroll
         for (int i = DCOLS*2+2; i > 0; --i) {
             rows[i] = rows[i - 1];
         }
@@ -54,6 +62,7 @@ void sobel(global unsigned int * restrict frame_in, global unsigned int * restri
            rows[DCOLS] = (count+offset) >= 0 ? frame_in[count+offset+COLS] : 0;      
            rows[DCOLS*2] = (count+offset) >= 0 ? frame_in[count+offset+COLS*2] : 0; 
         }
+    
         int x_dir = 0;
         int y_dir = 0;
 

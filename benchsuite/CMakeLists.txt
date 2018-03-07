@@ -31,6 +31,7 @@ set(SOURCES
   sobel.cpp
   parse_ppm.cpp
   watermarking.cpp
+  matrix_mult.cpp
   utils/io.cpp
 )
 
@@ -42,6 +43,7 @@ set(HEADERS
   mersenne.hpp
   sobel.hpp
   watermarking.hpp
+  matrix_mult.hpp
   parse_ppm.hpp
   utils/io.hpp
 )

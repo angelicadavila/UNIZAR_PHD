@@ -26,7 +26,7 @@
 #define CLAMP_ONE  0x1.fffffep-1f
 
 __kernel void mersenne_twister_generate(__global uint* restrict y_in,
-							    __global float* restrict U_out, ulong N,uint offset)
+							    __global float* restrict U_out, uint N,uint offset)
 {
    unsigned int mt[MT_N];
 

@@ -303,12 +303,14 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                                nullptr,
                                nullptr);
 #else
-  m_kernel.setArg(m_nargs, (uint)offset);
+ m_kernel.setArg(m_nargs,(uint) gws );
+ m_kernel.setArg(m_nargs+1, (uint)offset);
   status=m_queue.enqueueNDRangeKernel(
-    m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(BLOCK_SIZE_X,BLOCK_SIZE_Y), nullptr,nullptr);
+  m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(128), nullptr,nullptr);
+  //Test Matrix Multiplication
+  // m_kernel, cl::NullRange, cl::NDRange(16*64,gws), cl::NDRange(BLOCK_SIZE_X,BLOCK_SIZE_Y), nullptr,nullptr);
 #endif
 #else
-// m_kernel.setSVMPointers(m_out_clb_buffers );
  m_kernel.setArg(m_nargs,(uint) gws );//iterations
  m_kernel.setArg(m_nargs+1, (uint)offset);
  status= m_queue.enqueueNDRangeKernel(m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
@@ -317,11 +319,11 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 //  status= m_queue.finish();
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
-
     Buffer& b = m_out_clb_buffers[i];
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
     auto offset_bytes = b.byBytes(offset_for_bytes)*m_internal_chunk;
-    status= m_queue.enqueueReadBuffer(m_out_buffers[i],
+  //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+  status= m_queue.enqueueReadBuffer(m_out_buffers[i],
 #if CLB_OPERATION_BLOCKING_READ == 1
                               CL_TRUE,
 #else
@@ -345,7 +347,6 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif  
   m_works++;
   m_works_size += size;
-  
 }
 
 void
@@ -454,35 +455,35 @@ Device::initBuffers()
   for (uint i = 0; i < len; ++i) {
     clb::Buffer& b = m_in_clb_buffers[i];
     auto data = b.data();
-    cout << "in [data] " << data << "\n";
-    cout << "in [address] " << b.get() << "\n";
-    cout << "in [size] " << b.size() << "\n";
-    cout << "in [bytes] " << b.bytes() << "\n";
+//    cout << "in [data] " << data << "\n";
+//    cout << "in [address] " << b.get() << "\n";
+//    cout << "in [size] " << b.size() << "\n";
+//    cout << "in [bytes] " << b.bytes() << "\n";
     cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
     m_in_buffers.push_back(move(tmp_buffer));
-    cout << "in buffer: " << &m_in_buffers[i] << "\n";
+//    cout << "in buffer: " << &m_in_buffers[i] << "\n";
   }
 
   len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
     clb::Buffer& b = m_out_clb_buffers[i];
     auto data = b.data();
-    cout << "out [data] " << data << "\n";
-    cout << "out [address] " << b.get() << "\n";
-    cout << "out [size] " << b.size() << "\n";
-    cout << "out [bytes] " << b.bytes() << "\n";
+//   cout << "out [data] " << data << "\n";
+//   cout << "out [address] " << b.get() << "\n";
+//   cout << "out [size] " << b.size() << "\n";
+//    cout << "out [bytes] " << b.bytes() << "\n";
     cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));
-    cout << "out buffer: " << &m_out_buffers[i] << "\n";
+//    cout << "out buffer: " << &m_out_buffers[i] << "\n";
   }
 }
 
 void
 Device::writeBuffers(bool /* dummy */)
 {
-  cout << "writeBuffers\n";
+//  cout << "writeBuffers\n";
 
   auto len = m_in_clb_buffers.size();
   m_prev_events.reserve(len);
@@ -491,8 +492,8 @@ Device::writeBuffers(bool /* dummy */)
     Buffer& b = m_in_clb_buffers[i];
     auto data = b.data();
     auto size = b.size();
-    cout << "writeBuffers [array] " << b.get() << " data: " << data
-         << " buffer: " << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n";
+//   cout << "writeBuffers [array] " << b.get() << " data: " << data
+//         << " buffer: " << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n";
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
   }
@@ -501,7 +502,7 @@ Device::writeBuffers(bool /* dummy */)
 void
 Device::initKernel()
 {
-  cout << "initKernel\n";
+//  cout << "initKernel\n";
 
   cl_int cl_err;
 

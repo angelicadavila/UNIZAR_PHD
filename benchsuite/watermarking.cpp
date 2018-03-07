@@ -58,14 +58,19 @@ do_watermarking(int tscheduler,
 
   Watermarking watermarking(COLS*ROWS);//+256
 
-  string kernel = file_read("support/kernels/watermarking_off.cl");
+  #if CLB_KERNEL_TASK == 0 
+    string kernel = file_read("support/kernels/watermarking_simd.cl");
+  #else
+    string kernel = file_read("support/kernels/watermarking_off.cl");
+    cout<<"Task"<<"\n";
+  #endif
 
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._input_img);
  auto output = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out);
 #pragma GCC diagnostic pop
   
-  int problem_size =(watermarking._total_size/16);
+  int problem_size =129536;//(watermarking._total_size/16);
 
   vector<clb::Device> devices;
 
@@ -76,7 +81,11 @@ do_watermarking(int tscheduler,
   vector <char> binary_file;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
+  #if CLB_KERNEL_TASK == 0 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_simd.aocx"); 
+  #else
     binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_off.aocx"); 
+  #endif  
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }

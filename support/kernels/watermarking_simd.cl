@@ -46,7 +46,7 @@ Description:
 #define WATERMARK_WIDTH 16
 
 //Using Datatype uint16 to get the full memory datawidth 512
-#define TYPE int
+#define TYPE uint
 
 //Per Memory Access getting 16 pixels
 #define DATA_SIZE 16
@@ -56,6 +56,7 @@ Description:
 uint saturatedAdd(uint x, uint y);
 
 #define BLOCK_SIZE 128
+
 __kernel
 void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __restrict output, int width, int height,const unsigned int iterations, const unsigned int offset) {
     
@@ -86,13 +87,14 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
     uint size = iterations;//total number of pixels by rows 
 
     TYPE tmp [DATA_SIZE];
-   
-    uint y =0;
-    uint x=(offset/width)%WATERMARK_HEIGHT;
-    // Process the whole image 
-
-    #pragma unroll
-    for (uint idx = 0 ; idx < size ; ++idx, x+= DATA_SIZE)
+    
+    uint idx= get_global_id(0);
+    uint x=((offset/width)%WATERMARK_HEIGHT)+(idx)*DATA_SIZE; 
+    uint y=0; 
+    // Index by block 
+    
+//    #pragma unroll
+//    image_traverse: for (uint idx = 0; idx < size ; ++idx, x+= DATA_SIZE)
     {
       //index with offset
       uint index=offset+idx*DATA_SIZE;
@@ -103,7 +105,6 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
         tmp[i]=input[i+index];
       }
       
-             
       // Row Boundary Check for x 
       if (x >= width){
         x = x -width;
@@ -131,7 +132,7 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
        for (int i=0; i < DATA_SIZE; i++){
          output[i+index] = tmp[i] ;
        }
-   }
+     }
 }
 
 uint saturatedAdd(uint x, uint y)

@@ -241,7 +241,7 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
     //available kernes:   vecadd_l    -one compute unit
     //                    vecadd_cu16 -16 compute units. performance aprox. 1/2 cpu
     //                    vecadd_cu32 -32 compute units
-    binary_file =file_read_binary("./benchsuite/altera_kernel/vecadd_l.aocx");
+    binary_file =file_read_binary("./benchsuite/altera_kernel/vecadd_simd.aocx");
     device2.setKernel(binary_file);
     devices.push_back(move(device2));
   }

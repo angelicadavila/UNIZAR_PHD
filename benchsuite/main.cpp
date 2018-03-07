@@ -16,6 +16,7 @@
 #include "mersenne.hpp"
 #include "sobel.hpp"
 #include "watermarking.hpp"
+#include "matrix_mult.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -104,7 +105,9 @@ main(int argc, char* argv[])
    do_sobel(tscheduler, tdevices, check, 1, chunksize, prop);
   }else if (tbench == 6){
    do_watermarking(tscheduler,tdevices,check,1,chunksize,prop);
+  }else if (tbench ==7){
+   do_matrixMult(tscheduler, tdevices, check, size, chunksize, prop, atoi(argv[8]));
   }
-
+  
   return 0;
 }

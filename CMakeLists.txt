@@ -1,11 +1,11 @@
 # Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
-# This file is part of clbalancer which is released under MIT License.
+# This file is part of EngineCL which is released under MIT License.
 # See file LICENSE for full license details.
 
 cmake_minimum_required(VERSION 3.3)
 
-set(PROJECT clbalancer)
-set(EXECUTABLE clbalancer)
+set(PROJECT EngineCL)
+set(EXECUTABLE EngineCL)
 project(${PROJECT})
 
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -62,6 +62,7 @@ message("NODE: ${NODE}")
 SetFlags()
 
 include_directories ("${SRC_DIR}")
+include_directories ("${INCLUDE_DIR}")
 include_directories ("${DEPS_DIR}")
 
 # add_subdirectory(deps)
@@ -73,7 +74,7 @@ message("Base_Library: ${Base_Library}")
 add_subdirectory(benchsuite)
 message("Benchsuite_Library: ${Benchsuite_Library}")
 
-set(Entry "clbalancer")
+set(Entry "EngineCL")
 add_executable("${Entry}" benchsuite/main.cpp)
 target_link_libraries("${Entry}"
   "${Base_Library}"

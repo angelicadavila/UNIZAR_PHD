@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_SCHEDULER_STATIC_HPP
-#define CLBALANCER_SCHEDULER_STATIC_HPP 1
+#ifndef ENGINECL_SCHEDULER_STATIC_HPP
+#define ENGINECL_SCHEDULER_STATIC_HPP 1
 
 #include <iostream>
 #include <mutex>
@@ -23,7 +23,7 @@ using std::mutex;
 using std::thread;
 using std::tie;
 
-namespace clb {
+namespace ecl {
 enum class ActionType;
 class StaticScheduler;
 
@@ -83,6 +83,10 @@ public:
   void enq_work(Device* device) override;
   void preenq_work() override;
 
+  void setGWS(ecl::NDRange gws) override;
+  void setLWS(size_t lws) override;
+  void setWSBound(float ws_bound) override;
+
 private:
   thread m_thread;
   size_t m_size;
@@ -102,6 +106,10 @@ private:
   vector<float> m_raw_proportions;
   WorkSplit m_wsplit;
 
+  ecl::NDRange m_gws;
+  size_t m_lws;
+  float m_ws_bound;
+
   mutex* m_mutex_duration;
   std::chrono::duration<double> m_time_init;
   std::chrono::duration<double> m_time;
@@ -112,6 +120,6 @@ private:
   std::once_flag flag_init;
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_SCHEDULER_STATIC_HPP */
+#endif /* ENGINECL_SCHEDULER_STATIC_HPP */

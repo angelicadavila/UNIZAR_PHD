@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "schedulers/dynamic.hpp"
@@ -13,7 +13,7 @@
 #define ATOMIC 1
 // #define ATOMIC 0
 
-namespace clb {
+namespace ecl {
 
 void
 scheduler_thread_func(DynamicScheduler& sched)
@@ -135,7 +135,6 @@ DynamicScheduler::setWorkSize(size_t size)
     given = (times + 1) * bound;
   } else {
     given = size;
-    cout<<"--------give"<<given<<"\n";
   }
   if (total < given) {
     given = total;
@@ -196,7 +195,6 @@ DynamicScheduler::splitWork(size_t size, float prop, size_t bound)
 {
   return { 0, 0 }; // NOTE(dyn)
   size_t given = bound * (static_cast<size_t>(prop * size) / bound);
-  // cout << "given: " << given << "\n";
   size_t rem = size - given;
   return { given, rem };
 }
@@ -254,7 +252,7 @@ DynamicScheduler::calcProportions()
       for (uint i = 0; i < last; ++i) {
         // proportions.push_back(  );
         tie(wsize_given, wsize_rem) = splitWork(wsize_rem, 1.0f / len, 128);
-        // cout << "given: " << wsize_given << " rem: " << wsize_rem << "\n";
+        // IF_LOGGING(cout << "given: " << wsize_given << " rem: " << wsize_rem << "\n");
         size_t wsize_offset = wsize_given_acc;
         proportions.push_back(make_tuple(wsize_given, wsize_offset));
         wsize_given_acc += wsize_given;
@@ -264,7 +262,8 @@ DynamicScheduler::calcProportions()
   }
   m_proportions = move(proportions);
   for (auto prop : m_proportions) {
-    cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop) << "\n";
+    IF_LOGGING(cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop)
+                    << "\n");
   }
 }
 
@@ -281,19 +280,12 @@ void
 DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
-  //lock_guard<mutex> guard(m_mutex_work);
-  if (m_size_rem > 0 ) {
-/*  vector<int> load_extra(3,1);
-  if (m_chunk_todo[0]>m_chunk_todo[1]  )
-        load_extra[0]=4;
-*/
-//  if (m_chunk_todo[1]>m_chunk_todo[m_ndevices]  )
-//      load_extra[1]=2;
+  if (m_size_rem > 0) {
 
     size_t size = m_worksize;
     size_t index = -1;
     {
-      //lock_guard<mutex> guard(m_mutex_work);
+      lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
       if(offset+size>m_size)
       {
@@ -304,7 +296,7 @@ DynamicScheduler::enq_work(Device* device)
       m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
-      m_queue_work.push_back(Work(id, offset, size));
+      m_queue_work.push_back(Work(id, offset, size, m_ws_bound));
       m_queue_id_work[id].push_back(index);
       m_chunk_todo[id]++;
     }
@@ -422,4 +414,4 @@ DynamicScheduler::getNextRequest()
 #endif
   return dev;
 }
-} // namespace clb
+} // namespace ecl

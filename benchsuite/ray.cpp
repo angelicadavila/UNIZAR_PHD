@@ -1,74 +1,6 @@
 #include "ray.hpp"
 
-int
-write_bmp_file(Pixel* pixels, int width, int height, const char* filename)
-{
-  // some calculations for bitmap size
-  int row_size = (PIXEL_BIT_DEPTH / 8) * width;
-  int row_size_padding = (row_size % 4) == 0 ? 0 : 4 - (row_size % 4);
-  int pixel_array_size = (row_size + row_size_padding) * height;
-  int file_size = BITMAP_HEADER_SIZE + BITMAP_INFO_HEADER_SIZE + pixel_array_size;
-
-  // magic bytes for standard bitmap
-  bmp_magic_t magic_bytes;
-  magic_bytes.magic[0] = 'B';
-  magic_bytes.magic[1] = 'M';
-  // bitmap header
-  BMP_HEADER bitmap_header;
-  bitmap_header.filesz = file_size;
-  bitmap_header.creator1 = 0; // not used
-  bitmap_header.creator2 = 0; // not used
-  bitmap_header.bmp_offset = BITMAP_HEADER_SIZE + BITMAP_INFO_HEADER_SIZE;
-  // bitmap info header
-  BMP_INFO_HEADER bitmap_info_header;
-  bitmap_info_header.header_sz = BITMAP_INFO_HEADER_SIZE;
-  bitmap_info_header.width = width;
-  bitmap_info_header.height = height;
-  bitmap_info_header.nplanes = 1;       // number of color planes
-  bitmap_info_header.bitspp = 24;       // number of bits per pixel. 0-7 = b, 8-15 = g, 16-23 = r
-  bitmap_info_header.compress_type = 0; // no compression
-  bitmap_info_header.bmp_bytesz = pixel_array_size;
-  bitmap_info_header.hres = 2835; // 2835 pixels/meter = 72 dpi of most monitors
-  bitmap_info_header.vres = 2835;
-  bitmap_info_header.ncolors = 0;    // we have no palette
-  bitmap_info_header.nimpcolors = 0; // 0 = all colors are important
-
-  // write file
-  FILE* bitmap_file;
-  bitmap_file = fopen(filename, "wb");
-  if (bitmap_file == NULL) {
-    fprintf(stderr, "Error opening file %s for writing\r\n", filename);
-    return 1;
-  }
-  // write headers
-  fwrite(&magic_bytes, sizeof magic_bytes, 1, bitmap_file);
-  fwrite(&bitmap_header, sizeof bitmap_header, 1, bitmap_file);
-  fwrite(&bitmap_info_header, sizeof bitmap_info_header, 1, bitmap_file);
-
-  // write pixels
-  // note that in standard bitmap format, the pixels at the bottom of the image
-  // are written first, but our internal structure has those pictures at max
-  // height
-  // therefore, we loop backwards
-  int i;
-  for (i = height - 1; i > -1; i--) {
-    int j;
-    for (j = 0; j < width; j++) {
-      int cur_pixel = i * width + j;
-      // pixel = cl_char4
-      // r = s[0] g = s[1] b = s[2]
-      fputc(pixels[cur_pixel].s[2], bitmap_file);
-      fputc(pixels[cur_pixel].s[1], bitmap_file);
-      fputc(pixels[cur_pixel].s[0], bitmap_file);
-    }
-    int r;
-    for (r = 0; r < row_size_padding; r++)
-      fputc(0, bitmap_file);
-  }
-
-  fclose(bitmap_file);
-  return 0;
-}
+using namespace std::chrono;
 
 Primitive*
 load_scene(data_t* data)
@@ -99,7 +31,7 @@ load_scene(data_t* data)
     return NULL;
   }
 
-  cout << *n_primitives << "\n";
+  IF_LOGGING(cout << "num primitives: " << *n_primitives << "\n");
   prim_list = (Primitive*)malloc(sizeof(Primitive) * *n_primitives);
 
   if (prim_list == NULL) {
@@ -161,7 +93,7 @@ load_scene(data_t* data)
         fprintf(stderr, "Scene file format invalid. Primitive %d\n", i + 1);
         return NULL;
     }
-    printf("--->%f\n", prim_list[i].m_refl);
+    IF_LOGGING(printf("--->%f\n", prim_list[i].m_refl));
   }
 
   // rnoz
@@ -177,13 +109,13 @@ ray_begin(data_t* data)
   int total_size = data->total_size;
 
   // Load scene
-  printf("Loading scene..\n");
+  IF_LOGGING(printf("Loading scene..\n"));
   Primitive* primitive_list;
   primitive_list = load_scene(data);
 
   cout << data->n_primitives << "\n";
 
-  printf("--->%f\n", primitive_list[2].m_refl);
+  IF_LOGGING(printf("- primitive: %f\n", primitive_list[2].m_refl));
   if (primitive_list == NULL) {
     fprintf(stderr, "Failed to load scene from file: %s\n", scene);
     return 1;
@@ -256,14 +188,24 @@ check_ray(vector<int> in1, vector<int> in2, vector<int> out, int size)
 }
 
 void
-do_ray(int tscheduler,
-       int tdevices,
-       bool check,
-       int wsize,
-       int chunksize,
-       float prop,
-       string scene_path)
+do_ray_base(int tscheduler,
+            int tdevices,
+            uint check,
+            int wsize,
+            int chunksize,
+            vector<float>& props,
+            string scene_path)
 {
+
+  bool use_binaries = (check >= 10) ? true : false;
+  check = (check >= 10) ? check - 10 : check;
+
+  string kernel_str;
+  try {
+    kernel_str = file_read("support/kernels/ray.cl");
+  } catch (std::ios::failure& e) {
+    cout << "io failure: " << e.what() << "\n";
+  }
 
   srand(0);
 
@@ -272,8 +214,8 @@ do_ray(int tscheduler,
 
   data.width = wsize;
   data.height = wsize;
-  auto total_size = wsize * wsize;
-  data.total_size = total_size;
+  auto image_size = wsize * wsize;
+  data.total_size = image_size;
   data.scene = scene_path.c_str();
 
   int depth = data.depth;
@@ -294,80 +236,362 @@ do_ray(int tscheduler,
 
   int n_primitives = data.n_primitives;
 
-  // auto prim_list = make_shared<vector<Primitive>>(n_primitives);
   auto in_prim_list = make_shared<vector<Primitive>>(n_primitives);
   in_prim_list.get()->assign(data.A, data.A + n_primitives);
-  // prim_list.data
-  // auto prim_list = make_shared<vector<Primitive>>(5);
-  // auto out_pixels = make_shared<vector<cl_uchar4>>(total_size);
-  auto out_pixels = make_shared<vector<Pixel>>(total_size);
-  out_pixels.get()->assign(data.C, data.C + total_size);
+  auto in_ptr = reinterpret_cast<Primitive*>(in_prim_list.get()->data());
+
+  auto out_pixels = make_shared<vector<Pixel>>(image_size);
+  out_pixels.get()->assign(data.C, data.C + image_size);
+  auto out_ptr = reinterpret_cast<Pixel*>(out_pixels.get()->data());
+
+  auto lws = 128;
+  auto gws = image_size;
+
+  auto sel_platform = PLATFORM;
+  auto sel_device = tdevices == 0 ? 1 : 0; // invert, tdevices: 0 = CPU, 1 = GPU
+
+  vector<char> kernel_bin;
+  if (use_binaries) {
+    switch (tdevices) {
+      case 200:
+        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:1.cl.bin");
+        break;
+      case 201:
+        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:0.cl.bin");
+        break;
+      case 300:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:1:0.cl.bin");
+        break;
+      case 301:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:1:1.cl.bin");
+        break;
+      case 310:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:0:0.cl.bin");
+        break;
+    }
+  }
+
+  auto time_init = std::chrono::system_clock::now().time_since_epoch();
+
+  switch (tdevices) {
+    case 200:
+      sel_platform = 0;
+      sel_device = 1;
+      break;
+    case 201:
+      sel_platform = 0;
+      sel_device = 0;
+      break;
+    case 300:
+      sel_platform = 1;
+      sel_device = 0;
+      break;
+    case 301:
+      sel_platform = 1;
+      sel_device = 1;
+      break;
+    case 310:
+      sel_platform = 0;
+      sel_device = 0;
+      break;
+  }
+
+  auto in_bytes = n_primitives * sizeof(Primitive);
+  auto out_bytes = image_size * sizeof(Pixel);
+
+  vector<cl::Platform> platforms;
+  vector<vector<cl::Device>> platfordevices;
+  cl::Device device;
+
+  IF_LOGGING(cout << "discoverDevices\n");
+  cl::Platform::get(&platforms);
+  IF_LOGGING(cout << "platforms: " << platforms.size() << "\n");
+  auto i = 0;
+  for (auto& platform : platforms) {
+    vector<cl::Device> devices;
+    platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    IF_LOGGING(cout << "platform: " << i++ << " devices: " << devices.size() << "\n");
+    platfordevices.push_back(move(devices));
+  }
+
+  auto last_platform = platforms.size() - 1;
+  if (sel_platform > last_platform) {
+    throw runtime_error("invalid platform selected");
+  }
+
+  auto last_device = platfordevices[sel_platform].size() - 1;
+  if (sel_device > last_device) {
+    throw runtime_error("invalid device selected");
+  }
+
+  device = move(platfordevices[sel_platform][sel_device]);
+
+  cl_int cl_err = CL_SUCCESS;
+  cl::Context context(device);
+
+  cl::CommandQueue queue(context, device, 0, &cl_err);
+  CL_CHECK_ERROR(cl_err, "CommandQueue queue");
+
+  IF_LOGGING(cout << "initBuffers\n");
+
+  cl_int buffer_in_flags = CL_MEM_READ_WRITE;
+  cl_int buffer_out_flags = CL_MEM_READ_WRITE;
+
+  cl::Buffer in_buffer(context, buffer_in_flags, in_bytes, NULL);
+  CL_CHECK_ERROR(cl_err, "in buffer ");
+  cl::Buffer out_buffer(context, buffer_out_flags, out_bytes, NULL);
+  CL_CHECK_ERROR(cl_err, "out buffer ");
+
+  CL_CHECK_ERROR(queue.enqueueWriteBuffer(in_buffer, CL_FALSE, 0, in_bytes, in_ptr, NULL));
+
+  IF_LOGGING(cout << "initKernel\n");
+
+  cl::Program::Sources sources;
+  cl::Program::Binaries binaries;
+
+  cl::Program program;
+  if (use_binaries) {
+    cout << "using binary\n";
+    binaries.push_back({ kernel_bin.data(), kernel_bin.size() });
+    vector<cl_int> status = { -1 };
+    program = std::move(cl::Program(context, { device }, binaries, &status, &cl_err));
+    CL_CHECK_ERROR(cl_err, "building program from binary failed for device ");
+  } else {
+    sources.push_back({ kernel_str.c_str(), kernel_str.length() });
+    program = std::move(cl::Program(context, sources));
+  }
+
+  string options;
+  options.reserve(32);
+  options += "-DECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+             to_string(ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
+
+  cl_err = program.build({ device }, options.c_str());
+  if (cl_err != CL_SUCCESS) {
+    IF_LOGGING(cout << " Error building: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device)
+                    << "\n");
+    CL_CHECK_ERROR(cl_err);
+  }
+
+  cl::Kernel kernel(program, "raytracer_kernel", &cl_err);
+
+  cl_err = kernel.setArg(0, out_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 0 in1 buffer");
+
+  cl_err = kernel.setArg(1, width);
+  CL_CHECK_ERROR(cl_err, "kernel arg 0 in1 buffer");
+
+  cl_err = kernel.setArg(2, height);
+  CL_CHECK_ERROR(cl_err, "kernel arg 1 in2 buffer");
+
+  cl_err = kernel.setArg(3, camera_x);
+  CL_CHECK_ERROR(cl_err, "kernel arg 2 out buffer");
+
+  cl_err = kernel.setArg(4, camera_y);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(5, camera_z);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(6, viewp_w);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(7, viewp_h);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(8, in_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(9, n_primitives);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(10, n_primitives * sizeof(Primitive), NULL);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  auto offset = 0;
+  queue.enqueueNDRangeKernel(
+    kernel, cl::NDRange(offset), cl::NDRange(gws), cl::NDRange(lws), NULL, NULL);
+
+  queue.enqueueReadBuffer(out_buffer, CL_TRUE, 0, out_bytes, out_ptr);
+
+  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
+
+  cout << "time: " << diff_ms << "\n";
+
+  // auto img = write_bmp_file(in1.data(), image_width, image_height, "g_base.bmp");
+  // IF_LOGGING(cout << img << "\n");
+  // img = write_bmp_file(out.data(), image_width, image_height, "gf_base.bmp");
+  // IF_LOGGING(cout << img << "\n");
+
+  if (check) {
+    data.C = out_pixels.get()->data();
+    data.out_file = "ray_base.bmp";
+
+    ray_end(&data);
+    cout << "Writing to ray_base.bmp\n";
+
+    // auto threshold = 0.01f;
+    // auto pos = check_binomial(in_ptr, out_ptr, samplesPerVectorWidth, samples, steps, threshold);
+    // auto ok = pos == -1;
+
+    // auto time = 0;
+    // if (ok) {
+    //   cout << "Success (" << time << ")\n";
+    // } else {
+    //   cout << "Failure (" << time << " in pos " << pos << ")\n";
+    // }
+  } else {
+    cout << "Done\n";
+  }
 
   free(data.C);
   free(data.A);
+  exit(0);
+}
 
-  cout << n_primitives << "\n";
-  cout << in_prim_list.get()->size() << "\n";
-  cout << in_prim_list.get()->capacity() << "\n";
-  cout << out_pixels.get()->size() << "\n";
-  cout << out_pixels.get()->capacity() << "\n";
+void
+do_ray(int tscheduler,
+       int tdevices,
+       uint check,
+       int wsize,
+       int chunksize,
+       vector<float>& props,
+       string scene_path)
+{
+  bool use_binaries = (check >= 10) ? true : false;
+  check = (check >= 10) ? check - 10 : check;
 
-  auto in_empty = make_shared<vector<Primitive>>(n_primitives);
-  // return;
-
-  // string kernel = get_kernel_str();
-  string kernel = file_read("support/kernels/raytracer.cl");
-
-  cout << kernel;
-
-  int size = total_size;
-  // int size = 128 * wsize;
-  // int worksize = 128 * chunksize;
-  int worksize = chunksize;
-
-  cout << size << "\n";
-  cout << worksize << "\n";
-  // auto in1_array = make_shared<vector<int>>(size, 1);
-  // auto in2_array = make_shared<vector<int>>(size, 2);
-  // auto out_array = make_shared<vector<int>>(size, 0);
-
-  vector<clb::Device> devices;
-  auto platform = 0;
-  if (tdevices == 0) { // CPU
-    clb::Device device(platform, 1);
-    devices.push_back(move(device));
-  } else if (tdevices == 1) { // GPU
-    clb::Device device2(platform, 0);
-    devices.push_back(move(device2));
-  } else { // CPU + GPU
-    clb::Device device(platform, 1);
-    clb::Device device2(platform, 0);
-    devices.push_back(move(device));
-    devices.push_back(move(device2));
+  string kernel_str;
+  try {
+    kernel_str = file_read("support/kernels/ray.cl");
+  } catch (std::ios::failure& e) {
+    cout << "io failure: " << e.what() << "\n";
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
+  srand(0);
 
-  clb::Runtime runtime(move(devices), size);
+  data_t data;
+  data_t_init(&data);
+
+  data.width = wsize;
+  data.height = wsize;
+  auto image_size = wsize * wsize;
+  data.total_size = image_size;
+  data.scene = scene_path.c_str();
+
+  int depth = data.depth;
+  int fast_norm = data.fast_norm;
+  int buil_norm = data.buil_norm;
+  int nati_sqrt = data.nati_sqrt;
+  int buil_dot = data.buil_dot;
+  int buil_len = data.buil_len;
+  int width = data.width;
+  int height = data.height;
+  float viewp_w = data.viewp_w;
+  float viewp_h = data.viewp_h;
+  float camera_x = data.camera_x;
+  float camera_y = data.camera_y;
+  float camera_z = data.camera_z;
+
+  ray_begin(&data);
+
+  int n_primitives = data.n_primitives;
+
+  auto in_prim_list = make_shared<vector<Primitive>>(n_primitives);
+  in_prim_list.get()->assign(data.A, data.A + n_primitives);
+  auto in_ptr = reinterpret_cast<Primitive*>(in_prim_list.get()->data());
+
+  auto out_pixels = make_shared<vector<Pixel>>(image_size);
+  out_pixels.get()->assign(data.C, data.C + image_size);
+  auto out_ptr = reinterpret_cast<Pixel*>(out_pixels.get()->data());
+
+  auto lws = 128;
+  auto gws = image_size;
+
+  auto platform = PLATFORM;
+
+  vector<char> kernel_bin;
+  if (use_binaries) {
+    switch (tdevices) {
+      case 200:
+        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:1.cl.bin");
+        break;
+      case 201:
+        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:0.cl.bin");
+        break;
+      case 300:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:1:0.cl.bin");
+        break;
+      case 301:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:1:1.cl.bin");
+        break;
+      case 310:
+        kernel_bin = file_read_binary("support/kernels/ray_batel:0:0.cl.bin");
+        break;
+    }
+  }
+
+  auto time_init = std::chrono::system_clock::now().time_since_epoch();
+
+  vector<ecl::Device> devices;
+  switch (tdevices) {
+    case 200: {
+      ecl::Device cpu(0, 1);
+      if (use_binaries) {
+        cpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(cpu));
+    } break;
+    case 201: {
+      ecl::Device igpu(0, 0);
+      if (use_binaries) {
+        igpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(igpu));
+    } break;
+    case 300: {
+      ecl::Device cpu(1, 0);
+      if (use_binaries) {
+        cpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(cpu));
+    } break;
+    case 301: {
+      ecl::Device phi(1, 1);
+      if (use_binaries) {
+        phi.setKernel(kernel_bin);
+      }
+      devices.push_back(move(phi));
+    } break;
+    case 310: {
+      ecl::Device gpu(0, 0);
+      if (use_binaries) {
+        gpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(gpu));
+    } break;
+  }
+
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  // ecl::HGuidedScheduler hgSched;
+
+  ecl::Runtime runtime(move(devices), gws, lws);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    stSched.setRawProportions(props);
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
-    dynSched.setWorkSize(worksize);
-  } else { // tscheduler == 2
-    runtime.setScheduler(&hgSched);
-    hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({ prop });
+    dynSched.setWorkSize(chunksize);
+    // } else { // tscheduler == 2
+    //   runtime.setScheduler(&hgSched);
+    //   hgSched.setWorkSize(worksize);
+    //   hgSched.setRawProportions({ prop });
   }
-  // runtime.setInBuffer(in1_array);
-  // runtime.setInBuffer(in2_array);
-  // runtime.setOutBuffer(out_array);
   runtime.setInBuffer(in_prim_list);
   runtime.setOutBuffer(out_pixels);
-  runtime.setKernel(kernel, "raytracer_kernel");
+  runtime.setKernel(kernel_str, "raytracer_kernel");
 
   runtime.setKernelArg(0, out_pixels);
   runtime.setKernelArg(1, width);
@@ -381,31 +605,43 @@ do_ray(int tscheduler,
   runtime.setKernelArg(9, n_primitives);
   // runtime.setKernelArg(10, sizeof(Primitive) * n_primitives);
   // auto sizePrim = sizeof(Primitive) * n_primitives;
-  runtime.setKernelArg(10, in_empty);
+  // runtime.setKernelArg(10, n_primitives * sizeof(Primitive), ArgType::LocalAlloc);
+  runtime.setKernelArgLocalAlloc(10, n_primitives * sizeof(Primitive));
   // runtime.setKernelArg(10, sizeof(Primitive) * n_primitives);
 
   runtime.run();
+
+  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
+
+  cout << "time: " << diff_ms << "\n";
 
   runtime.printStats();
 
   data.C = out_pixels.get()->data();
 
-  ray_end(&data);
-  // if (check) {
-  //   auto in1 = *in1_array.get();
-  //   auto in2 = *in2_array.get();
-  //   auto out = *out_array.get();
+  if (check) {
+    data.out_file = "ray.bmp";
+    ray_end(&data);
+    //   auto in1 = *in1_array.get();
+    //   auto in2 = *in2_array.get();
+    //   auto out = *out_array.get();
 
-  //   auto pos = check_ray(in1, in2, out, size);
-  //   auto ok = pos == -1;
+    //   auto pos = check_ray(in1, in2, out, size);
+    //   auto ok = pos == -1;
 
-  //   auto time = 0;
-  //   if (ok) {
-  //     cout << "Success (" << time << ")\n";
-  //   } else {
-  //     cout << "Failure (" << time << " in pos " << pos << ")\n";
-  //   }
-  // } else {
-  //   cout << "Done\n";
-  // }
+    //   auto time = 0;
+    //   if (ok) {
+    //     cout << "Success (" << time << ")\n";
+    //   } else {
+    //     cout << "Failure (" << time << " in pos " << pos << ")\n";
+    //   }
+    cout << "Writing to ray.bmp\n";
+  } else {
+    cout << "Done\n";
+  }
+
+  exit(0);
+  // free(data.C);
+  // free(data.A);
 }

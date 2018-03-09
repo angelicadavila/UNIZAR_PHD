@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "schedulers/static.hpp"
@@ -9,7 +9,7 @@
 
 #include "device.hpp"
 
-namespace clb {
+namespace ecl {
 
 void
 scheduler_thread_func(StaticScheduler& sched)
@@ -21,6 +21,8 @@ scheduler_thread_func(StaticScheduler& sched)
   cout << "sched thread: wait callbacks\n";
   sched.waitCallbacks();
   cout << "sched thread: notified\n";
+  sched.saveDuration(ActionType::schedulerEnd);
+  sched.saveDurationOffset(ActionType::schedulerEnd);
 }
 
 StaticScheduler::StaticScheduler(WorkSplit wsplit)
@@ -61,7 +63,6 @@ StaticScheduler::printStats()
   cout << "StaticScheduler:\n";
   cout << "chunks: " << sum << "\n";
   cout << "duration offsets from init:\n";
-  
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
@@ -91,6 +92,27 @@ StaticScheduler::setTotalSize(size_t size)
 }
 
 void
+StaticScheduler::setGWS(NDRange gws)
+{
+  m_gws = gws;
+  // m_size = gws[0]; // TODO review gws
+  // m_size = gws.space();
+  m_has_work = true;
+}
+
+void
+StaticScheduler::setLWS(size_t lws)
+{
+  m_lws = lws;
+}
+
+void
+StaticScheduler::setWSBound(float ws_bound)
+{
+  m_ws_bound = ws_bound;
+}
+
+void
 StaticScheduler::setDevices(vector<Device*>&& devices)
 {
   m_devices = move(devices);
@@ -106,7 +128,7 @@ StaticScheduler::setDevices(vector<Device*>&& devices)
 void
 StaticScheduler::setRawProportions(const vector<float>& props)
 {
-  cout << "StaticScheduler::setRawProportions\n";
+  IF_LOGGING(cout << "StaticScheduler::setRawProportions\n");
   auto last = m_ndevices - 1;
   if (props.size() < last) {
     throw runtime_error("proportions < number of devices - 1");
@@ -128,8 +150,13 @@ StaticScheduler::setRawProportions(const vector<float>& props)
 tuple<size_t, size_t>
 StaticScheduler::splitWork(size_t size, float prop, size_t bound)
 {
+  IF_LOGGING(cout << "splitWork: size " << size << " prop " << prop << " bound " << bound << "\n");
   size_t given = bound * (static_cast<size_t>(prop * size) / bound);
   size_t rem = size - given;
+  if ((given % m_lws) != 0) {
+    throw runtime_error("given % lws: " + to_string(given) + " % " + to_string(m_lws));
+  }
+
   return { given, rem };
 }
 
@@ -163,13 +190,13 @@ StaticScheduler::calcProportions()
   size_t wsize_given_acc = 0;
   size_t wsize_given = 0;
   size_t wsize_rem = m_size;
-  // cout << "calcProportions: " << m_wsplit << " wsize_rem: " << wsize_rem << "\n";
+  // IF_LOGGING(cout << "calcProportions: " << m_wsplit << " wsize_rem: " << wsize_rem << "\n");
   switch (m_wsplit) {
     case WorkSplit::Raw:
       for (uint i = 0; i < last; ++i) {
         auto prop = m_raw_proportions[i];
         // for (auto prop : props){
-        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, prop, 128);
+        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, prop, m_lws); // m_lws was 128
         size_t wsize_offset = wsize_given_acc;
         proportions.push_back(make_tuple(wsize_given, wsize_offset));
         wsize_given_acc += wsize_given;
@@ -179,18 +206,41 @@ StaticScheduler::calcProportions()
     case WorkSplit::By_Devices:
       for (uint i = 0; i < last; ++i) {
         // proportions.push_back(  );
-        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, 1.0f / len, 128);
-        // cout << "given: " << wsize_given << " rem: " << wsize_rem << "\n";
+        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, 1.0f / len, m_lws); // m_lws was 128
+        // IF_LOGGING(cout << "given: " << wsize_given << " rem: " << wsize_rem << "\n");
         size_t wsize_offset = wsize_given_acc;
         proportions.push_back(make_tuple(wsize_given, wsize_offset));
         wsize_given_acc += wsize_given;
       }
       proportions.push_back(make_tuple(wsize_rem, wsize_given_acc));
       break;
-   }
+      // case WorkSplit::Decr2:
+      //   for (uint i=1; i<len; ++i){
+      //     // proportions.push_back(  );
+      //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
+      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
+      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
+      //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
+      //     wsize_given_acc += wsize_given;
+      //   }
+      //   proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the
+      //   last break;
+      // case WorkSplit::Incr2:
+      //   for (uint i=1; i<len; ++i){
+      //     // proportions.push_back(  );
+      //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
+      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
+      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
+      //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
+      //     wsize_given_acc += wsize_given;
+      //   }
+      //   proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the
+      //   last break;
+  }
   m_proportions = move(proportions);
   for (auto prop : m_proportions) {
-    cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop) << "\n";
+    IF_LOGGING(cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop)
+                    << "\n");
   }
 }
 
@@ -198,7 +248,7 @@ void
 StaticScheduler::start()
 {
   m_thread = thread(scheduler_thread_func, std::ref(*this));
-  cout << "thread start\n";
+  IF_LOGGING(cout << "thread start\n");
 }
 
 /**
@@ -213,7 +263,8 @@ StaticScheduler::enq_work(Device* device)
     auto prop = m_proportions[id];
     size_t size, offset;
     tie(size, offset) = prop;
-    // cout << "proportion for me id: " << id << " size: " << size << " offset: " << offset << "\n";
+    IF_LOGGING(cout << "proportion for me id: " << id << " size: " << size << " offset: " << offset
+                    << "\n");
 
    lock_guard<mutex> guard(m_mutex_work);
     auto index = m_queue_work.size();
@@ -221,6 +272,9 @@ StaticScheduler::enq_work(Device* device)
     m_queue_id_work[id].push_back(index);
 
     m_chunk_todo[id]++;
+    // cout << "device_id: " << id << " chunk_todo: " << m_chunk_todo[id] << " index: " << index
+    // << " work.offset: " << m_queue_work[index].offset << " work.size: " <<
+    // m_queue_work[index].size << "\n";
   } else {
     cout << "StaticScheduler::enq_work  not enqueuing\n";
   }
@@ -296,4 +350,4 @@ StaticScheduler::getWork(uint queue_index)
   return m_queue_work[queue_index];
 }
 
-} // namespace clb
+} // namespace ecl

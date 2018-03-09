@@ -1,4 +1,5 @@
 #include "clutils.hpp"
+#include "config.hpp"
 
 #include <cerrno>
 #include <cstdio>
@@ -118,7 +119,8 @@ public:
     cl::Program program(context, sources);
     string options;
     options.reserve(32);
-    options += "-DCL_SUPPORT_KERNEL_OFFSET=" + to_string(CL_SUPPORT_KERNEL_OFFSET);
+    options += "-DECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+               to_string(ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
 
     cout << "Options:\n";
     cout << options << "\n";

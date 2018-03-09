@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_SCHEDULER_HPP
-#define CLBALANCER_SCHEDULER_HPP 1
+#ifndef ENGINECL_SCHEDULER_HPP
+#define ENGINECL_SCHEDULER_HPP 1
 
 #include <iostream>
 #include <mutex>
@@ -12,6 +12,8 @@
 #include <tuple>
 #include <vector>
 
+#include "clutils.hpp"
+#include "ndrange.hpp"
 #include "semaphore.hpp"
 #include "work.hpp"
 
@@ -20,7 +22,7 @@
 using std::tuple;
 using std::vector;
 
-namespace clb {
+namespace ecl {
 class Device;
 
 class Scheduler
@@ -48,8 +50,12 @@ public:
   virtual void preenq_work() = 0;
   ///wait finish of kernel-
   virtual void endScheduler()=0;
+
+  virtual void setGWS(NDRange gws) = 0;
+  virtual void setLWS(size_t lws) = 0;
+  virtual void setWSBound(float ws_bound) = 0;
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_SCHEDULER_HPP */
+#endif /* ENGINECL_SCHEDULER_HPP */

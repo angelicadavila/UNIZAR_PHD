@@ -17,20 +17,23 @@
 struct CBData
 {
   int queue_index;
-  clb::Device* device;
-  CBData(int queue_index_, clb::Device* device_)
+  ecl::Device* device;
+  CBData(int queue_index_, ecl::Device* device_)
     : queue_index(queue_index_)
     , device(device_)
-  {}
+  {
+  }
 };
 
 void CL_CALLBACK
 callbackRead(cl_event /*event*/, cl_int /*status*/, void* data)
 {
+  IF_LOGGING(cout << "CB\n");
   CBData* cbdata = reinterpret_cast<CBData*>(data);
-  clb::Device* device = cbdata->device;
-  clb::Scheduler* sched = device->getScheduler();
-  device->saveDuration(clb::ActionType::completeWork);
+  ecl::Device* device = cbdata->device;
+  IF_LOGGING(cout << device->getID() << " callback " << cbdata->queue_index << "\n");
+  ecl::Scheduler* sched = device->getScheduler();
+  device->saveDuration(ecl::ActionType::completeWork);
   sched->callback(cbdata->queue_index);
   delete cbdata;
 }
@@ -40,7 +43,7 @@ void oclContextCallback (const char *errinfo, const void *, size_t, void *) {
  }
 
 
-namespace clb {
+namespace ecl {
 
 void
 device_thread_func(Device& device)
@@ -52,6 +55,7 @@ device_thread_func(Device& device)
   device.barrier_init();
 
   auto time1 = std::chrono::system_clock::now().time_since_epoch();
+  device.init();
   cout<<"----------init device:"<<device.getID()<<"\n";
   Scheduler* sched = device.getScheduler();
   device.saveDuration(ActionType::deviceStart);
@@ -76,8 +80,11 @@ device_thread_func(Device& device)
 
     if (queue_index >= 0) { //
       Work work = sched->getWork(queue_index);
-      device.do_work(work.offset, work.size, queue_index);
+
+      device.do_work(work.offset, work.size, work.bound, queue_index);
     } else {
+      IF_LOGGING(cout << "device id " << device.getID() << " finished\n");
+      device.notifyBarrier();
      
       //Read the last chunk
       //NOTE set m_prev_events in last chunk from sched to avoid overlapping
@@ -133,6 +140,17 @@ Device::printStats()
 {
   cout << "Device id: " << getID() << "\n";
   showInfo();
+  cout << "program type: ";
+  switch (m_program_type) {
+    case ProgramType::CustomBinary:
+      cout << "custom binary\n";
+      break;
+    case ProgramType::CustomSource:
+      cout << "custom source\n";
+      break;
+    default:
+      cout << "source\n";
+  }
   cout << "works: " << m_works << " works_size: " << m_works_size << "\n";
   size_t acc = 0;
   size_t total = 0;
@@ -174,9 +192,35 @@ Device::saveDurationOffset(ActionType action)
 }
 
 void
-Device::setKernelArg(cl_uint /* index */, ::size_t /* size */, const void* /* ptr */)
+Device::setKernelArg(cl_uint index, const uint bytes, ArgType type)
 {
-  throw runtime_error("Device::setKernelArg size ptr* not implemented");
+  if (type != ArgType::LocalAlloc) {
+    throw runtime_error("setLocalArg(uint, uint, ArgType) only admits ArgType::LocalAlloc");
+  }
+  IF_LOGGING(cout << "setKernelArg bytes ArgType index: " << index << "\n");
+  m_arg_index.push_back(index);
+
+  IF_LOGGING(cout << "bytes: " << bytes << "\n");
+
+  m_arg_type.push_back(type);
+  m_arg_bytes.push_back(bytes);
+  m_arg_ptr.push_back(NULL);
+  m_nargs++;
+}
+
+void
+Device::setKernelArgLocalAlloc(cl_uint index, const uint bytes)
+{
+  IF_LOGGING(cout << "setKernelArgLocalAlloc index: " << index << "\n");
+  m_arg_index.push_back(index);
+
+  IF_LOGGING(cout << "bytes: " << bytes << "\n");
+
+  m_arg_type.push_back(ArgType::LocalAlloc);
+  // m_arg_size.push_back(-1);
+  m_arg_bytes.push_back(bytes);
+  m_arg_ptr.push_back(NULL);
+  m_nargs++;
 }
 
 void
@@ -240,7 +284,7 @@ void
 Device::useRuntimeDiscovery()
 {
   Runtime* runtime = m_runtime;
-  cout << m_sel_platform << " - " << m_sel_device << "\n";
+  IF_LOGGING(cout << m_sel_platform << " - " << m_sel_device << "\n");
   m_platform = runtime->usePlatformDiscovery(m_sel_platform);
   m_device = runtime->useDeviceDiscovery(m_sel_platform, m_sel_device);
 }
@@ -252,7 +296,7 @@ Device::setKernel(const string& source, const string& kernel)
   if (m_program_type == ProgramType::Source) {
     m_program_source = source;
   } else {
-    cout << "Using custom Kernel\n";
+    IF_LOGGING(cout << "Using custom Kernel\n");
   }
   m_kernel_str = kernel;
 }
@@ -260,7 +304,7 @@ Device::setKernel(const string& source, const string& kernel)
 void
 Device::setKernel(const vector<char>& binary)
 {
-  cout << "Provided binary Kernel\n";
+  IF_LOGGING(cout << "Provided binary Kernel\n");
   m_program_type = ProgramType::CustomBinary;
   m_program_binary = binary;
 }
@@ -268,7 +312,7 @@ Device::setKernel(const vector<char>& binary)
 void
 Device::setKernel(const string& source)
 {
-  cout << "Provided source Kernel\n";
+  IF_LOGGING(cout << "Provided source Kernel\n");
   m_program_type = ProgramType::CustomSource;
   m_program_source = source;
 }
@@ -372,11 +416,6 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 }
 
 void
-Device::waitFinish(){
-	m_queue.finish();
-}
-
-void
 Device::init()
 {
   m_time = std::chrono::system_clock::now().time_since_epoch();
@@ -426,16 +465,16 @@ Device::barrier_init()
 void
 Device::initByIndex(uint sel_platform, uint sel_device)
 {
-  cout << "initByIndex\n";
-  cout << sel_platform << " - " << sel_device << "\n";
+  IF_LOGGING(cout << "initByIndex\n");
+  IF_LOGGING(cout << sel_platform << " - " << sel_device << "\n");
   vector<cl::Platform> platforms;
   cl::Platform::get(&platforms);
   m_platform = platforms.at(sel_platform);
-  cout << sel_platform << " - " << sel_device << "\n";
+  IF_LOGGING(cout << sel_platform << " - " << sel_device << "\n");
   vector<cl::Device> devices;
   m_platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
   m_device = devices.at(sel_device);
-  cout << sel_platform << " - " << sel_device << "\n";
+  IF_LOGGING(cout << sel_platform << " - " << sel_device << "\n");
 }
 
 void
@@ -451,7 +490,7 @@ Device::initContext()
 void
 Device::initQueue()
 {
-  cout << "initQueue\n";
+  IF_LOGGING(cout << "initQueue\n");
   cl_int cl_err;
 
   cl::Context& context = m_context;
@@ -482,7 +521,7 @@ Device::initQueue()
 void
 Device::initBuffers()
 {
-  cout << "initBuffers\n";
+  IF_LOGGING(cout << "initBuffers\n");
   cl_int cl_err = CL_SUCCESS;
 
   cl_int buffer_in_flags = CL_MEM_READ_WRITE;
@@ -490,126 +529,61 @@ Device::initBuffers()
   //cl_int buffer_out_flags = CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA;
   cl_int buffer_out_flags = CL_MEM_READ_WRITE;
 
-  m_in_buffers.reserve(m_in_clb_buffers.size());
-  m_out_buffers.reserve(m_out_clb_buffers.size());
+  m_in_buffers.reserve(m_in_ecl_buffers.size());
+  m_out_buffers.reserve(m_out_ecl_buffers.size());
 
-  auto len = m_in_clb_buffers.size();
+  auto len = m_in_ecl_buffers.size();
   for (uint i = 0; i < len; ++i) {
-    clb::Buffer& b = m_in_clb_buffers[i];
+    ecl::Buffer& b = m_in_ecl_buffers[i];
     auto data = b.data();
-//    cout << "in [data] " << data << "\n";
-//    cout << "in [address] " << b.get() << "\n";
-    cout << "in [size] " << b.size() << "\n";
-    cout << "in [bytes] " << b.bytes() << "\n";
-    cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL,&cl_err);
+    IF_LOGGING(cout << "in [data] " << data << "\n");
+    IF_LOGGING(cout << "in [address] " << b.get() << "\n");
+    IF_LOGGING(cout << "in [size] " << b.size() << "\n");
+    IF_LOGGING(cout << "in [bytes] " << b.bytes() << "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
     m_in_buffers.push_back(move(tmp_buffer));
-//    cout << "in buffer: " << &m_in_buffers[i] << "\n";
+    IF_LOGGING(cout << "in buffer: " << &m_in_buffers[i] << "\n");
   }
 
-  len = m_out_clb_buffers.size();
+  len = m_out_ecl_buffers.size();
   for (uint i = 0; i < len; ++i) {
-    clb::Buffer& b = m_out_clb_buffers[i];
+    ecl::Buffer& b = m_out_ecl_buffers[i];
     auto data = b.data();
-//   cout << "out [data] " << data << "\n";
-//   cout << "out [address] " << b.get() << "\n";
-    cout << "out [size] " << b.size() << "\n";
-    cout << "out [bytes] " << b.bytes() << "\n";
-    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL,&cl_err);
+    IF_LOGGING(cout << "out [data] " << data << "\n");
+    IF_LOGGING(cout << "out [address] " << b.get() << "\n");
+    IF_LOGGING(cout << "out [size] " << b.size() << "\n");
+    IF_LOGGING(cout << "out [bytes] " << b.bytes() << "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));
-//    cout << "out buffer: " << &m_out_buffers[i] << "\n";
+    IF_LOGGING(cout << "out buffer: " << &m_out_buffers[i] << "\n");
   }
 }
 
 void
 Device::writeBuffers(bool /* dummy */)
 {
-//  cout << "writeBuffers\n";
-  auto len = m_in_clb_buffers.size();
-//  m_prev_events.reserve(len);
-//  m_prev_events.resize(len);
+  IF_LOGGING(cout << "writeBuffers\n");
+
+  auto len = m_in_ecl_buffers.size();
+  m_prev_events.reserve(len);
+  m_prev_events.resize(len);
   for (uint i = 0; i < len; ++i) {
-    Buffer& b = m_in_clb_buffers[i];
+    Buffer& b = m_in_ecl_buffers[i];
     auto data = b.data();
     auto size = b.size();
-//   cout << "writeBuffers [array] " << b.get() << " data: " << data
-//         << " buffer: " << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n";
+    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+                    << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
-      m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, nullptr,nullptr)); //&(m_prev_events.data()[i])));
+      m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
   }
-
- m_kernel.setArg(m_nargs,(uint) 1);
- m_kernel.setArg(m_nargs+1,(uint) 1);
- m_queue.enqueueNDRangeKernel(
-                          m_kernel, cl::NullRange, 
-                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
-                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
-                          nullptr ,nullptr);
-
-
-        Buffer& b = m_out_clb_buffers[0];
-  m_queueRead.enqueueReadBuffer(m_out_buffers[0],
-                                  CL_TRUE,
-                                  0,
-                                  4,
-                                  b.dataWithOffset(0),
-                                  nullptr,
-                                  nullptr);
-
-   m_queue.finish(); 
-   m_queueRead.finish(); 
- }
-
-void
-Device::readBuffers()
-{
-  #if CLB_PROFILING == 1
-  cl::Event m_event_read;
-  #endif
-  size_t sizeR=m_prev_readParams[0]; 
-  size_t offsetR=m_prev_readParams[1];
-  auto len = m_out_clb_buffers.size();
-  cl_int status;  
-  if(sizeR!=0)
-  {
-    for (uint i = 0; i < len; ++i) {
-        Buffer& b = m_out_clb_buffers[i];
-        size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
-        auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
-      auto address= offset_bytes;
-      if(address & 0x3){
-       cout<<"unaligned \n";
-       }
-      //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
-      status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
-                                  CL_TRUE,
-                                  offset_bytes,
-                                  size_bytes,
-                                  b.dataWithOffset(offsetR*m_internal_chunk),
-                                  nullptr,
-                            #if CLB_PROFILING == 1
-                                  &m_event_read);
-                            #else 
-                                  nullptr);
-                            #endif
-        CL_CHECK_ERROR(status,"Reading memory problem");
-      }
-  }
-  #if CLB_PROFILING == 1
-  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
-  time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
-  time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
-  time_stkrn= m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
-  time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_read "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
-  #endif
 }
 
 void
 Device::initKernel()
 {
-//  cout << "initKernel\n";
+  IF_LOGGING(cout << "initKernel\n");
 
   cl_int cl_err;
 
@@ -618,7 +592,7 @@ Device::initKernel()
   cl::Program program;
 
   if (m_program_type == ProgramType::CustomBinary) {
-    cout << "size: " << m_program_binary.size() << "\n";
+    IF_LOGGING(cout << "size: " << m_program_binary.size() << "\n");
     binaries.push_back({ m_program_binary.data(), m_program_binary.size() });
 #pragma GCC diagnostic ignored "-Wignored-attributes"
     vector<cl_int> status = { -1 };
@@ -631,12 +605,12 @@ Device::initKernel()
   }
   string options;
   options.reserve(32);
-  options += "-DCLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
-             to_string(CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
+  options += "-DECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+             to_string(ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
 
-#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0
-  cout << "Kernel should receive the last argument as 'uint offset' "
-          "(CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0)\n";
+#if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0
+  IF_LOGGING(cout << "Kernel should receive the last argument as 'uint offset' "
+                     "(ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0)\n");
 #endif
 
   cl_err = program.build({ m_device }, options.c_str());
@@ -644,7 +618,8 @@ Device::initKernel()
     cout << " Error building: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device) << "\n";
     CL_CHECK_ERROR(cl_err);
   } else {
-    cout << " Building info: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device) << "\n";
+    IF_LOGGING(cout << " Building info: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device)
+                    << "\n");
   }
 
   cl::Kernel kernel(program, m_kernel_str.c_str(), &cl_err);
@@ -654,21 +629,22 @@ Device::initKernel()
   auto unassigned = m_in_buffers_ptr.size();
   for (uint i = 0; i < len; ++i) {
     auto index = m_arg_index[i];
-    cout << "[i] " << index << "\n";
-    auto size = m_arg_size[i];
-    if (size == 0) {
+    IF_LOGGING(cout << "[i] " << index << "\n");
+    auto type = m_arg_type[i];
+    if (type == ArgType::Vector) {
+      IF_LOGGING(cout << "[ArgType::Vector]\n");
       int pos = -1;
       auto address = m_arg_ptr[i];
       auto assigned = false;
-      cout << "[value] " << m_arg_ptr[i] << "\n";
-      cout << "[address] " << address << "\n";
+      IF_LOGGING(cout << "[value] " << m_arg_ptr[i] << "\n");
+      IF_LOGGING(cout << "[address] " << address << "\n");
       if (unassigned > 0) { // usually more in buffers than out
         auto it = find(begin(m_in_buffers_ptr), end(m_in_buffers_ptr), address);
-        cout << "it: " << *it << "\n";
+        IF_LOGGING(cout << "it: " << *it << "\n");
         if (it != end(m_in_buffers_ptr)) {
           pos = distance(m_in_buffers_ptr.begin(), it);
-          cout << "address: " << address << " position: " << pos
-               << " buffer: " << &m_in_buffers[pos] << "\n";
+          IF_LOGGING(cout << "address: " << address << " position: " << pos
+                          << " buffer: " << &m_in_buffers[pos] << "\n");
           cl_err = kernel.setArg(index, m_in_buffers[pos]);
           CL_CHECK_ERROR(cl_err, "kernel arg in buffer " + to_string(i));
           unassigned--;
@@ -680,8 +656,8 @@ Device::initKernel()
         auto it = find(begin(m_out_buffers_ptr), end(m_out_buffers_ptr), address);
         if (it != end(m_out_buffers_ptr)) {
           auto pos = distance(m_out_buffers_ptr.begin(), it);
-          cout << "address: " << address << " position: " << pos
-               << " buffer: " << &m_out_buffers[pos] << "\n";
+          IF_LOGGING(cout << "address: " << address << " position: " << pos
+                          << " buffer: " << &m_out_buffers[pos] << "\n");
           cl_err = kernel.setArg(index, m_out_buffers[pos]);
           CL_CHECK_ERROR(cl_err, "kernel arg out buffer " + to_string(i));
           assigned = true;
@@ -690,26 +666,45 @@ Device::initKernel()
 
       if (!assigned) { // maybe empty space (__local)
         if (m_arg_bytes[i] > 0) {
-          cout << "[bytes] " << m_arg_bytes[i] << "\n";
+          IF_LOGGING(cout << "ptr not buffer\n");
+          IF_LOGGING(cout << "[bytes] " << m_arg_bytes[i] << "\n");
           size_t bytes = m_arg_bytes[i];
-          // void* ptr = m_arg_ptr[i];
-          cl_err = kernel.setArg((cl_uint)i, bytes, NULL);
+          vector<void*>* vptr = reinterpret_cast<vector<void*>*>(m_arg_ptr[i]);
+          void* ptr = vptr->data();
+          cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
           CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
         } else {
           throw runtime_error("unknown kernel arg address " + to_string(i));
         }
       }
-    } else {
-      cout << "[size] " << m_arg_size[i] << "\n";
-      cout << "[value] " << m_arg_ptr[i] << "\n";
-      size_t size = m_arg_size[i];
+    } else if (type == ArgType::T) {
+      IF_LOGGING(cout << "[ArgType::T]\n");
+      // IF_LOGGING(cout << "[size] " << m_arg_size[i] << "\n");
+      IF_LOGGING(cout << "[value] " << m_arg_ptr[i] << "\n");
+      // ArgType size = m_arg_size[i];
+      size_t bytes = m_arg_bytes[i];
       void* ptr = m_arg_ptr[i];
-      cl_err = kernel.setArg((cl_uint)i, size, ptr);
+      cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
+      CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+    } else { // ArgType::LocalAlloc
+      IF_LOGGING(cout << "[ArgType::LocalAlloc]\n");
+      IF_LOGGING(cout << "empy space __local\n");
+      IF_LOGGING(cout << "[bytes] " << m_arg_bytes[i] << "\n");
+      size_t bytes = m_arg_bytes[i];
+      void* ptr = m_arg_ptr[i];
+      // ptr should be NULL
+      cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
       CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
     }
   }
 
   m_kernel = move(kernel);
+}
+
+void
+Device::setLWS(size_t lws)
+{
+  m_lws = lws;
 }
 
 void
@@ -744,7 +739,7 @@ Device::showInfo()
 void
 Device::show()
 {
-  cout << "show\n";
+  IF_LOGGING(cout << "show\n");
 }
 
 Runtime*
@@ -806,4 +801,4 @@ Device::set_localWorkSize( size_t lws0, size_t lws1,size_t lws2)
     m_lws[2]=lws2;
 }
 
-} // namespace clb
+} // namespace ecl

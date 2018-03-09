@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_SCHEDULER_DYNAMIC_HPP
-#define CLBALANCER_SCHEDULER_DYNAMIC_HPP 1
+#ifndef ENGINECL_SCHEDULER_DYNAMIC_HPP
+#define ENGINECL_SCHEDULER_DYNAMIC_HPP 1
 
 #include <atomic>
 #include <chrono>
@@ -14,6 +14,7 @@
 #include <thread>
 #include <vector>
 
+#include "config.hpp"
 #include "inspector.hpp"
 #include "scheduler.hpp"
 #include "semaphore.hpp"
@@ -27,7 +28,7 @@ using std::queue;
 using std::thread;
 using std::tie;
 
-namespace clb {
+namespace ecl {
 enum class ActionType;
 class Device;
 class Scheduler;
@@ -62,7 +63,7 @@ public:
   void start() override;
 
   // NOTE(dyn) new func
-  void setWorkSize(size_t size);
+  void setWorkSize(size_t size); // , size_t bound = CL_LWS);
 
   // NOTE(dyn) new func
   bool hasWork();
@@ -100,6 +101,10 @@ public:
   void req_work(Device* device) override;
   void enq_work(Device* device) override;
   void preenq_work() override;
+
+  void setGWS(NDRange gws) override;
+  void setLWS(size_t lws) override;
+  void setWSBound(float ws_bound) override;
 
 private:
   thread m_thread;
@@ -139,6 +144,11 @@ private:
   size_t m_size_given;
   size_t m_worksize;
   size_t m_work_last;
+  // size_t m_worksize_bound;
+
+  NDRange m_gws;
+  size_t m_lws;
+  float m_ws_bound;
 
   mutex* m_mutex_duration;
   std::chrono::duration<double,std::micro> m_time_init;
@@ -148,6 +158,6 @@ private:
 
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_SCHEDULER_DYNAMIC_HPP */
+#endif /* ENGINECL_SCHEDULER_DYNAMIC_HPP */

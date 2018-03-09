@@ -1,16 +1,16 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_INSPECTOR_HPP
-#define CLBALANCER_INSPECTOR_HPP 1
+#ifndef ENGINECL_INSPECTOR_HPP
+#define ENGINECL_INSPECTOR_HPP 1
 
 #include <iostream>
 
 using std::cout;
 
-namespace clb {
+namespace ecl {
 
 enum class ActionType
 {
@@ -40,6 +40,6 @@ public:
   static void printActionTypeDuration(ActionType action, size_t d);
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_INSPECTOR_HPP */
+#endif /* ENGINECL_INSPECTOR_HPP */

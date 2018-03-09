@@ -1,0 +1,10 @@
+#ifndef ENGINECL_BENCHS_MAIN_HPP
+#define ENGINECL_BENCHS_MAIN_HPP
+
+#define PLATFORM 0
+// #define PLATFORM 1
+
+// #define USE_BINARIES 1
+// #define USE_BINARIES 0
+
+#endif /* ENGINECL_BENCHS_MAIN_HPP */

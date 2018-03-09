@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "buffer.hpp"
@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace clb {
+namespace ecl {
 
 Buffer::Buffer(Direction direction)
   : m_direction(direction)
@@ -63,4 +63,4 @@ Buffer::byBytes(size_t size)
   return m_item_size * size;
 }
 
-} // namespace clb
+} // namespace ecl

@@ -5,7 +5,7 @@
 /* #pragma OPENCL EXTENSION cl_amd_printf : enable */
 
 __kernel void
-#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
+#if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 gaussian_blur(__global uchar4* blurred,
               __global uchar4* input,
               int rows,

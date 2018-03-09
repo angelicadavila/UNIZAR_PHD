@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_RUNTIME_HPP
-#define CLBALANCER_RUNTIME_HPP 1
+#ifndef ENGINECL_RUNTIME_HPP
+#define ENGINECL_RUNTIME_HPP 1
 
 #include <chrono>
 #include <memory>
@@ -12,6 +12,7 @@
 
 #include "clutils.hpp"
 #include "device.hpp"
+#include "ndrange.hpp"
 #include "semaphore.hpp"
 
 using std::lock_guard;
@@ -22,7 +23,7 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
-namespace clb {
+namespace ecl {
 class Scheduler;
 
 class Runtime
@@ -54,6 +55,14 @@ public:
       device.setKernelArg(index, value);
     }
   }
+  template<typename T>
+  void setKernelArg(cl_uint index, const uint bytes, ArgType arg)
+  {
+    for (auto& device : m_devices) {
+      device.setKernelArg(index, bytes, arg);
+    }
+  }
+  void setKernelArgLocalAlloc(cl_uint index, const uint bytes);
 
   void setInternalChunk(int internal_chunk)
   {
@@ -77,7 +86,7 @@ public:
 
   void setScheduler(Scheduler* scheduler);
 
-  Runtime(vector<Device>&& devices, size_t size);
+  Runtime(vector<Device>&& devices, NDRange gws, size_t lws = CL_LWS, float bound = 1.0f);
 
 private:
   void configDevices();
@@ -90,7 +99,10 @@ private:
   vector<Device> m_devices;
   Scheduler* m_scheduler;
 
-  size_t m_size;
+  NDRange m_gws;
+  size_t m_lws;
+  float m_ws_bound;
+
   shared_ptr<semaphore> m_sema_ready;
   semaphore m_sema_all_ready;
 
@@ -103,6 +115,6 @@ private:
   int m_internal_chunk;
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_RUNTIME_HPP */
+#endif /* ENGINECL_RUNTIME_HPP */

@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_DEVICE_HPP
-#define CLBALANCER_DEVICE_HPP 1
+#ifndef ENGINECL_DEVICE_HPP
+#define ENGINECL_DEVICE_HPP 1
 
 #include <CL/cl.hpp>
 #include <algorithm>
@@ -12,9 +12,11 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <functional>
 #include <tuple>
 #include <utility>
+
+#include <cmath>
+
 #include "buffer.hpp"
 #include "clutils.hpp"
 #include "config.hpp"
@@ -31,12 +33,13 @@ using std::tuple;
 using std::unique_ptr;
 using std::vector;
 
-namespace clb {
+namespace ecl {
 enum class ActionType;
 class Scheduler;
 class Runtime;
 class Device;
 class Buffer;
+class NDRange;
 
 void
 device_thread_func(Device& device);
@@ -46,6 +49,13 @@ enum class ProgramType
   Source = 0,
   CustomSource = 1,
   CustomBinary = 2,
+};
+
+enum class ArgType
+{
+  T = 0,
+  Vector = 1,
+  LocalAlloc = 2,
 };
 
 class Device
@@ -69,7 +79,7 @@ public:
   void setBarrier_init(shared_ptr<semaphore> barrier_init);
 
   template<typename T>
-  void setInBuffer(shared_ptr<T> array)
+  void setInBuffer(shared_ptr<vector<T>> array)
   {
     Buffer b(Direction::In);
     b.set(array);
@@ -84,13 +94,13 @@ public:
     cout << "address: " << address << "\n";
   }
   template<typename T>
-  void setOutBuffer(shared_ptr<T> array)
+  void setOutBuffer(shared_ptr<vector<T>> array)
   {
     Buffer b(Direction::Out);
     b.set(array);
     m_out_clb_buffers.push_back(move(b));
 
-      auto address = array.get();
+    auto address = array.get();
     m_out_buffers_ptr.push_back(address);
 
     cout << "clb::Buffer out get: " << b.get() << "\n";
@@ -99,43 +109,13 @@ public:
     cout << "address: " << address << "\n";
   }
 
-  template<typename T>
-  void setKernel(const T& file,
-                 vector <size_t> global_work, 
-                 vector <size_t> local_work)
-  {
-     if constexpr (std::is_same_v<T, string>)
-    {
-      m_program_type = ProgramType::CustomSource;
-      m_program_source= file;
-    }
-    else{
-      m_program_type = ProgramType::CustomBinary;
-      m_program_binary = file;
-    }
-  //initializing the parameters of kernel execution
-    m_gws=vector <size_t>(3,1);
-    m_lws=vector <size_t>(3,1);
-    for( int i=0; i<(int)global_work.size();i++)
-      m_gws[i]=global_work[i];
-   
-    for( int i=0; i<(int)local_work.size();i++)
-      m_lws[i]=local_work[i];
-  }
-
-
-
   void setKernel(const string& source);
   void setKernel(const vector<char>& source);
-  
   void setKernel(const string& source, const string& kernel); // used by Runtime/Scheduler
- 
- void setID(int id);
+  void setID(int id);
   int getID();
   void waitWork();
   void notifyWork();
-  //funtion for the second queue
-  void wait_queue();
 
   void printStats();
 
@@ -158,9 +138,9 @@ public:
   }
 
   template<typename T>
-  void setKernelArg(cl_uint index, const shared_ptr<T>& value)
+  void setKernelArg(cl_uint index, const shared_ptr<vector<T>>& value)
   {
-    cout << "setKernelArg shared_ptr T\n";
+    cout << "setKernelArg shared_ptr T index: " << index << "\n";
     m_arg_index.push_back(index);
     auto address = value.get();
 
@@ -172,7 +152,7 @@ public:
     cout << "bytes: " << bytes << "\n";
 
     m_arg_size.push_back(0);
-    m_arg_bytes.push_back(0);
+    m_arg_bytes.push_back(bytes);
     m_arg_ptr.push_back(address);
     m_nargs++;
   }
@@ -189,30 +169,14 @@ public:
   void init();
   void show();
   void notifyBarrier();
-  void barrier_init();
   string& getBuffer();
   void showInfo();
 
   void do_work(size_t offset, size_t size, int queue_index);
 
-  void waitFinish();
   Runtime* getRuntime();
   void setRuntime(Runtime* runtime);
 
-  void setInternalChunk(int internal_chunk);
-  int  getInternalChunk();
-
-  vector<size_t> m_prev_readParams;
-
-  void set_globalWorkSize( size_t gws0);
-  void set_globalWorkSize( size_t gws0, size_t gws1);
-  void set_globalWorkSize( size_t gws0, size_t gws1,size_t gws2);
-
-  void set_localWorkSize( size_t lws0);
-  void set_localWorkSize( size_t lws0, size_t lws1);
-  void set_localWorkSize( size_t lws0, size_t lws1,size_t lws2);
-  
-  void readBuffers();
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);
@@ -230,15 +194,12 @@ private:
   Runtime* m_runtime;
 
   shared_ptr<semaphore> m_barrier;
-  shared_ptr<semaphore> m_barrier_init;
 
   thread m_thread;
   string m_info_buffer;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uint> m_arg_index;
 #pragma GCC diagnostic pop
-  vector<size_t> m_gws;
-  vector<size_t> m_lws;
   vector<size_t> m_arg_size;
   uint m_nargs;
   vector<size_t> m_arg_bytes;
@@ -256,10 +217,11 @@ private:
   cl::Device m_device;
   cl::Context m_context;
   cl::CommandQueue m_queue;
-  cl::CommandQueue m_queueRead;
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
   string m_kernel_str;
+
+  vector<cl::Event> m_prev_events;
 
   int m_id;
   semaphore* m_sema_work;
@@ -276,9 +238,6 @@ private:
   string m_program_source;
   vector<char> m_program_binary;
   ProgramType m_program_type;
-
-  //internal chunk size execute in the kernel
-  int m_internal_chunk;
 };
 
 } // namespace clb

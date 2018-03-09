@@ -8,6 +8,6 @@ function(configOpenCL)
   endif()
 
   if (OPENCL_VERSION MATCHES "1.2")
-    include_directories("${INCLUDE_DIR}/OpenCL_1.2")
+    include_directories("${DEPS_DIR}/OpenCL_1.2")
   endif()
 endfunction()

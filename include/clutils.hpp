@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLUTILS_HPP
-#define CLUTILS_HPP 1
+#ifndef ENGINECL_CLUTILS_HPP
+#define ENGINECL_CLUTILS_HPP 1
 
 #include <CL/cl.hpp>
 #include <iostream>
@@ -37,7 +37,7 @@ public:
   static string clEnumToString(cl_int error);
 };
 
-namespace clb {
+namespace ecl {
 namespace OpenCL {
 struct LocalSpaceArg
 {
@@ -59,6 +59,6 @@ struct KernelArgumentHandler<LocalSpaceArg>
 };
 
 } // namespace OpenCL
-} // namespace clb
+} // namespace ecl
 
-#endif // CLUTILS_HPP
+#endif // ENGINECL_CLUTILS_HPP

@@ -1,25 +1,23 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_BUFFER_HPP
-#define CLBALANCER_BUFFER_HPP 1
+#ifndef ENGINECL_BUFFER_HPP
+#define ENGINECL_BUFFER_HPP 1
 
-// #include "clutils.hpp"
-// #include "semaphore.hpp"
-// #include "sched.hpp"
-// #include "device.hpp"
+#include <CL/cl.h>
+#include <iostream>
 #include <memory>
 #include <typeinfo>
 #include <vector>
 
-#include <CL/cl.h>
+#include "config.hpp"
 
 using std::shared_ptr;
 using std::vector;
 
-namespace clb {
+namespace ecl {
 
 enum class Direction
 {
@@ -36,11 +34,9 @@ public:
   Buffer(Buffer const&) = delete;
   Buffer& operator=(Buffer const&) = delete;
 
-
   Buffer(Buffer&&) = default;
   Buffer& operator=(Buffer&&) = default;
 
-  
   Direction direction();
   size_t size();
   size_t itemSize();
@@ -58,6 +54,7 @@ public:
     m_bytes = sizeof(T) * m_size;
     m_data = reinterpret_cast<void*>(v->data());
     m_address = reinterpret_cast<void*>(v);
+    IF_LOGGING(std::cout << "m_size: " << m_size << " m_bytes: " << m_bytes << "\n");
   }
 
   void* get();
@@ -75,6 +72,6 @@ private:
   void* m_address;
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_BUFFER_HPP */
+#endif /* ENGINECL_BUFFER_HPP */

@@ -321,7 +321,6 @@ Gaussian::compare_gaussian_blur_2loops(float /* threshold */)
   int cols = _width;
   int filterWidth = _filter_width;
 
-
   int total_size = _total_size;
 
 #pragma omp parallel for num_threads(4)
@@ -533,7 +532,7 @@ do_gaussian(int tscheduler,
             bool check,
             uint image_width,
             int chunksize,
-            float prop,
+            vector<float>& props,
             uint filter_width)
 {
   uint image_height = image_width;
@@ -544,9 +543,9 @@ do_gaussian(int tscheduler,
 
   // string kernel = gaussian.get_kernel_str();
   string kernel = file_read("support/kernels/gaussian.cl");
-//   auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
-//   auto b = make_shared<vector<cl_float>>(gaussian._b);
-//   auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
+  // auto a = make_shared<vector<cl_uchar4>>(gaussian._a);
+  // auto b = make_shared<vector<cl_float>>(gaussian._b);
+  // auto c = make_shared<vector<cl_uchar4>>(gaussian._c);
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto a = shared_ptr<vector<cl_uchar4,vecAllocator<cl_uchar4>>>(&gaussian._a);
  auto b = shared_ptr<vector<cl_float,vecAllocator<cl_float>>>(&gaussian._b);
@@ -586,7 +585,7 @@ cout<<"Manual proportions!";
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop , 0.2});
+    stSched.setRawProportions(props);
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

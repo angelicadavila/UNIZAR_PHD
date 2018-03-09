@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef SEMAPHORE_HPP
-#define SEMAPHORE_HPP 1
+#ifndef ENGINECL_SEMAPHORE_HPP
+#define ENGINECL_SEMAPHORE_HPP 1
 
 #include <condition_variable>
 #include <iostream>
@@ -116,7 +116,8 @@ using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
 template<typename Mutex, typename CondVar>
 basic_semaphore<Mutex, CondVar>::basic_semaphore(int count)
   : mCount{ -count }
-{}
+{
+}
 
 /*!
   \brief consume `count` resources and notify one/all threads (all if count >
@@ -217,4 +218,4 @@ basic_semaphore<Mutex, CondVar>::native_handle()
   return mCv.native_handle();
 }
 
-#endif // SEMAPHORE_HPP
+#endif // ENGINECL_SEMAPHORE_HPP

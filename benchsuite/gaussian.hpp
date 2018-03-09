@@ -1,5 +1,5 @@
-#ifndef CLBALANCER_BENCHS_GAUSSIAN_HPP
-#define CLBALANCER_BENCHS_GAUSSIAN_HPP
+#ifndef ENGINECL_BENCHS_GAUSSIAN_HPP
+#define ENGINECL_BENCHS_GAUSSIAN_HPP
 
 #include "clbalancer.hpp"
 #include "vecAllocator.hpp"
@@ -8,17 +8,12 @@
 #include <string>
 #include <vector>
 
-#include <omp.h>
 #include <cmath>
 #include <cstdlib>
-
+#include <omp.h>
 
 #include "clbalancer.hpp"
 #include "utils/io.hpp"
-
-// #include "device.hpp"
-// #include "runtime.hpp"
-// #include "sched.hpp"
 
 using std::ostream;
 
@@ -96,4 +91,4 @@ public:
   // shared_ptr<vector<cl_uchar4>> _c; // blurred
 };
 
-#endif /* CLBALANCER_BENCHS_GAUSSIAN_HPP */
+#endif /* ENGINECL_BENCHS_GAUSSIAN_HPP */

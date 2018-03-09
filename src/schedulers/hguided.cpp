@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "schedulers/hguided.hpp"
@@ -9,7 +9,7 @@
 #include "scheduler.hpp"
 #include <tuple>
 
-namespace clb {
+namespace ecl {
 
 void
 scheduler_thread_func(HGuidedScheduler& sched)
@@ -69,11 +69,11 @@ HGuidedScheduler::printStats()
   for (uint i = 0; i < len; ++i) {
     sum += m_chunk_done[i];
   }
-  cout << "HGuidedScheduler:\n";
-  cout << "chunks: " << sum << "\n";
-  cout << "duration offsets from init:\n";
+  IF_LOGGING(cout << "HGuidedScheduler:\n");
+  IF_LOGGING(cout << "chunks: " << sum << "\n");
+  IF_LOGGING(cout << "duration offsets from init:\n");
   for (auto& t : m_duration_offset_actions) {
-    Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
+    IF_LOGGING(Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t)));
   }
 
   auto last_item=m_duration_offset_actions.size()-1; 
@@ -142,6 +142,30 @@ HGuidedScheduler::setWorkSize(size_t size)
   if (m_worksize % bound != 0) {
     throw runtime_error("worksize if not multiple of LWS");
   }
+}
+
+void
+HGuidedScheduler::setGWS(NDRange gws)
+{
+  m_gws = gws;
+  m_size = gws[0]; // TODO review gws
+  m_has_work = true;
+  m_size_rem = m_size;           // NOTE(dyn) statement
+  m_size_given = 0;              // NOTE(dyn) used for the offset
+  m_size_rem_given = m_size;     // NOTE(dyn)
+  m_size_rem_completed = m_size; // NOTE(dyn)
+}
+
+void
+HGuidedScheduler::setLWS(size_t lws)
+{
+  m_lws = lws;
+}
+
+void
+HGuidedScheduler::setWSBound(size_t ws_bound)
+{
+  m_ws_bound = ws_bound;
 }
 
 bool
@@ -226,7 +250,8 @@ HGuidedScheduler::setRawProportions(const vector<float>& props)
 
 void
 HGuidedScheduler::calcProportions()
-{}
+{
+}
 
 /**
  * Should be called only if m_ndevices > 0
@@ -246,7 +271,7 @@ HGuidedScheduler::normalizeRawProportions()
     auto sum = 0.0f;
     uint nprops = 0;
     for (auto prop : props) {
-      cout << prop << "\n";
+      IF_LOGGING(cout << prop << "\n");
       if (prop <= 0.0f || prop >= 1.0f) {
         throw runtime_error("proportion should be between (0.0f, 1.0f)");
       }
@@ -277,27 +302,30 @@ HGuidedScheduler::enq_work(Device* device)
     size_t size = m_worksize;
 
     auto prop = m_raw_proportions[id];
-    size_t lws = 128;
+    // size_t lws = 128;
+    // size_t lws = 256; // mandelbrot
+    size_t lws = m_lws;
     size_t min_worksize = m_worksize;
     auto new_size = splitWorkLikeHGuided(m_size_rem, min_worksize, lws, prop);
 
     size = new_size;
 
-    // cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop: " << prop
+    // IF_LOGGING(cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop:
+    // " << prop
     // << " lws: " << lws
-    // << " new_size: " << new_size << " m_worksize: " << m_worksize << "\n";
+    // << " new_size: " << new_size << " m_worksize: " << m_worksize << "\n");
 
     size_t index = -1;
     {
       m_size_rem -= new_size;
       m_size_given += new_size;
       index = m_queue_work.size();
-      m_queue_work.push_back(Work(id, offset, size));
+      m_queue_work.push_back(Work(id, offset, size, m_ws_bound));
       m_queue_id_work[id].push_back(index);
       m_chunk_todo[id]++;
     }
   } else {
-    cout << "HGuidedScheduler::enq_work  not enqueuing\n";
+    IF_LOGGING(cout << "HGuidedScheduler::enq_work  not enqueuing\n");
   }
 }
 
@@ -385,4 +413,4 @@ HGuidedScheduler::getNextRequest()
   return dev;
 }
 
-} // namespace clb
+} // namespace ecl

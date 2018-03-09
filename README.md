@@ -1,6 +1,6 @@
-# CLBalancer
+# EngineCL
 
-This repository is a basic mirror of `clbalancer`. Only the minimal runnable part of the project is clonned in this repository to avoid struggling with many not so relevant files.
+This repository is a basic mirror of `EngineCL`. Only the minimal runnable part of the project is clonned in this repository to avoid struggling with many not so relevant files.
 
 **Work In Progress**.
 
@@ -46,27 +46,27 @@ Examples:
 
 ```sh
 # assign static, device 0
-./build/debug/clbalancer 0 0 0 1 1024 128 0.01 21
+./build/debug/EngineCL 0 0 0 1 1024 128 0.01 21
 # vecadd dynamic, 2 devices
-./build/debug/clbalancer 1 2 1 1 1024 128 0.10 21
+./build/debug/EngineCL 1 2 1 1 1024 128 0.10 21
 # gaussian static, 2 devices
-./build/debug/clbalancer 0 2 2 1 1024 128 0.11 21
+./build/debug/EngineCL 0 2 2 1 1024 128 0.11 21
 
 # vecadd hguided, no checks, 2 devices
-./build/release/clbalancer 2 2 1 0 100000 1000 0.5
+./build/release/EngineCL 2 2 1 0 100000 1000 0.5
 
 # gaussian hguided, 2 devices
-./build/release/clbalancer 2 2 2 1 2048 128 0.21 31
+./build/release/EngineCL 2 2 2 1 2048 128 0.21 31
 
 ## gaussian static, 2 devices
-/usr/bin/time ./build/debug/clbalancer 0 2 2 1 4096 524288 0.01 41
-/usr/bin/time ./build/debug/clbalancer 0 2 2 1 1024 128 0.52 21
+/usr/bin/time ./build/debug/EngineCL 0 2 2 1 4096 524288 0.01 41
+/usr/bin/time ./build/debug/EngineCL 0 2 2 1 1024 128 0.52 21
 ```
 
 Concurrency tests:
 
 ```sh
-scheds=(0 1) its=10 prop=0.01 timeout=15; for sched in ${scheds[@]}; do echo "scheduler $sched"; for i in $(seq 1 1 $its); do printf "$i "; out="$(timeout $timeout ./build/release/clbalancer $sched 2 2 1 2048 128 $prop 21)"; if [[ $? == 124 ]]; then printf "<-- Timeout "; else rt=$(echo "$out" | grep Success); [[ $? != 0 ]] && printf "<-- Failure "; fi; done; done
+scheds=(0 1) its=10 prop=0.01 timeout=15; for sched in ${scheds[@]}; do echo "scheduler $sched"; for i in $(seq 1 1 $its); do printf "$i "; out="$(timeout $timeout ./build/release/EngineCL $sched 2 2 1 2048 128 $prop 21)"; if [[ $? == 124 ]]; then printf "<-- Timeout "; else rt=$(echo "$out" | grep Success); [[ $? != 0 ]] && printf "<-- Failure " && echo "$out"; fi; done; done
 ```
 
 ## Author

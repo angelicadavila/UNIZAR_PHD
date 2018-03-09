@@ -1,5 +1,26 @@
 # ChangeLog
 
+## v0.3.0 (2018-03-09)
+
+**Enhancements**
+
+- Named: EngineCL (with `ecl` as namespace)
+- Complete functional benchs: saxpy, gaussian, ray, binomial, mandelbrot and nbody.
+- Every bench with a OpenCL C++ base case. All but ray with checkers.
+- Conditional compilation for logging.
+- Improved API for kernel argument (LocalAlloc).
+- Output write pattern (relation between gws and index of out buffers).
+- Version focused on usability and performance (overhead). Schedulers should be reviewed.
+- New reviewed kernels (ray without artifacts).
+
+**News**
+
+- Version used for the Euro-Par ICPP.
+
+**Stats**
+
+- C++ LOC: 2219 `src`, 989 `include` (headers)
+
 ## v0.2.4 (2018-02-05)
 
 **Enhancements**

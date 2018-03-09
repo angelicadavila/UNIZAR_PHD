@@ -1,13 +1,14 @@
 # Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
-# This file is part of clbalancer which is released under MIT License.
+# This file is part of EngineCL which is released under MIT License.
 # See file LICENSE for full license details.
 
 message("src: ${CMAKE_CURRENT_SOURCE_DIR}")
 message("root_dir: ${ROOT_DIR}")
 message("src_dir: ${SRC_DIR}")
 message("deps_dir: ${DEPS_DIR}")
+message("include_dir: ${INCLUDE_DIR}")
 
-set(Entry "clbalancer-base")
+set(Entry "enginecl-base")
 set(Base_Library "${Entry}" PARENT_SCOPE)
 
 set (Needed_Libraries
@@ -38,25 +39,25 @@ set(SOURCES
 )
 
 set(HEADERS
-  config.hpp
-  buffer.hpp
-  clbalancer.hpp
-  semaphore.hpp
-  runtime.hpp
-  schedulers/static.hpp
-  schedulers/dynamic.hpp
-  schedulers/proportional.hpp
-  schedulers/hguided.hpp
-  scheduler.hpp
-  device.hpp
-  clutils.hpp
-  inspector.hpp
+  ${INCLUDE_DIR}/config.hpp
+  ${INCLUDE_DIR}/buffer.hpp
+  ${INCLUDE_DIR}/EngineCL.hpp
+  ${INCLUDE_DIR}/semaphore.hpp
+  ${INCLUDE_DIR}/runtime.hpp
+  ${INCLUDE_DIR}/schedulers/static.hpp
+  ${INCLUDE_DIR}/schedulers/dynamic.hpp
+  ${INCLUDE_DIR}/schedulers/proportional.hpp
+  # schedulers/hguided.hpp
+  ${INCLUDE_DIR}/scheduler.hpp
+  ${INCLUDE_DIR}/device.hpp
+  ${INCLUDE_DIR}/clutils.hpp
+  ${INCLUDE_DIR}/inspector.hpp
 )
 
 IncludeLibraries("${Entry}" "${Needed_Libraries}")
 
 # add_library("${Entry}" ${SOURCES} ${HEADERS})
-add_library("${Entry}" SHARED ${SOURCES} ${HEADERS})
+add_library("${Entry}" SHARED ${HEADERS} ${SOURCES})
 
 LinkLibraries("${Entry}" "${Needed_Libraries}")
 

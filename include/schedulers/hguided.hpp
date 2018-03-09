@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
-#ifndef CLBALANCER_SCHEDULER_HGUIDED_HPP
-#define CLBALANCER_SCHEDULER_HGUIDED_HPP 1
+#ifndef ENGINECL_SCHEDULER_HGUIDED_HPP
+#define ENGINECL_SCHEDULER_HGUIDED_HPP 1
 
 #include <chrono>
 #include <iostream>
@@ -25,7 +25,7 @@ using std::mutex;
 using std::queue;
 using std::thread;
 
-namespace clb {
+namespace ecl {
 enum class ActionType;
 class Device;
 class Scheduler;
@@ -100,6 +100,10 @@ public:
   void enq_work(Device* device) override;
   void preenq_work() override;
 
+  void setGWS(NDRange gws) override;
+  void setLWS(size_t lws) override;
+  void setWSBound(size_t ws_bound) override;
+
 private:
   thread m_thread;
   size_t m_size;
@@ -129,6 +133,10 @@ private:
   size_t m_worksize;
   size_t m_work_last;
 
+  NDRange m_gws;
+  size_t m_lws;
+  size_t m_ws_bound;
+
   mutex* m_mutex_duration;
   std::chrono::duration<double> m_time_init;
   std::chrono::duration<double> m_time;
@@ -136,6 +144,6 @@ private:
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
 };
 
-} // namespace clb
+} // namespace ecl
 
-#endif /* CLBALANCER_SCHEDULER_HGUIDED_HPP */
+#endif /* ENGINECL_SCHEDULER_HGUIDED_HPP */

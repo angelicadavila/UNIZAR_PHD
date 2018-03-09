@@ -1,7 +1,7 @@
 // -*- mode: c -*-
 
 __kernel void
-#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
+#if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 vecadd(__global int* in1, __global int* in2, __global int* out, int size)
 {
   int idx = get_global_id(0);

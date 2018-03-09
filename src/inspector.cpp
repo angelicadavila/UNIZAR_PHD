@@ -1,11 +1,11 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "inspector.hpp"
 
-namespace clb {
+namespace ecl {
 
 void
 Inspector::printActionTypeDuration(ActionType action, size_t d)
@@ -62,4 +62,4 @@ Inspector::printActionTypeDuration(ActionType action, size_t d)
   }
 }
 
-} // namespace clb
+} // namespace ecl

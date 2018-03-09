@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "runtime.hpp"
@@ -9,11 +9,13 @@
 #include "inspector.hpp"
 #include "scheduler.hpp"
 
-namespace clb {
+namespace ecl {
 
-Runtime::Runtime(vector<Device>&& devices, size_t size)
+Runtime::Runtime(vector<Device>&& devices, NDRange gws, size_t lws, float ws_bound)
   : m_devices(move(devices))
-  , m_size(size)
+  , m_gws(gws)
+  , m_lws(lws)
+  , m_ws_bound(ws_bound)
   , m_sema_all_ready(m_devices.size())
 {
   m_barrier = make_shared<semaphore>(m_devices.size());
@@ -77,14 +79,14 @@ Runtime::setKernel(const string& source, const string& kernel)
 void
 Runtime::discoverDevices()
 {
-  cout << "discoverDevices\n";
+  IF_LOGGING(cout << "discoverDevices\n");
   cl::Platform::get(&m_platforms);
-  cout << "platforms: " << m_platforms.size() << "\n";
+  IF_LOGGING(cout << "platforms: " << m_platforms.size() << "\n");
   auto i = 0;
   for (auto& platform : m_platforms) {
     vector<cl::Device> devices;
     platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
-    cout << "platform: " << i++ << " devices: " << devices.size() << "\n";
+    IF_LOGGING(cout << "platform: " << i++ << " devices: " << devices.size() << "\n");
     m_platform_devices.push_back(move(devices));
   }
 }
@@ -170,7 +172,10 @@ void
 Runtime::setScheduler(Scheduler* scheduler)
 {
   m_scheduler = scheduler;
-  m_scheduler->setTotalSize(m_size);
+  m_scheduler->setTotalSize(m_gws[0]); // TODO gws[0] ?
+  m_scheduler->setGWS(m_gws);
+  m_scheduler->setLWS(m_lws);
+  m_scheduler->setWSBound(m_ws_bound);
   configDevices();
 }
 
@@ -184,10 +189,11 @@ Runtime::configDevices()
     Device& device = m_devices[i];
     device.setID(id++);
     device.setScheduler(m_scheduler);
+    device.setLWS(m_lws);
     device.setRuntime(this);
     devices.push_back(&device);
   }
   m_scheduler->setDevices(move(devices));
 }
 
-} // namespace clb
+} // namespace ecl

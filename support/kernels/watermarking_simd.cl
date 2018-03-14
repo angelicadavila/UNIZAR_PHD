@@ -90,8 +90,8 @@ void apply_watermark(__global const TYPE * __restrict input, __global TYPE * __r
     TYPE tmp [DATA_SIZE];
     
     uint idx= get_global_id(0);
-    uint x=((offset/width)%WATERMARK_HEIGHT)+(idx)*DATA_SIZE; 
-    uint y=0; 
+    uint x=(idx*DATA_SIZE) % width;//((offset/width)%WATERMARK_HEIGHT)+(idx)*DATA_SIZE; 
+    uint y=(idx*DATA_SIZE)/width; 
     // Index by block 
     
 //    #pragma unroll

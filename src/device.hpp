@@ -99,18 +99,18 @@ public:
   }
 
   template<typename T>
-  void setKernel(const vector<T>& file,
+  void setKernel(const T& file,
                  vector <size_t> global_work, 
                  vector <size_t> local_work)
   {
-     if constexpr (std::is_same_v<T, char>)
+     if constexpr (std::is_same_v<T, string>)
     {
-      m_program_type = ProgramType::CustomBinary;
-      m_program_binary = file;
-    }
-    else{
       m_program_type = ProgramType::CustomSource;
       m_program_source= file;
+    }
+    else{
+      m_program_type = ProgramType::CustomBinary;
+      m_program_binary = file;
     }
   //initializing the parameters of kernel execution
     m_gws=vector <size_t>(3,1);
@@ -244,7 +244,7 @@ private:
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
   string m_kernel_str;
-  vector<cl::Event> m_event_kernel;
+  cl::Event m_event_kernel;
   vector<cl::Event> m_prev_events;
 
   int m_id;

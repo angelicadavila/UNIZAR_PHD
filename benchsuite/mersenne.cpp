@@ -72,21 +72,26 @@ do_mersenne(int tscheduler,
   auto platform_cpu = 0;
   auto platform_gpu = 1;
   auto platform_fpga= 2;
+  
+ // Mersenne twister is a unitary kernel pipeline or Task execution
 
   vector <char> binary_file;
+  vector <size_t>gws=vector <size_t>(3,0);
+  gws[0]=1;
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel.aocx"); 
-    device2.setKernel(binary_file); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_fpr.aocx"); 
+    device2.setKernel(binary_file,gws,gws); 
     devices.push_back(move(device2));
   }
-
   if (tdevices &0x01){  
     clb::Device device(platform_cpu,0);
+    device.setKernel(kernel,gws,gws);
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
     clb::Device device1(platform_gpu,0);
+    device1.setKernel(kernel,gws,gws);
     devices.push_back(move(device1));
   }
 
@@ -108,7 +113,8 @@ cout<<"Manual proportions!";
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);
-  runtime.setKernel(kernel, "mersenne_twister_generate");
+  //Mersenne its specialized in every device gws(1,1,1) lws(1,1,1)
+  runtime.setKernel(kernel, "mersenne_twister_generate");//the default is gws(0,1,1) when gws[0]=chunk_size. lws(128,1,1)
 
   runtime.setKernelArg(0, input);//in
   runtime.setKernelArg(1, output);//out

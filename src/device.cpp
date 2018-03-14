@@ -104,6 +104,11 @@ Device::Device(uint sel_platform, uint sel_device)
   m_sema_run = make_unique<semaphore>(1);
   m_duration_actions.reserve(1024);     // NOTE to improve
   m_duration_offset_actions.reserve(8); // NOTE to improve
+  m_gws= m_gws=vector <size_t>(3,1);
+  m_lws=vector <size_t>(3,1);
+  //default values
+  m_gws[0]=0;//to set the chunk size
+  m_lws[0]=128;
 }
 
 Device::~Device()
@@ -236,15 +241,10 @@ Device::setKernel(const string& source, const string& kernel)
 {
   if (m_program_type == ProgramType::Source) {
     m_program_source = source;
-    m_gws= vector <size_t>(3,1);
-    m_lws= vector <size_t>(3,1);
-    m_gws[0]=0;
-    m_lws[0]=128;
   } else {
     cout << "Using custom Kernel\n";
   }
   m_kernel_str = kernel;
-  
 }
 
 void
@@ -253,10 +253,6 @@ Device::setKernel(const vector<char>& binary)
   cout << "Provided binary Kernel\n";
   m_program_type = ProgramType::CustomBinary;
   m_program_binary = binary;
-  m_gws= vector <size_t>(3,1);
-  m_lws= vector <size_t>(3,1);
-  m_gws[0]=0;
-  m_lws[0]=128;
 }
 
 void
@@ -265,11 +261,6 @@ Device::setKernel(const string& source)
   cout << "Provided source Kernel\n";
   m_program_type = ProgramType::CustomSource;
   m_program_source = source;
-  
-  m_gws= vector <size_t>(3,1);
-  m_lws= vector <size_t>(3,1);
-  m_gws[0]=0;
-  m_lws[0]=128;
 }
 
 void
@@ -319,16 +310,22 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                                nullptr,
                                nullptr);
 #else
- m_kernel.setArg(m_nargs,(uint) m_gws[0] );
+ m_kernel.setArg(m_nargs,(ulong) size );
  m_kernel.setArg(m_nargs+1, (uint)offset);
   status=m_queue.enqueueNDRangeKernel(
-  m_kernel, cl::NullRange, cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), cl::NDRange(m_lws[0],m_lws[1],m_lws[2]), nullptr,&m_event_kernel[0]);
-  //Test Matrix Multiplication
-  // m_kernel, cl::NullRange, cl::NDRange(16*64,gws), cl::NDRange(BLOCK_SIZE_X,BLOCK_SIZE_Y), nullptr,nullptr);
+                          m_kernel, cl::NullRange, 
+                          cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
+                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+                          nullptr,&m_event_kernel);
 #endif
+
+  m_prev_events=vector<cl::Event>({ m_event_kernel });
   CL_CHECK_ERROR(status,"NDRange problem");
+
+  //kernel n + Read n-1
   status= m_queueRead.finish();
   CL_CHECK_ERROR(status,"finish queue"); 
+
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
     Buffer& b = m_out_clb_buffers[i];
@@ -340,13 +337,14 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                               offset_bytes,
                               size_bytes,
                               b.dataWithOffset(offset),
-                              &m_event_kernel,
+                              &m_prev_events,
                               nullptr);
     CL_CHECK_ERROR(status,"Reading memory problem");
 
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
   clb::Scheduler* sched = getScheduler();
+  m_queue.finish();
   saveDuration(clb::ActionType::completeWork);
   sched->callback(queue_index);
 #else

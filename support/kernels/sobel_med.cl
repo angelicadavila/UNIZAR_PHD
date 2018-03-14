@@ -44,12 +44,13 @@ void sobel(global unsigned int * restrict frame_in, global unsigned int * restri
     
     int count = -(2*DCOLS+3); 
     iterations=1;
-    offset+=get_local_id(0)+get_group_id(0)*BLOCK_SIZE;
+    offset+=get_global_id(0);
     while (count != iterations) {
         // Each cycle, shift a new pixel into the buffer.
         // Unrolling this loop allows the compile to infer a shift register.
     
         for (int i = DCOLS*2; i > 0; --i) {
+          if(count+offset+COLS<ROWS*COLS)
             rows[i] = frame_in[count+offset+COLS];
         }
       
@@ -58,7 +59,7 @@ void sobel(global unsigned int * restrict frame_in, global unsigned int * restri
             rows[i] = rows[i - 1];
         }
         rows[0] = (count+offset) >= 0 ? frame_in[count+offset] : 0;
-        if((count+offset)<(COLS*ROWS)-(3*COLS)){
+        if((count+offset)<(COLS*ROWS)-(4*COLS)){
            rows[DCOLS] = (count+offset) >= 0 ? frame_in[count+offset+COLS] : 0;      
            rows[DCOLS*2] = (count+offset) >= 0 ? frame_in[count+offset+COLS*2] : 0; 
         }

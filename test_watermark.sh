@@ -18,8 +18,8 @@ done
 
 grep -v "Done" $name_file2 > file2.txt; mv file2.txt $name_file2
 
-name_file=test_sobel/data2_dynamic.txt
-name_file2=test_sobel/data2t_dynamic.txt
+name_file=test_watermark/data2_dynamic.txt
+name_file2=test_watermark/data2t_dynamic.txt
 
 for dev in 4 2 1 7 6 5 3
 do

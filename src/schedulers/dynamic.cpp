@@ -35,9 +35,7 @@ scheduler_thread_func(DynamicScheduler& sched)
     } while (moreReqs);
     sched.waitCallbacks();
   }
-  sched.notifyDevices();
-  sched.saveDuration(ActionType::schedulerEnd);
-  sched.saveDurationOffset(ActionType::schedulerEnd);
+    sched.notifyDevices();
 }
 
 DynamicScheduler::DynamicScheduler(WorkSplit wsplit)
@@ -63,6 +61,13 @@ DynamicScheduler::~DynamicScheduler()
   if (m_thread.joinable()) {
     m_thread.join();
   }
+}
+
+void
+DynamicScheduler::endScheduler()
+{
+    saveDuration(ActionType::schedulerEnd);
+    saveDurationOffset(ActionType::schedulerEnd);
 }
 
 void

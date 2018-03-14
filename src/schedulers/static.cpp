@@ -21,8 +21,6 @@ scheduler_thread_func(StaticScheduler& sched)
   cout << "sched thread: wait callbacks\n";
   sched.waitCallbacks();
   cout << "sched thread: notified\n";
-  sched.saveDuration(ActionType::schedulerEnd);
-  sched.saveDurationOffset(ActionType::schedulerEnd);
 }
 
 StaticScheduler::StaticScheduler(WorkSplit wsplit)
@@ -43,6 +41,14 @@ StaticScheduler::~StaticScheduler()
     m_thread.join();
   }
 }
+
+void
+StaticScheduler::endScheduler()
+{
+  saveDuration(ActionType::schedulerEnd);
+  saveDurationOffset(ActionType::schedulerEnd);
+}
+
 
 void
 StaticScheduler::printStats()

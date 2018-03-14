@@ -72,6 +72,7 @@ public:
   // Thread API
   void init();
 
+  void endScheduler() override;
   void printStats() override;
 
   void saveDuration(ActionType action);

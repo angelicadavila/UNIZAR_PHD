@@ -70,9 +70,10 @@ device_thread_func(Device& device)
 
     if (queue_index >= 0) { //
       Work work = sched->getWork(queue_index);
-
       device.do_work(work.offset, work.size, queue_index);
     } else {
+      device.wait_queue();
+      sched->endScheduler();
       cout << "device id " << device.getID() << " finished\n";
 			device.notifyBarrier();
       cont = false;
@@ -229,15 +230,21 @@ Device::useRuntimeDiscovery()
   m_device = runtime->useDeviceDiscovery(m_sel_platform, m_sel_device);
 }
 
+//use by runtime
 void
 Device::setKernel(const string& source, const string& kernel)
 {
   if (m_program_type == ProgramType::Source) {
     m_program_source = source;
+    m_gws= vector <size_t>(3,1);
+    m_lws= vector <size_t>(3,1);
+    m_gws[0]=0;
+    m_lws[0]=128;
   } else {
     cout << "Using custom Kernel\n";
   }
   m_kernel_str = kernel;
+  
 }
 
 void
@@ -246,6 +253,10 @@ Device::setKernel(const vector<char>& binary)
   cout << "Provided binary Kernel\n";
   m_program_type = ProgramType::CustomBinary;
   m_program_binary = binary;
+  m_gws= vector <size_t>(3,1);
+  m_lws= vector <size_t>(3,1);
+  m_gws[0]=0;
+  m_lws[0]=128;
 }
 
 void
@@ -254,6 +265,11 @@ Device::setKernel(const string& source)
   cout << "Provided source Kernel\n";
   m_program_type = ProgramType::CustomSource;
   m_program_source = source;
+  
+  m_gws= vector <size_t>(3,1);
+  m_lws= vector <size_t>(3,1);
+  m_gws[0]=0;
+  m_lws[0]=128;
 }
 
 void
@@ -293,8 +309,8 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
-  auto gws = size;
-#if CLB_KERNEL_TASK == 0
+  if(m_gws[0]!=1) 
+    m_gws[0] = size;//pass to global
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
@@ -303,38 +319,31 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                                nullptr,
                                nullptr);
 #else
- m_kernel.setArg(m_nargs,(uint) gws );
+ m_kernel.setArg(m_nargs,(uint) m_gws[0] );
  m_kernel.setArg(m_nargs+1, (uint)offset);
   status=m_queue.enqueueNDRangeKernel(
-  m_kernel, cl::NullRange, cl::NDRange(gws), cl::NDRange(128), nullptr,nullptr);
+  m_kernel, cl::NullRange, cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), cl::NDRange(m_lws[0],m_lws[1],m_lws[2]), nullptr,&m_event_kernel[0]);
   //Test Matrix Multiplication
   // m_kernel, cl::NullRange, cl::NDRange(16*64,gws), cl::NDRange(BLOCK_SIZE_X,BLOCK_SIZE_Y), nullptr,nullptr);
 #endif
-#else
- m_kernel.setArg(m_nargs,(uint) gws );//iterations
- m_kernel.setArg(m_nargs+1, (uint)offset);
- status= m_queue.enqueueNDRangeKernel(m_kernel, cl::NullRange, 1 ,1 , nullptr,nullptr);
-#endif
   CL_CHECK_ERROR(status,"NDRange problem");
-//  status= m_queue.finish();
+  status= m_queueRead.finish();
+  CL_CHECK_ERROR(status,"finish queue"); 
   auto len = m_out_clb_buffers.size();
   for (uint i = 0; i < len; ++i) {
     Buffer& b = m_out_clb_buffers[i];
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
     auto offset_bytes = b.byBytes(offset_for_bytes)*m_internal_chunk;
   //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
-  status= m_queue.enqueueReadBuffer(m_out_buffers[i],
-#if CLB_OPERATION_BLOCKING_READ == 1
-                              CL_TRUE,
-#else
+  status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
                               CL_FALSE,
-#endif
                               offset_bytes,
                               size_bytes,
                               b.dataWithOffset(offset),
-                              nullptr,
+                              &m_event_kernel,
                               nullptr);
     CL_CHECK_ERROR(status,"Reading memory problem");
+
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
   clb::Scheduler* sched = getScheduler();
@@ -437,6 +446,11 @@ Device::initQueue()
   cl::CommandQueue queue(context, device, 0, &cl_err);
   CL_CHECK_ERROR(cl_err, "CommandQueue queue");
   m_queue = move(queue);
+  
+  cl::CommandQueue queueRead(context, device, 0, &cl_err);
+  CL_CHECK_ERROR(cl_err, "CommandQueue queueRead");
+  m_queueRead = move(queueRead);
+
 }
 
 void
@@ -613,6 +627,13 @@ Device::initEvents()
   CL_CHECK_ERROR(cl_err, "user event end");
 
   m_end = move(end);
+}
+
+void
+Device::wait_queue()
+{
+  m_queue.finish();
+  m_queueRead.finish();
 }
 
 void

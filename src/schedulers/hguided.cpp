@@ -32,8 +32,6 @@ scheduler_thread_func(HGuidedScheduler& sched)
     sched.waitCallbacks();
   }
   sched.notifyDevices();
-  sched.saveDuration(ActionType::schedulerEnd);
-  sched.saveDurationOffset(ActionType::schedulerEnd);
 }
 
 HGuidedScheduler::HGuidedScheduler(WorkSplit wsplit)
@@ -54,6 +52,13 @@ HGuidedScheduler::~HGuidedScheduler()
   if (m_thread.joinable()) {
     m_thread.join();
   }
+}
+
+void
+HGuidedScheduler::endScheduler()
+{
+  saveDuration(ActionType::schedulerEnd);
+  saveDurationOffset(ActionType::schedulerEnd);
 }
 
 void

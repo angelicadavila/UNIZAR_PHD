@@ -50,6 +50,7 @@ Description:
 
 //Per Memory Access getting 16 pixels
 #define DATA_SIZE 16
+//16
 
 
 //function declaration

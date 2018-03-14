@@ -91,6 +91,7 @@ public:
 
   void printStats() override;
 
+  void endScheduler() override;
   void saveDuration(ActionType action);
   void saveDurationOffset(ActionType action);
 

@@ -50,6 +50,7 @@ public:
 
   DynamicScheduler(WorkSplit wsplit = WorkSplit::By_Devices);
   ~DynamicScheduler();
+  
 
   DynamicScheduler(DynamicScheduler const&) = delete;
   DynamicScheduler& operator=(DynamicScheduler const&) = delete;
@@ -89,6 +90,7 @@ public:
   // Thread API
   void init();
 
+  void endScheduler() override;
   void printStats() override;
 
   void saveDuration(ActionType action);

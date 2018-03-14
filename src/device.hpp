@@ -98,13 +98,40 @@ public:
     cout << "address: " << address << "\n";
   }
 
+  template<typename T>
+  void setKernel(const vector<T>& file,
+                 vector <size_t> global_work, 
+                 vector <size_t> local_work)
+  {
+     if constexpr (std::is_same_v<T, char>)
+    {
+      m_program_type = ProgramType::CustomBinary;
+      m_program_binary = file;
+    }
+    else{
+      m_program_type = ProgramType::CustomSource;
+      m_program_source= file;
+    }
+  //initializing the parameters of kernel execution
+    m_gws=vector <size_t>(3,1);
+    m_lws=vector <size_t>(3,1);
+    m_gws[0]=global_work[0];
+    m_lws[0]=local_work[0];
+  }
+
+
+
   void setKernel(const string& source);
   void setKernel(const vector<char>& source);
+  
   void setKernel(const string& source, const string& kernel); // used by Runtime/Scheduler
-  void setID(int id);
+ 
+ void setID(int id);
   int getID();
   void waitWork();
   void notifyWork();
+  //funtion for the second queue
+  void wait_queue();
 
   void printStats();
 
@@ -194,6 +221,8 @@ private:
 #pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uint> m_arg_index;
 #pragma GCC diagnostic pop
+  vector<size_t> m_gws;
+  vector<size_t> m_lws;
   vector<size_t> m_arg_size;
   uint m_nargs;
   vector<size_t> m_arg_bytes;
@@ -211,10 +240,11 @@ private:
   cl::Device m_device;
   cl::Context m_context;
   cl::CommandQueue m_queue;
+  cl::CommandQueue m_queueRead;
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
   string m_kernel_str;
-
+  vector<cl::Event> m_event_kernel;
   vector<cl::Event> m_prev_events;
 
   int m_id;

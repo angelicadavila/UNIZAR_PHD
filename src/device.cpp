@@ -310,7 +310,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                                nullptr,
                                nullptr);
 #else
- m_kernel.setArg(m_nargs,(ulong) size );
+ m_kernel.setArg(m_nargs,(uint) size );
  m_kernel.setArg(m_nargs+1, (uint)offset);
   status=m_queue.enqueueNDRangeKernel(
                           m_kernel, cl::NullRange, 
@@ -344,6 +344,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   }
 #if CLB_OPERATION_BLOCKING_READ == 1
   clb::Scheduler* sched = getScheduler();
+  //wait finish kernel
   m_queue.finish();
   saveDuration(clb::ActionType::completeWork);
   sched->callback(queue_index);

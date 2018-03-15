@@ -5,12 +5,14 @@
 #include <iostream>
 #include <fstream>
 
-#define ROWS 1080
-#define COLS 1920
+#define ROWS 25920 
+#define COLS 12060
+//#define ROWS 1080
+//#define COLS 1920
 void
 Watermarking::init_image()
 {
-    std::string imageFilename = "butterflies.ppm";
+  std::string imageFilename = "benchsuite/burmistree.ppm";
     
   if (!parse_ppm(imageFilename.c_str(),COLS,ROWS,(unsigned char *)_input_img.data())) {
         std::cerr << "Error: could not load " << std::endl;
@@ -65,7 +67,7 @@ do_watermarking(int tscheduler,
  auto output = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out);
 #pragma GCC diagnostic pop
   
-  int problem_size =129536;//(watermarking._total_size/16);
+  int problem_size =19537152;//(watermarking._total_size/16);
 
   vector<clb::Device> devices;
 
@@ -78,8 +80,7 @@ do_watermarking(int tscheduler,
     clb::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_off.aocx");
     //vector of kernel dimension. Task Kernel gws==lws
-    vector <size_t>gws=vector <size_t>(3,0);
-    gws[0]=1;
+    vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,gws,gws); 
     devices.push_back(move(device2));
   }

@@ -92,12 +92,14 @@
 //  operations per cycle.
 
 //#include "../host/inc/matrixMult.h"
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 32
 #ifndef SIMD_WORK_ITEMS
 #define SIMD_WORK_ITEMS 4 // default value
 #endif
 
 __kernel 
+__attribute((reqd_work_group_size(BLOCK_SIZE,BLOCK_SIZE,1)))
+__attribute((num_simd_work_items(SIMD_WORK_ITEMS)))
 void matrixMult( // Input and output matrices
                  __global float *restrict C,
                  __global float *A,
@@ -110,12 +112,12 @@ void matrixMult( // Input and output matrices
     __local float B_local[BLOCK_SIZE][BLOCK_SIZE];
 
     // Block index
-    int block_x = get_group_id(0);
-    int block_y = get_group_id(1)+offset;
+    int block_y = get_group_id(0);
+    int block_x = get_group_id(1)+offset;
 
     // Local ID index (offset within a block)
-    int local_x = get_local_id(0);
-    int local_y = get_local_id(1);
+    int local_y = get_local_id(0);
+    int local_x = get_local_id(1);
 
     // Compute loop bounds
     int a_start = A_width * BLOCK_SIZE * block_y;

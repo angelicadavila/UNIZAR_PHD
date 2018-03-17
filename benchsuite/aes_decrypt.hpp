@@ -39,10 +39,12 @@ do_aesdecrypt(int tscheduler,
 class Aes_decrypt
 {
 public:
-  Aes_decrypt()
-    :
+  Aes_decrypt(int size)
+    :_total_size(size),
     _input_img(_total_size)
+    ,_crypt_img(_total_size)
     ,_out(_total_size)
+    ,_round_key(16)
   {
     init_image();
   }
@@ -54,8 +56,9 @@ public:
   int _total_size;
 #pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_img;  // image
-  vector<int,vecAllocator<int>> _round_key;  // image
-  vector<int,vecAllocator<int>> _out;  // blurred
+  vector<char,vecAllocator<char>> _crypt_img;  // image
+  vector<char,vecAllocator<char>> _round_key;  // image
+  vector<char,vecAllocator<char>> _out;  // blurred
 #pragma GCC diagnostic pop
 };
 

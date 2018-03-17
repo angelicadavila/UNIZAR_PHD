@@ -200,6 +200,16 @@ public:
 
   void setInternalChunk(int internal_chunk);
   int  getInternalChunk();
+
+
+
+  void set_globalWorkSize( size_t gws0);
+  void set_globalWorkSize( size_t gws0, size_t gws1);
+  void set_globalWorkSize( size_t gws0, size_t gws1,size_t gws2);
+
+  void set_localWorkSize( size_t lws0);
+  void set_localWorkSize( size_t lws0, size_t lws1);
+  void set_localWorkSize( size_t lws0, size_t lws1,size_t lws2);
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);

@@ -302,6 +302,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   cl_int status;
   if(m_gws[0]!=1) 
     m_gws[0] = size;//pass to global
+
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
@@ -674,4 +675,43 @@ int
 Device::getInternalChunk(){
     return m_internal_chunk;
 }
+
+void
+Device::set_globalWorkSize( size_t gws0)
+{
+    m_gws[0]=gws0;
+}
+void
+Device::set_globalWorkSize( size_t gws0, size_t gws1)
+{
+    m_gws[0]=gws0;
+    m_gws[1]=gws1;
+}
+void
+Device::set_globalWorkSize( size_t gws0, size_t gws1,size_t gws2)
+{ 
+    m_gws[0]=gws0;
+    m_gws[1]=gws1;
+    m_gws[2]=gws2;
+}
+
+void
+Device::set_localWorkSize( size_t lws0)
+{
+    m_lws[0]=lws0;
+}
+void
+Device::set_localWorkSize( size_t lws0, size_t lws1)
+{
+    m_lws[0]=lws0;
+    m_lws[1]=lws1;
+}
+void
+Device::set_localWorkSize( size_t lws0, size_t lws1,size_t lws2)
+{ 
+    m_lws[0]=lws0;
+    m_lws[1]=lws1;
+    m_lws[2]=lws2;
+}
+
 } // namespace clb

@@ -5,8 +5,8 @@
 #include <iostream>
 #include <fstream>
 
-#define ROWS 25920 
-#define COLS 12060
+#define COLS 25920 
+#define ROWS 12060
 //#define ROWS 1080
 //#define COLS 1920
 void

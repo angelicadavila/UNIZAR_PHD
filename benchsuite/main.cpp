@@ -17,6 +17,7 @@
 #include "sobel.hpp"
 #include "watermarking.hpp"
 #include "matrix_mult.hpp"
+#include "aes_decrypt.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -107,6 +108,9 @@ main(int argc, char* argv[])
    do_watermarking(tscheduler,tdevices,check,1,chunksize,prop);
   }else if (tbench ==7){
    do_matrixMult(tscheduler, tdevices, check, size, chunksize, prop, atoi(argv[8]));
+  }
+  else if (tbench ==8){
+   do_aesdecrypt(tscheduler, tdevices, check, size, chunksize, prop );
   }
   
   return 0;

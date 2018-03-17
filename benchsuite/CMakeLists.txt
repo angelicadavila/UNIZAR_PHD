@@ -32,6 +32,8 @@ set(SOURCES
   parse_ppm.cpp
   watermarking.cpp
   matrix_mult.cpp
+  aes_proc.cpp
+  aes_decrypt.cpp
   utils/io.cpp
 )
 
@@ -45,6 +47,8 @@ set(HEADERS
   watermarking.hpp
   matrix_mult.hpp
   parse_ppm.hpp
+  aes_proc.hpp
+  aes_decrypt.hpp
   utils/io.hpp
 )
 

@@ -14,9 +14,9 @@ namespace clb {
 void
 scheduler_thread_func(HGuidedScheduler& sched)
 {
-  auto time1 = std::chrono::system_clock::now().time_since_epoch();
-  sched.saveDuration(ActionType::schedulerStart);
-  sched.saveDurationOffset(ActionType::schedulerStart);
+//  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+//  sched.saveDuration(ActionType::schedulerStart);
+//  sched.saveDurationOffset(ActionType::schedulerStart);
   sched.preenq_work();
   while (sched.hasWork()) {
     auto moreReqs = true;
@@ -75,6 +75,11 @@ HGuidedScheduler::printStats()
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
+
+  auto last_item=m_duration_offset_actions.size()-1; 
+  auto init_time=(std::get<0>(m_duration_offset_actions[0]));
+  auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
+  cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
 }
 
 void
@@ -93,7 +98,7 @@ HGuidedScheduler::saveDuration(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time).count();
   m_duration_actions.push_back(make_tuple(diff_ms, action));
   m_time = t2;
 }
@@ -102,7 +107,7 @@ HGuidedScheduler::saveDurationOffset(ActionType action)
 {
   lock_guard<mutex> lock(*m_mutex_duration);
   auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - m_time_init).count();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
 
@@ -307,6 +312,11 @@ HGuidedScheduler::preenq_work()
 void
 HGuidedScheduler::req_work(Device* device)
 {
+  
+  
+  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+  saveDuration(ActionType::schedulerStart);
+  saveDurationOffset(ActionType::schedulerStart);
   {
     lock_guard<mutex> guard(m_mutex_work);
     if (m_size_rem_completed) {

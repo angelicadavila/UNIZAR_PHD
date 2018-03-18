@@ -105,7 +105,8 @@ void matrixMult( // Input and output matrices
                  __global float *A,
                  __global float *B, 
                  // Widths of matrices.
-                 int A_width, int B_width, const uint offset)
+                 int A_width, int B_width,
+                 uint iterations, const uint offset)
 {
     // Local storage for a block of input matrices A and B
     __local float A_local[BLOCK_SIZE][BLOCK_SIZE];

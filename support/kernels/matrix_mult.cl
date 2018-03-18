@@ -92,7 +92,7 @@
 //  operations per cycle.
 
 //#include "../host/inc/matrixMult.h"
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 64
 #ifndef SIMD_WORK_ITEMS
 #define SIMD_WORK_ITEMS 4 // default value
 #endif
@@ -105,7 +105,7 @@ void matrixMult( // Input and output matrices
                  __global float *A,
                  __global float *B, 
                  // Widths of matrices.
-                 int A_width, int B_width, 
+                 int A_width, int B_width,
                  uint iterations, const uint offset)
 {
     // Local storage for a block of input matrices A and B

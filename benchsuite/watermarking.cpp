@@ -110,7 +110,7 @@ do_watermarking(int tscheduler,
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.9, 0.2});
+   hgSched.setRawProportions({0.3,0.6});
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

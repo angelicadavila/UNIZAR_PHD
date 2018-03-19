@@ -21,8 +21,8 @@ Aes_decrypt::init_image()
     }
   //128 bit encryption key
   unsigned char key[] = "Xilinx SDAccel  ";
-  
   vector<char,vecAllocator<char>>_round_key((char*)key, (char*)key+16);
+  KeyExpansion((unsigned char *)_round_key.data());  
   //perform SW encryption
   //Xilinx
   aesecb_encrypt(key, ((unsigned char *)_input_img.data() ),

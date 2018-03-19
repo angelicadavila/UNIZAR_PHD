@@ -44,7 +44,7 @@ public:
     _input_img(_total_size)
     ,_crypt_img(_total_size)
     ,_out(_total_size)
-    ,_round_key(16)
+    ,_round_key(11*16)
   {
     init_image();
   }

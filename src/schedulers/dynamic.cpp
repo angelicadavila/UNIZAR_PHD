@@ -64,13 +64,6 @@ DynamicScheduler::~DynamicScheduler()
 }
 
 void
-DynamicScheduler::endScheduler()
-{
-    saveDuration(ActionType::schedulerEnd);
-    saveDurationOffset(ActionType::schedulerEnd);
-}
-
-void
 DynamicScheduler::printStats()
 {
   auto sum = 0;
@@ -146,12 +139,51 @@ DynamicScheduler::setWorkSize(size_t size)
     m_work_last = rest;
   }
   m_worksize = given;
+  if ((m_worksize % m_lws) != 0) {
+    throw runtime_error("m_worksize % lws: " + to_string(m_worksize) + " % " + to_string(m_lws));
+  }
+  IF_LOGGING(cout << "m_worksize (chunk size): " << m_worksize << "\n");
+}
+
+void
+DynamicScheduler::setGWS(NDRange gws)
+{
+  m_gws = gws;
+
+  // auto dims = m_gws.dimensions();
+
+  // auto size = gws.space();
+
+  // m_size = size;
+
+  // size = 16384;
+  // auto lws_space = 8 * 8;
+  // auto max_chunks = size / lws_space; // 256
+  // auto chunks = max_chunks;
+  // m_worksize = lws_space * chunks;
+
+  // m_has_work = true;
+  // m_size_rem = size;           // NOTE(dyn) statement
+  // m_size_given = 0;            // NOTE(dyn) used for the offset
+  // m_size_rem_given = size;     // NOTE(dyn)
+  // m_size_rem_completed = size; // NOTE(dyn)
+}
+
+void
+DynamicScheduler::setLWS(size_t lws)
+{
+  m_lws = lws;
+}
+
+void
+DynamicScheduler::setWSBound(float ws_bound)
+{
+  m_ws_bound = ws_bound;
 }
 
 bool
 DynamicScheduler::hasWork()
 {
-  lock_guard<mutex> guard(m_mutex_work);
   return m_size_rem_completed != 0;
 }
 
@@ -182,6 +214,7 @@ DynamicScheduler::notifyRequests()
 void
 DynamicScheduler::setTotalSize(size_t size)
 {
+  // cout << "setTotalSize: " << size << "\n";
   m_size = size;
   m_has_work = true;
   m_size_rem = size;           // NOTE(dyn) statement
@@ -308,7 +341,8 @@ DynamicScheduler::enq_work(Device* device)
 
 void
 DynamicScheduler::preenq_work()
-{}
+{
+}
 
 void
 DynamicScheduler::req_work(Device* device)

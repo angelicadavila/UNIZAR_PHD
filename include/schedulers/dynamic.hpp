@@ -51,7 +51,6 @@ public:
 
   DynamicScheduler(WorkSplit wsplit = WorkSplit::By_Devices);
   ~DynamicScheduler();
-  
 
   DynamicScheduler(DynamicScheduler const&) = delete;
   DynamicScheduler& operator=(DynamicScheduler const&) = delete;
@@ -135,12 +134,9 @@ private:
   atomic<uint> m_requests_idx_done;
   vector<uint> m_requests_list;
 
-  int m_size_rem_given;
-
-  int m_size_rem;
-
-//  size_t m_size_rem_completed;
-  atomic<int>  m_size_rem_completed;
+  size_t m_size_rem;
+  size_t m_size_rem_given;
+  atomic<size_t> m_size_rem_completed;
   size_t m_size_given;
   size_t m_worksize;
   size_t m_work_last;
@@ -155,7 +151,6 @@ private:
   std::chrono::duration<double,std::micro> m_time;
   vector<tuple<size_t, ActionType>> m_duration_actions;
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
-
 };
 
 } // namespace ecl

@@ -2,6 +2,18 @@
 #include <iostream>
 #include <fstream>
 
+// bench=22; size=$(( 1 * 1024 )); its=1; for i in `seq 1 1 $its`; do /usr/bin/time
+// ./build/release/EngineCL 2 2 $bench 1 $size 128 0.5 21; done
+
+using namespace std::chrono;
+
+inline ostream&
+operator<<(ostream& os, cl_uchar4& t)
+{
+  os << "(" << (int)t.s[0] << "," << (int)t.s[1] << "," << (int)t.s[2] << "," << (int)t.s[3] << ")";
+  return os;
+}
+
 void
 Gaussian::fill_image()
 {
@@ -287,8 +299,8 @@ Gaussian::compare_gaussian_blur(float threshold)
         if (diffX >= threshold || diffY >= threshold || diffZ >= threshold) {
           if (showable) {
 #pragma omp critical
-            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX << "," << blurY
-                 << "," << blurZ << ")\n";
+            cout << "i: " << tid << " blurred: " << blurred[tid] << " float calculated: (" << blurX
+                 << "," << blurY << "," << blurZ << ")\n";
             showable = false;
             ok = ok & false;
           }
@@ -527,6 +539,234 @@ gaussian_blur(__global uchar4* blurred, __global uchar4* input, int rows,
 }
 
 void
+do_gaussian_base(int tscheduler,
+                 int tdevices,
+                 uint check,
+                 uint image_width,
+                 int chunksize,
+                 vector<float>& props,
+                 uint filter_width)
+{
+  bool use_binaries = (check >= 10) ? true : false;
+  check = (check >= 10) ? check - 10 : check;
+
+  uint image_height = image_width;
+
+  int worksize = chunksize;
+
+  IF_LOGGING(cout << image_width << "\n");
+
+  Gaussian gaussian(image_width, image_height, filter_width);
+
+  string kernel_str = file_read("support/kernels/gaussian.cl");
+
+  int size = gaussian._total_size;
+
+  auto a_array = shared_ptr<vector<cl_uchar4>>(&gaussian._a);
+  auto b_array = shared_ptr<vector<cl_float>>(&gaussian._b);
+  auto c_array = shared_ptr<vector<cl_uchar4>>(&gaussian._c);
+
+  auto sel_platform = PLATFORM;
+  auto sel_device = tdevices == 0 ? 1 : 0; // invert, tdevices: 0 = CPU, 1 = GPU
+
+  vector<char> kernel_bin;
+  if (use_binaries) {
+    switch (tdevices) {
+      case 200:
+        kernel_bin = file_read_binary("support/kernels/gaussian_sapu:0:1.cl.bin");
+        break;
+      case 201:
+        kernel_bin = file_read_binary("support/kernels/gaussian_sapu:0:0.cl.bin");
+        break;
+      case 300:
+        kernel_bin = file_read_binary("support/kernels/gaussian_batel:1:0.cl.bin");
+        break;
+      case 301:
+        kernel_bin = file_read_binary("support/kernels/gaussian_batel:1:1.cl.bin");
+        break;
+      case 310:
+        kernel_bin = file_read_binary("support/kernels/gaussian_batel:0:0.cl.bin");
+        break;
+    }
+  }
+
+  auto time_init = std::chrono::system_clock::now().time_since_epoch();
+
+  switch (tdevices) {
+    case 200:
+      sel_platform = 0;
+      sel_device = 1;
+      break;
+    case 201:
+      sel_platform = 0;
+      sel_device = 0;
+      break;
+    case 300:
+      sel_platform = 1;
+      sel_device = 0;
+      break;
+    case 301:
+      sel_platform = 1;
+      sel_device = 1;
+      break;
+    case 310:
+      sel_platform = 0;
+      sel_device = 0;
+      break;
+  }
+
+  vector<cl::Platform> platforms;
+  vector<vector<cl::Device>> platform_devices;
+  cl::Device device;
+
+  IF_LOGGING(cout << "discoverDevices\n");
+  cl::Platform::get(&platforms);
+  IF_LOGGING(cout << "platforms: " << platforms.size() << "\n");
+  auto i = 0;
+  for (auto& platform : platforms) {
+    vector<cl::Device> devices;
+    platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    IF_LOGGING(cout << "platform: " << i++ << " devices: " << devices.size() << "\n");
+    platform_devices.push_back(move(devices));
+  }
+
+  auto last_platform = platforms.size() - 1;
+  if (sel_platform > last_platform) {
+    throw runtime_error("invalid platform selected");
+  }
+
+  auto last_device = platform_devices[sel_platform].size() - 1;
+  if (sel_device > last_device) {
+    throw runtime_error("invalid device selected");
+  }
+
+  device = move(platform_devices[sel_platform][sel_device]);
+
+  cl_int cl_err = CL_SUCCESS;
+  cl::Context context(device);
+
+  cl::CommandQueue queue(context, device, 0, &cl_err);
+  CL_CHECK_ERROR(cl_err, "CommandQueue queue");
+
+  IF_LOGGING(cout << "initBuffers\n");
+
+  cl_int buffer_in_flags = CL_MEM_READ_WRITE;
+  cl_int buffer_out_flags = CL_MEM_READ_WRITE;
+
+  IF_LOGGING(cout << a_array.get()->size() << "\n");
+  IF_LOGGING(cout << b_array.get()->size() << "\n");
+  IF_LOGGING(cout << c_array.get()->size() << "\n");
+
+  cl::Buffer a_buffer(context, buffer_in_flags, sizeof(cl_uchar4) * a_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "in1 buffer ");
+  cl::Buffer b_buffer(context, buffer_in_flags, sizeof(cl_float) * b_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "in2 buffer ");
+  cl::Buffer c_buffer(context, buffer_out_flags, sizeof(cl_uchar4) * c_array.get()->size(), NULL);
+  CL_CHECK_ERROR(cl_err, "out buffer ");
+
+  IF_LOGGING(cout << "x\n");
+  CL_CHECK_ERROR(queue.enqueueWriteBuffer(
+    a_buffer, CL_FALSE, 0, sizeof(cl_uchar4) * a_array.get()->size(), a_array.get()->data(), NULL));
+
+  CL_CHECK_ERROR(queue.enqueueWriteBuffer(
+    b_buffer, CL_FALSE, 0, sizeof(cl_float) * b_array.get()->size(), b_array.get()->data(), NULL));
+
+  IF_LOGGING(cout << "initKernel\n");
+
+  cl::Program::Sources sources;
+  cl::Program::Binaries binaries;
+  cl::Program program;
+  if (use_binaries) {
+    cout << "using binary\n";
+    binaries.push_back({ kernel_bin.data(), kernel_bin.size() });
+    vector<cl_int> status = { -1 };
+    program = std::move(cl::Program(context, { device }, binaries, &status, &cl_err));
+    CL_CHECK_ERROR(cl_err, "building program from binary failed for device ");
+  } else {
+    sources.push_back({ kernel_str.c_str(), kernel_str.length() });
+    program = std::move(cl::Program(context, sources));
+  }
+
+  string options;
+  options.reserve(32);
+  options += "-DECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED=" +
+             to_string(ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED);
+
+  cl_err = program.build({ device }, options.c_str());
+  if (cl_err != CL_SUCCESS) {
+    IF_LOGGING(cout << " Error building: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device)
+                    << "\n");
+    CL_CHECK_ERROR(cl_err);
+  }
+
+  cl::Kernel kernel(program, "gaussian_blur", &cl_err);
+
+  cl_err = kernel.setArg(0, c_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 0 in1 buffer");
+
+  cl_err = kernel.setArg(1, a_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 1 in2 buffer");
+
+  cl_err = kernel.setArg(2, image_height);
+  CL_CHECK_ERROR(cl_err, "kernel arg 2 out buffer");
+
+  cl_err = kernel.setArg(3, image_width);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  cl_err = kernel.setArg(4, b_buffer);
+  CL_CHECK_ERROR(cl_err, "kernel arg 1 in2 buffer");
+
+  cl_err = kernel.setArg(5, filter_width);
+  CL_CHECK_ERROR(cl_err, "kernel arg 3 size");
+
+  // cl_int cl_err;
+  cl::UserEvent end(context, &cl_err);
+  CL_CHECK_ERROR(cl_err, "user event end");
+
+  cl::Event evkernel;
+
+  auto lws = 128;
+
+  auto offset = 0;
+  auto gws = size;
+  queue.enqueueNDRangeKernel(
+    kernel, cl::NDRange(offset), cl::NDRange(gws), cl::NDRange(lws), NULL, NULL);
+
+  cl::Event evread;
+  vector<cl::Event> events({ evkernel });
+
+  queue.enqueueReadBuffer(
+    c_buffer, CL_TRUE, 0, sizeof(cl_uchar4) * c_array.get()->size(), c_array.get()->data());
+
+  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
+
+  cout << "time: " << diff_ms << "\n";
+
+  auto in1 = *a_array.get();
+  auto in2 = *b_array.get();
+  auto out = *c_array.get();
+
+  if (check) {
+
+    auto ok = gaussian.compare_gaussian_blur();
+
+    if (ok) {
+      success(diff_ms);
+    } else {
+      failure(diff_ms);
+    }
+    if (check == 2) {
+      auto img = write_bmp_file(out.data(), image_width, image_height, "gaussian_base.bmp");
+      cout << "writing gaussian_base.bmp (" << img << ")\n";
+    }
+  } else {
+    cout << "Done\n";
+  }
+  exit(0);
+}
+
+void
 do_gaussian(int tscheduler,
             int tdevices,
             bool check,
@@ -535,9 +775,15 @@ do_gaussian(int tscheduler,
             vector<float>& props,
             uint filter_width)
 {
+  bool use_binaries = (check >= 10) ? true : false;
+  check = (check >= 10) ? check - 10 : check;
+
   uint image_height = image_width;
 
   int worksize = chunksize;
+
+  IF_LOGGING(cout << "width " << image_width << "\n");
+  IF_LOGGING(cout << "filter width " << filter_width << "\n");
 
   Gaussian gaussian(image_width, image_height, filter_width);
 
@@ -554,7 +800,7 @@ do_gaussian(int tscheduler,
 
   int problem_size = gaussian._total_size;
 
-  vector<clb::Device> devices;
+  auto platform = PLATFORM;
 
   auto platform_cpu = 0;
   auto platform_gpu = 1;
@@ -577,22 +823,21 @@ do_gaussian(int tscheduler,
     devices.push_back(move(device1));
   }
 
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  // ecl::HGuidedScheduler hgSched;
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
-cout<<"Manual proportions!";
-  clb::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions(props);
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
-  } else { // tscheduler == 2
-    runtime.setScheduler(&hgSched);
-    hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({ prop });
+    // } else { // tscheduler == 2
+    //   runtime.setScheduler(&hgSched);
+    //   hgSched.setWorkSize(worksize);
+    //   hgSched.setRawProportions({ prop });
   }
   runtime.setInBuffer(a);
   runtime.setInBuffer(b);
@@ -608,11 +853,20 @@ cout<<"Manual proportions!";
 
   runtime.run();
 
+  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
+
+  cout << "time: " << diff_ms << "\n";
+
   runtime.printStats();
 
   // auto ptr = reinterpret_cast<cl_uchar4*>(b.data());
-  // cout << ptr[0].s[0] << "\n";
-  // cout << ptr[121].s[0] << "\n";
+  // IF_LOGGING(cout << ptr[0].s[0] << "\n");
+  // IF_LOGGING(cout << ptr[121].s[0] << "\n");
+
+  auto in1 = *a.get();
+  auto in2 = *b.get();
+  auto out = *c.get();
 
   if (check) {
     auto in1 = *a.get();
@@ -635,13 +889,11 @@ cout<<"Manual proportions!";
     } else {
       cout << "Failure gauss(" << time << ")\n";
     }
-    //file to save and compare data results
-/*      std::ofstream myfile;
-      myfile.open ("gauss.txt");
-      for(int dat=0; dat<out.size(); dat++)
-      		myfile<<(int)out[dat].s[0]<<"-"<<(int)out[dat].s[1]<<"-"<<(int)out[dat].s[2]<<"\n";
- 			myfile.close();
-*/
+    if (check == 2) {
+      auto xxx = write_bmp_file(in1.data(), image_width, image_height, "gaussian_original.bmp");
+      auto img = write_bmp_file(out.data(), image_width, image_height, "gaussian.bmp");
+      cout << "writing gaussian.bmp (" << img << ")\n";
+    }
   } else {
     cout << "Done gauss\n";
   }

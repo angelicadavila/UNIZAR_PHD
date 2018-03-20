@@ -36,9 +36,11 @@
 // #include "fmt/format.h"
 // #include "rang/rang.hpp"
 // #include "spdlog/spdlog.h"
+#include "utils/io.hpp"
 
 #include <thread>
 
+#include "main.hpp"
 // using namespace std::chrono_literals;
 // using namespace std;
 
@@ -85,7 +87,6 @@ main(int argc, char* argv[])
 
   // auto prop = stof(argv[7]);
   auto props = string_to_proportions(argv[7]);
-  auto prop = stof(argv[7]);
 
   if (tbench == 0) {
     // do_assign(tscheduler, tdevices, check, size, chunksize, prop);

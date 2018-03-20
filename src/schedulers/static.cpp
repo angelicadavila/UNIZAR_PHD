@@ -18,9 +18,9 @@ scheduler_thread_func(StaticScheduler& sched)
 //  sched.saveDuration(ActionType::schedulerStart);
 //  sched.saveDurationOffset(ActionType::schedulerStart);
   sched.preenq_work();
-  cout << "sched thread: wait callbacks\n";
+  IF_LOGGING(cout << "sched thread: wait callbacks\n");
   sched.waitCallbacks();
-  cout << "sched thread: notified\n";
+  IF_LOGGING(cout << "sched thread: notified\n");
   sched.saveDuration(ActionType::schedulerEnd);
   sched.saveDurationOffset(ActionType::schedulerEnd);
 }
@@ -218,8 +218,8 @@ StaticScheduler::calcProportions()
       //   for (uint i=1; i<len; ++i){
       //     // proportions.push_back(  );
       //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
-      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
-      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
+      //     (1.0f/len)/(2*i), 128); IF_LOGGING(cout << "given: " << wsize_given << " rem:
+      //     " << wsize_rem << "\n"); size_t wsize_offset = wsize_given_acc;
       //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
       //     wsize_given_acc += wsize_given;
       //   }
@@ -229,8 +229,8 @@ StaticScheduler::calcProportions()
       //   for (uint i=1; i<len; ++i){
       //     // proportions.push_back(  );
       //     tie(wsize_given, wsize_rem) = splitWork(wsize_rem,
-      //     (1.0f/len)/(2*i), 128); cout << "given: " << wsize_given << " rem:
-      //     " << wsize_rem << "\n"; size_t wsize_offset = wsize_given_acc;
+      //     (1.0f/len)/(2*i), 128); IF_LOGGING(cout << "given: " << wsize_given << " rem:
+      //     " << wsize_rem << "\n"); size_t wsize_offset = wsize_given_acc;
       //     proportions.push_back(make_tuple(wsize_given, wsize_offset));
       //     wsize_given_acc += wsize_given;
       //   }
@@ -258,7 +258,7 @@ void
 StaticScheduler::enq_work(Device* device)
 {
   int id = device->getID();
-  cout << "StaticScheduler::enq_work for " << id << "\n";
+  IF_LOGGING(cout << "StaticScheduler::enq_work for " << id << "\n");
   if (m_chunk_todo[id] == 0) { // Static
     auto prop = m_proportions[id];
     size_t size, offset;
@@ -272,18 +272,19 @@ StaticScheduler::enq_work(Device* device)
     m_queue_id_work[id].push_back(index);
 
     m_chunk_todo[id]++;
-    // cout << "device_id: " << id << " chunk_todo: " << m_chunk_todo[id] << " index: " << index
+    // IF_LOGGING(cout << "device_id: " << id << " chunk_todo: " << m_chunk_todo[id] << " index: "
+    // << index
     // << " work.offset: " << m_queue_work[index].offset << " work.size: " <<
-    // m_queue_work[index].size << "\n";
+    // m_queue_work[index].size << "\n");
   } else {
-    cout << "StaticScheduler::enq_work  not enqueuing\n";
+    IF_LOGGING(cout << "StaticScheduler::enq_work  not enqueuing\n");
   }
 }
 
 void
 StaticScheduler::preenq_work()
 {
-  cout << "StaticScheduler::preenq_work\n";
+  IF_LOGGING(cout << "StaticScheduler::preenq_work\n");
   m_devices_working = m_ndevices;
   calcProportions();
 }

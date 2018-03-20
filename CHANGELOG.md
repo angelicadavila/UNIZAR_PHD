@@ -1,5 +1,16 @@
 # ChangeLog
 
+## v0.3.1 (2018-03-20)
+
+**Bugfix**
+
+- Static: needed mutex.
+- Dynamic: needed atomic + each device should execute the package given to it.
+
+**Acknowledgements**
+
+  Bugs found by Angélica Dávila (UNIZAR)
+
 ## v0.3.0 (2018-03-09)
 
 **Enhancements**

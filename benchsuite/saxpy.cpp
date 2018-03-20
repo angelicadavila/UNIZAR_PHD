@@ -273,6 +273,18 @@ do_saxpy(int tscheduler,
       case 310:
         kernel_bin = file_read_binary("support/kernels/saxpy_batel:0:0.cl.bin");
         break;
+      case 313:
+        throw runtime_error("unsupported 303");
+        break;
+      case 400:
+        kernel_bin = file_read_binary("support/kernels/saxpy_station:0:1.cl.bin");
+        break;
+      case 401:
+        kernel_bin = file_read_binary("support/kernels/saxpy_station:0:0.cl.bin");
+        break;
+      case 403:
+        throw runtime_error("unsupported 403");
+        break;
     }
   }
 
@@ -313,6 +325,43 @@ do_saxpy(int tscheduler,
       if (use_binaries) {
         gpu.setKernel(kernel_bin);
       }
+      devices.push_back(move(gpu));
+    } break;
+    case 313: {
+      ecl::Device cpu(1, 0);
+      ecl::Device phi(1, 1);
+      ecl::Device gpu(0, 0);
+      // if (use_binaries) {
+      //   gpu.setKernel(kernel_bin);
+      // }
+      devices.push_back(move(cpu));
+      devices.push_back(move(phi));
+      devices.push_back(move(gpu));
+    } break;
+    case 400: {
+      ecl::Device cpu(0, 1);
+      if (use_binaries) {
+        cpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(cpu));
+    } break;
+    case 401: {
+      ecl::Device gpu(0, 0);
+      if (use_binaries) {
+        gpu.setKernel(kernel_bin);
+      }
+      devices.push_back(move(gpu));
+    } break;
+    case 403: {
+      ecl::Device cpu(0, 1);
+      // if (use_binaries) {
+      //   cpu.setKernel(kernel_bin);
+      // }
+      devices.push_back(move(cpu));
+      ecl::Device gpu(0, 0);
+      // if (use_binaries) {
+      //   gpu.setKernel(kernel_bin);
+      // }
       devices.push_back(move(gpu));
     } break;
   }

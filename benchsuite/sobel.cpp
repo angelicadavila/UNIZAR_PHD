@@ -14,6 +14,10 @@
 //#define ROWS 6155
 #define COLS 25920
 #define ROWS 12060
+
+//#define COLS 1024 
+//#define ROWS 1024
+
 void
 Sobel::init_image()
 {
@@ -109,14 +113,14 @@ do_sobel(int tscheduler,
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    stSched.setRawProportions({ prop, 0.25 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.9, 0.2});
+   hgSched.setRawProportions({0.23, 0.25});
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

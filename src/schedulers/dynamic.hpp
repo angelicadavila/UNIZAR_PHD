@@ -145,6 +145,7 @@ private:
   std::chrono::duration<double,std::micro> m_time;
   vector<tuple<size_t, ActionType>> m_duration_actions;
   vector<tuple<size_t, ActionType>> m_duration_offset_actions;
+
 };
 
 } // namespace clb

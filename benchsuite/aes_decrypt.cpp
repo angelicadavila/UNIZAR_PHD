@@ -8,6 +8,8 @@
 
 #define COLS 25920
 #define ROWS 12060
+//#define COLS 25920
+//#define ROWS 12060
 #define ROUNDS 10
 void
 Aes_decrypt::init_image()
@@ -66,7 +68,8 @@ do_aesdecrypt(int tscheduler,
  auto output = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out);
 #pragma GCC diagnostic pop
   
-  int problem_size =19537152;//(aes_decrypt._total_size)/16;
+  int problem_size =(aes_decrypt._total_size)/16;
+  //19537152;//(aes_decrypt._total_size)/16;
 
   vector<clb::Device> devices;
 

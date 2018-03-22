@@ -283,6 +283,13 @@ DynamicScheduler::enq_work(Device* device)
   int id = device->getID();
   //lock_guard<mutex> guard(m_mutex_work);
   if (m_size_rem > 0 ) {
+/*  vector<int> load_extra(3,1);
+  if (m_chunk_todo[0]>m_chunk_todo[1]  )
+        load_extra[0]=4;
+*/
+//  if (m_chunk_todo[1]>m_chunk_todo[m_ndevices]  )
+//      load_extra[1]=2;
+
     size_t size = m_worksize;
     size_t index = -1;
     {

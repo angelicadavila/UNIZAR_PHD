@@ -7,7 +7,9 @@
 
 #define COLS 25920 
 #define ROWS 12060
-//#define ROWS 1080
+//#define ROWS 256
+//#define COLS 128 
+//#define ROWS 12060
 //#define COLS 1920
 void
 Watermarking::init_image()
@@ -103,7 +105,7 @@ do_watermarking(int tscheduler,
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    stSched.setRawProportions({ prop, 0.26 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

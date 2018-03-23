@@ -202,9 +202,14 @@ public:
   int  getInternalChunk();
 
 //#if CLB_PROFILING == 1
+  vector<cl::Event>  m_prev_events;
   cl::Event m_event_read;
+  cl::Event m_event_kernel;
 //#endif
-  cl::UserEvent m_event_user;
+  uint count;
+  vector<size_t> m_prev_size;
+  vector<size_t> m_prev_offset;
+
   void set_globalWorkSize( size_t gws0);
   void set_globalWorkSize( size_t gws0, size_t gws1);
   void set_globalWorkSize( size_t gws0, size_t gws1,size_t gws2);
@@ -260,7 +265,7 @@ private:
   cl::UserEvent m_end;
   string m_kernel_str;
 //  cl::Event m_event_kernel;
-  vector<cl::Event> m_prev_events;
+  //vector<cl::Event> m_prev_events;
 
   int m_id;
   semaphore* m_sema_work;

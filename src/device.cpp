@@ -80,12 +80,12 @@ device_thread_func(Device& device)
       device.wait_queue();
 
   #if CLB_PROFILING ==1
-  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  /*ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
   time_skrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";*/
   #endif
       sched->endScheduler();
       cout << "device id " << device.getID() << " finished\n";
@@ -311,16 +311,14 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   }
 */
 //  cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
- cl::Event m_event_kernel;
- m_prev_events.clear();
- 
+  //cl::Event m_event_kernel[2];
+    m_prev_events.clear();
  auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
   if(m_gws[0]!=1) 
     m_gws[0] = size;//pass to global
-
-
+ // count^=0x01;
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
@@ -338,16 +336,21 @@ Device::do_work(size_t offset, size_t size, int queue_index)
                           m_kernel, cl::NullRange, 
                           cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
                           cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
-                          nullptr ,&m_event_kernel);
+                          nullptr ,&(m_event_kernel));
 #endif
   CL_CHECK_ERROR(status,"NDRange problem");
   
-  m_prev_events.push_back({m_event_kernel});
+  //m_event_kernel[count].wait();
+  
+  m_prev_events.push_back(m_event_kernel);
+  //m_prev_events.push_back({m_event_kernel[count]});
  
-   m_event_read.wait();
+  //m_queueRead.finish();
+  m_event_read.wait();
   
   //kernel n + Read n-1
   #if CLB_PROFILING ==1
+  uint tmp=count;
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
   time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
@@ -355,37 +358,50 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
   cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
-
   
+  size_t sizeR=m_prev_size[0]; 
+  size_t offsetR=m_prev_offset[0];
+ //test-- 
   auto len = m_out_clb_buffers.size();
-  for (uint i = 0; i < len; ++i) {
+if(offset!=0)
+{
+for (uint i = 0; i < len; ++i) {
     Buffer& b = m_out_clb_buffers[i];
-    size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-    auto offset_bytes = b.byBytes(offset_for_bytes)*m_internal_chunk;
+    size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
+    auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
  // cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
   status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
                               CL_FALSE,
                               offset_bytes,
                               size_bytes,
-                              b.dataWithOffset(offset),
-                              &m_prev_events,
+                              b.dataWithOffset(offsetR*m_internal_chunk),
+  nullptr,//                            &m_prev_events[count],
                               &m_event_read);
     CL_CHECK_ERROR(status,"Reading memory problem");
   }
-  #if CLB_OPERATION_BLOCKING_READ == 1
+   }
+
+  m_prev_size[0]=size; 
+  m_prev_offset[0]=offset_for_bytes;
+ 
+ #if CLB_OPERATION_BLOCKING_READ == 1
   
-  clb::Scheduler* sched = getScheduler();
   //wait finish kernel
-  m_event_kernel.wait();
+  m_queue.finish();
+  
   #if CLB_PROFILING ==1
+  uint c=count;
   time_skrn=m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_END>();
   cout<<"**time_krn : "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
-  saveDuration(clb::ActionType::completeWork);
+  
+  clb::Scheduler* sched = getScheduler();
   sched->callback(queue_index);
+  saveDuration(clb::ActionType::completeWork);
+
 #else
   auto cbdata = new CBData(queue_index, this);
   evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
@@ -427,9 +443,9 @@ Device::init()
   saveDuration(ActionType::writeBuffers);
   saveDurationOffset(ActionType::writeBuffers);
   // work();
-  m_prev_events=vector<cl::Event>(1);
-  
-  m_event_user=cl::UserEvent(m_context,NULL );
+  m_prev_size=  vector<size_t>(2,0);   
+  m_prev_offset=vector<size_t>(2,0);
+  count=0; 
 //file debug
    //std::string namefile="index_dev_";//+getID();
 }

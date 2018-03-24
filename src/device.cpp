@@ -12,7 +12,8 @@
 
 #include <chrono>
 #include <thread>
-
+#include <iostream>
+#include <functional>
 struct CBData
 {
   int queue_index;
@@ -77,16 +78,11 @@ device_thread_func(Device& device)
       Work work = sched->getWork(queue_index);
       device.do_work(work.offset, work.size, queue_index);
     } else {
+     
+      //Read the last chunk
+      //NOTE set m_prev_events in last chunk from sched to avoid overlapping
+      device.readBuffers();
       device.wait_queue();
-
-  #if CLB_PROFILING ==1
-  /*ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
-  time_skrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
-  time_qkrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
-  time_stkrn= device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
-  time_ekrn=  device.m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";*/
-  #endif
       sched->endScheduler();
       cout << "device id " << device.getID() << " finished\n";
 			device.notifyBarrier();
@@ -311,14 +307,13 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   }
 */
 //  cout<<"offset:"<<offset<<" device:"<<getID()<<"\n";
-  //cl::Event m_event_kernel[2];
-    m_prev_events.clear();
+ 
+ cl::Event m_event_kernel; 
  auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
   if(m_gws[0]!=1) 
     m_gws[0] = size;//pass to global
- // count^=0x01;
 #if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
@@ -340,49 +335,12 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 #endif
   CL_CHECK_ERROR(status,"NDRange problem");
   
-  //m_event_kernel[count].wait();
-  
-  m_prev_events.push_back(m_event_kernel);
-  //m_prev_events.push_back({m_event_kernel[count]});
- 
-  //m_queueRead.finish();
-  m_event_read.wait();
-  
-  //kernel n + Read n-1
-  #if CLB_PROFILING ==1
-  uint tmp=count;
-  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
-  time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
-  time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
-  time_stkrn= m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
-  time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
-  #endif
-  
-  size_t sizeR=m_prev_size[0]; 
-  size_t offsetR=m_prev_offset[0];
- //test-- 
-  auto len = m_out_clb_buffers.size();
-if(offset!=0)
-{
-for (uint i = 0; i < len; ++i) {
-    Buffer& b = m_out_clb_buffers[i];
-    size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
-    auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
- // cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
-  status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
-                              CL_FALSE,
-                              offset_bytes,
-                              size_bytes,
-                              b.dataWithOffset(offsetR*m_internal_chunk),
-  nullptr,//                            &m_prev_events[count],
-                              &m_event_read);
-    CL_CHECK_ERROR(status,"Reading memory problem");
-  }
-   }
+  //Conditional Read to overlapping in a Kernel_i with read_i-1
+  //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
+  readBuffers();
 
-  m_prev_size[0]=size; 
-  m_prev_offset[0]=offset_for_bytes;
+  m_prev_readParams[0]=size; 
+  m_prev_readParams[1]=offset_for_bytes;
  
  #if CLB_OPERATION_BLOCKING_READ == 1
   
@@ -390,14 +348,14 @@ for (uint i = 0; i < len; ++i) {
   m_queue.finish();
   
   #if CLB_PROFILING ==1
-  uint c=count;
+  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  
   time_skrn=m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_END>();
   cout<<"**time_krn : "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
-  
   clb::Scheduler* sched = getScheduler();
   sched->callback(queue_index);
   saveDuration(clb::ActionType::completeWork);
@@ -443,10 +401,7 @@ Device::init()
   saveDuration(ActionType::writeBuffers);
   saveDurationOffset(ActionType::writeBuffers);
   // work();
-  m_prev_size=  vector<size_t>(2,0);   
-  m_prev_offset=vector<size_t>(2,0);
-  count=0; 
-//file debug
+  m_prev_readParams=  vector<size_t>(2,0);   
    //std::string namefile="index_dev_";//+getID();
 }
 
@@ -581,6 +536,42 @@ Device::writeBuffers(bool /* dummy */)
   }
   
  }
+
+void
+Device::readBuffers()
+{
+
+  cl::Event m_event_read; 
+  size_t sizeR=m_prev_readParams[0]; 
+  size_t offsetR=m_prev_readParams[1];
+  auto len = m_out_clb_buffers.size();
+  cl_int status;  
+  if(sizeR!=0)
+  {
+    for (uint i = 0; i < len; ++i) {
+        Buffer& b = m_out_clb_buffers[i];
+        size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
+        auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
+     // cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+      status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
+                                  CL_TRUE,
+                                  offset_bytes,
+                                  size_bytes,
+                                  b.dataWithOffset(offsetR*m_internal_chunk),
+      nullptr,//                            &m_prev_events[count],
+                                  &m_event_read);
+        CL_CHECK_ERROR(status,"Reading memory problem");
+      }
+  }
+  #if CLB_PROFILING == 1
+  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
+  time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
+  time_stkrn= m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  #endif
+}
 
 void
 Device::initKernel()

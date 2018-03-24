@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <functional>
 #include <tuple>
 #include <utility>
 #include "buffer.hpp"
@@ -201,14 +202,7 @@ public:
   void setInternalChunk(int internal_chunk);
   int  getInternalChunk();
 
-//#if CLB_PROFILING == 1
-  vector<cl::Event>  m_prev_events;
-  cl::Event m_event_read;
-  cl::Event m_event_kernel;
-//#endif
-  uint count;
-  vector<size_t> m_prev_size;
-  vector<size_t> m_prev_offset;
+  vector<size_t> m_prev_readParams;
 
   void set_globalWorkSize( size_t gws0);
   void set_globalWorkSize( size_t gws0, size_t gws1);
@@ -217,6 +211,8 @@ public:
   void set_localWorkSize( size_t lws0);
   void set_localWorkSize( size_t lws0, size_t lws1);
   void set_localWorkSize( size_t lws0, size_t lws1,size_t lws2);
+  
+  void readBuffers();
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);
@@ -264,8 +260,6 @@ private:
   cl::Kernel m_kernel;
   cl::UserEvent m_end;
   string m_kernel_str;
-//  cl::Event m_event_kernel;
-  //vector<cl::Event> m_prev_events;
 
   int m_id;
   semaphore* m_sema_work;

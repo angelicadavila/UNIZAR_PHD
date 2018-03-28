@@ -586,7 +586,7 @@ cout<<"Manual proportions!";
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    stSched.setRawProportions({ prop , 0.2});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

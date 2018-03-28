@@ -113,14 +113,14 @@ do_sobel(int tscheduler,
   clb::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop, 0.25 });
+    stSched.setRawProportions({ prop, 0.26 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.23, 0.25});
+   hgSched.setRawProportions({prop, 0.25});
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

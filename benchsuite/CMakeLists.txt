@@ -34,6 +34,7 @@ set(SOURCES
   matrix_mult.cpp
   aes_proc.cpp
   aes_decrypt.cpp
+  gsm.cpp
   utils/io.cpp
 )
 
@@ -49,6 +50,7 @@ set(HEADERS
   parse_ppm.hpp
   aes_proc.hpp
   aes_decrypt.hpp
+  gsm.hpp
   utils/io.hpp
 )
 

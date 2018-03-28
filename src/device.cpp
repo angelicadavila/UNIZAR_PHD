@@ -326,14 +326,16 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 
  m_kernel.setArg(m_nargs,(uint) size);
  m_kernel.setArg(m_nargs+1,(uint) offset);
-// cout<<"offset: "<<offset<<" size:"<< size<<"\n";
- status=m_queue.enqueueNDRangeKernel(
+// cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ //if(getID()==0)
+ {status=m_queue.enqueueNDRangeKernel(
                           m_kernel, cl::NullRange, 
                           cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
                           cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
                           nullptr ,&(m_event_kernel));
+                          
+  CL_CHECK_ERROR(status,"NDRange problem");}
 #endif
-  CL_CHECK_ERROR(status,"NDRange problem");
   
   //Conditional Read to overlapping in a Kernel_i with read_i-1
   //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
@@ -354,7 +356,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   time_qkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_krn : "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  cout<<"**time_krn "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
   clb::Scheduler* sched = getScheduler();
   sched->callback(queue_index);
@@ -534,14 +536,34 @@ Device::writeBuffers(bool /* dummy */)
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, nullptr,nullptr)); //&(m_prev_events.data()[i])));
   }
-  
+
+ m_kernel.setArg(m_nargs,(uint) 1);
+ m_kernel.setArg(m_nargs+1,(uint) 1);
+ m_queue.enqueueNDRangeKernel(
+                          m_kernel, cl::NullRange, 
+                          cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
+                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+                          nullptr ,nullptr);
+
+
+        Buffer& b = m_out_clb_buffers[0];
+  m_queueRead.enqueueReadBuffer(m_out_buffers[0],
+                                  CL_TRUE,
+                                  0,
+                                  1,
+                                  b.dataWithOffset(0),
+                                  nullptr,
+                                  nullptr);
+
+   m_queue.finish(); 
  }
 
 void
 Device::readBuffers()
 {
-
-  cl::Event m_event_read; 
+  #if CLB_PROFILING == 1
+  cl::Event m_event_read;
+  #endif
   size_t sizeR=m_prev_readParams[0]; 
   size_t offsetR=m_prev_readParams[1];
   auto len = m_out_clb_buffers.size();
@@ -552,14 +574,18 @@ Device::readBuffers()
         Buffer& b = m_out_clb_buffers[i];
         size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
         auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
-     // cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+      //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
       status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
                                   CL_TRUE,
                                   offset_bytes,
                                   size_bytes,
                                   b.dataWithOffset(offsetR*m_internal_chunk),
-      nullptr,//                            &m_prev_events[count],
+                                  nullptr,
+                            #if CLB_PROFILING == 1
                                   &m_event_read);
+                            #else 
+                                  nullptr);
+                            #endif
         CL_CHECK_ERROR(status,"Reading memory problem");
       }
   }
@@ -569,7 +595,7 @@ Device::readBuffers()
   time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-  cout<<"**time_read: "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  cout<<"**time_read "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
 }
 

@@ -18,6 +18,7 @@
 #include "watermarking.hpp"
 #include "matrix_mult.hpp"
 #include "aes_decrypt.hpp"
+#include "gsm.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -112,6 +113,8 @@ main(int argc, char* argv[])
   else if (tbench ==8){
    do_aesdecrypt(tscheduler, tdevices, check, size, chunksize, prop );
   }
-  
+  else if (tbench == 9){
+   do_gsm(tscheduler,tdevices,check,size,chunksize,prop);
+  }
   return 0;
 }

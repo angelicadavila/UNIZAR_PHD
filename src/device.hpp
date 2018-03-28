@@ -116,10 +116,10 @@ public:
   //initializing the parameters of kernel execution
     m_gws=vector <size_t>(3,1);
     m_lws=vector <size_t>(3,1);
-    for( int i=0; i<global_work.size();i++)
+    for( int i=0; i<(int)global_work.size();i++)
       m_gws[i]=global_work[i];
    
-    for( int i=0; i<local_work.size();i++)
+    for( int i=0; i<(int)local_work.size();i++)
       m_lws[i]=local_work[i];
   }
 

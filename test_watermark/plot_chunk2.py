@@ -60,7 +60,7 @@ def main():
   parser.add_argument('fname', help='File prefix for reading the input data')
   parser.add_argument('--dir', help='Directory containing the input data.')
   file_test='modelt_dynamic.txt'
-  title_name="Watermark dynamic work size"
+  title_name="Watermark dynamic data size=1.25Gb "
   figure_name="Watermarkwork_im2.png"
   datos=carga_fichero(file_test,'executionKernel: ',0,1,0)   
 
@@ -73,51 +73,46 @@ def main():
   # tiempos de ejecuciOn
   ################################################
 
-  samples=5
-  dev=3
+  samples=10
+  dev=7
   
-  exm=7
+  exm=100
 
   datos2=np.reshape(datos,(exm*dev,samples))
   data_mean=np.average(datos2,axis=1)
   data_std=np.std(datos2,axis=1)
   print data_mean 
   print data_std
-#  red=datos2[:exm]
-#  mean_datosf=np.average(red,axis=1)
-#  print mean_datosf
-#  std_datosf=np.std(red,axis=1)
 #  
-#  red=datos2[samples:samples*2,:]
-#  mean_datosg=np.average(red,axis=1)
-#  std_datosg=np.std(red,axis=1)
-#  
-#  red=datos2[samples*2:samples*3,:]
-#  mean_datosc=np.average(red,axis=1)
-#  std_datosc=np.std(red,axis=1)
-#  
-  t=[0, 5, 10, 15, 20, 25, 30]
+  t=np.arange(0,500,5)
+  #t=[0, 5, 10, 15, 20, 25, 30]
   # t=[3907430*4, 1953715*4, 1302476*4, 976857*4, 781486*4, 651238*4]
   #55820434*4 ]
   #[4096*4, 40960*4, 204800*4, 409600*4, 4096000*4]
    #width= 0.25
+  text_label=['FPGA', 'GPU', 'CPU','FGC','FG','FC','GC']
+  colors = plt.cm.tab20b(np.linspace(0,1 , dev))
+  #colors = plt.cm.Pastel1(np.linspace(0,0.8 , dev))
+  hetero_marks = ['v-', '<-', '^-','>-','s-','d-','h-']
   fig, ax = plt.subplots() 
-  plt.plot(t,np.roll(data_mean[:exm],1), 'ro-', t,np.roll(data_mean[exm:exm*2],1), 'bo-',t, np.roll(data_mean[exm*2:exm*3],1),'yo-',label={'FPGA', 'GPU','CPU'})
+  
+  for x in range(dev):
+    plt.plot(t,data_mean[exm*x:exm*(x+1)],hetero_marks[x], label=text_label[x],color=colors[x])
   #plt.xscale('log')
-  #text_labels= ('FPGA','GPU','CPU','FGC','FG','GC','FC')
   #colors = plt.cm.Pastel1(np.linspace(0,0.8 , exm))
   ##colors = plt.cm.viridis(np.linspace(0,0.8 , exm))
-
+  plt.legend(bbox_to_anchor=(1.04,1),loc='upper left')
   #plt.bar(index,mean_datos2,width,color=colors,yerr=std_datos2)
   #plt.xticks(index,text_labels)
   plt.grid(True) 
  
   # Adjust layout to make room for the table:
-  plt.subplots_adjust(left=0.2, bottom=0.2)
+#  plt.subplots_adjust(left=0.2, bottom=0.2)
  
-  ax.set_ylabel('Throughtput(Mb/s)')
+  ax.set_ylabel('Time(us)')
+  ax.set_xlabel('Number of chunks')
   ax.set_title(title_name)
-  plt.savefig(figure_name) 
+  plt.savefig(figure_name,bbox_inches="tight") 
   plt.show()
 
 

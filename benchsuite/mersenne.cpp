@@ -42,7 +42,7 @@ Mersenne::init_seed()
 string
 Mersenne::get_kernel_str()
 {
-
+   return "";
 }
 
 void
@@ -138,7 +138,7 @@ cout<<"Manual proportions!";
   */  //file to save and compare data results
       std::ofstream myfile;
       myfile.open ("mersenne.txt");
-      for(int dat=0; dat<out.size(); dat++)
+      for(int dat=0; dat<(int)out.size(); dat++)
       		myfile<<out[dat]<<"\n";
  			myfile.close();
 

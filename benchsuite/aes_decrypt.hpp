@@ -39,12 +39,12 @@ do_aesdecrypt(int tscheduler,
 class Aes_decrypt
 {
 public:
-  Aes_decrypt(int size)
-    :_total_size(size),
-    _input_img(_total_size)
+  Aes_decrypt(int in_size)
+    :_total_size(in_size)
+    ,_input_img(_total_size)
     ,_crypt_img(_total_size)
-    ,_out(_total_size)
     ,_round_key(11*16)
+    ,_out(_total_size)
   {
     init_image();
   }

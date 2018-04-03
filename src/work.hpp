@@ -41,4 +41,7 @@ splitWorkLikeHGuided(size_t total, size_t min_worksize, size_t lws, float comp_p
   return ret;
 }
 
+
+
+
 #endif // CLBALANCER_WORK_HPP

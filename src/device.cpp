@@ -326,7 +326,7 @@ Device::do_work(size_t offset, size_t size, int queue_index)
 
  m_kernel.setArg(m_nargs,(uint) size);
  m_kernel.setArg(m_nargs+1,(uint) offset);
-// cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  {status=m_queue.enqueueNDRangeKernel(
                           m_kernel, cl::NullRange, 
@@ -497,7 +497,7 @@ Device::initBuffers()
     auto data = b.data();
 //    cout << "in [data] " << data << "\n";
 //    cout << "in [address] " << b.get() << "\n";
-//    cout << "in [size] " << b.size() << "\n";
+    cout << "in [size] " << b.size() << "\n";
 //    cout << "in [bytes] " << b.bytes() << "\n";
     cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
@@ -550,12 +550,13 @@ Device::writeBuffers(bool /* dummy */)
   m_queueRead.enqueueReadBuffer(m_out_buffers[0],
                                   CL_TRUE,
                                   0,
-                                  1,
+                                  4,
                                   b.dataWithOffset(0),
                                   nullptr,
                                   nullptr);
 
    m_queue.finish(); 
+   m_queueRead.finish(); 
  }
 
 void

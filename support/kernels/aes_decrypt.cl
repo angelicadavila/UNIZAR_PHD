@@ -345,12 +345,12 @@ void krnl_aes_decrypt(__global uchar16* __restrict output,__global uchar16* __re
     __attribute__((xcl_pipeline_loop))
   #endif
   
-  blockindex=get_global_id(0);
+  blockindex=get_global_id(0)+offset/16;
 //(  for(blockindex=0;blockindex<blocks;blockindex++)
 {
     uchar16 block0;
 
-    block0 = input[blockindex+offset];
+    block0 = input[blockindex];
 
     //InitialRound
     block0 = AddRoundKey(block0,ROUNDS,roundkeylocal);
@@ -367,6 +367,6 @@ void krnl_aes_decrypt(__global uchar16* __restrict output,__global uchar16* __re
     block0 = SubBytesRSBox(block0); //SubBytesRSBox
     block0 = AddRoundKey(block0,0,roundkeylocal); //addRoundKey
 
-    output[blockindex+offset] = block0;
+    output[blockindex] = block0;
   }
 }

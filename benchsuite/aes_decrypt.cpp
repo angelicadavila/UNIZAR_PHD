@@ -23,13 +23,22 @@ Aes_decrypt::init_image()
     }
   //128 bit encryption key
   unsigned char key[] = "Xilinx SDAccel  ";
-  vector<char,vecAllocator<char>>_round_key((char*)key, (char*)key+16);
-  KeyExpansion((unsigned char *)_round_key.data());  
+  unsigned char roundkey[(ROUNDS + 1) * 16];
+  strcpy(((char *) roundkey), ((char *) key));
+  KeyExpansion(roundkey);
+  //vector<char,vecAllocator<char>>_round_key((char*)roundkey, (char*)roundkey+(10+1)*16);
+ //uncomment this if you have a other test image
   //perform SW encryption
   //Xilinx
-  aesecb_encrypt(key, ((unsigned char *)_input_img.data() ),
-      ((unsigned char *) _crypt_img.data()), _total_size, ROUNDS);
-
+ // aesecb_encrypt(key, ((unsigned char *)_input_img.data() ),
+  //    ((unsigned char *) _crypt_img.data()), _total_size, ROUNDS);
+ // outFrame((unsigned int*)_crypt_img.data());
+  //imageFilename = "benchsuite/burmisCript.ppm";
+    
+  if (!parse_ppm(imageFilename.c_str(),COLS,ROWS,(unsigned char *)_crypt_img.data())) {
+        std::cerr << "Error: could not load " << std::endl;
+        exit(0);
+    }
 }
 
 string
@@ -42,7 +51,21 @@ Aes_decrypt::get_kernel_str()
 void 
 Aes_decrypt::outFrame(unsigned *frameData) {
 
+  char fname[256];
+  sprintf(fname, "burmisCript.ppm");
+  printf("Dumping %s\n", fname);
 
+  FILE *f = fopen(fname, "wb");
+  fprintf(f, "P6 %d %d %d\n", COLS, ROWS, 255);
+  for(unsigned y = 0; y < ROWS; ++y) {
+    for(unsigned x = 0; x < COLS; ++x) {
+      // This assumes byte-order is little-endian.
+      unsigned pixel = frameData[y * COLS + x];
+      fwrite(&pixel, 1, 3, f);
+    }
+    fprintf(f, "\n");
+  }
+  fclose(f);
 
 }
 
@@ -68,7 +91,7 @@ do_aesdecrypt(int tscheduler,
  auto output = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out);
 #pragma GCC diagnostic pop
   
-  int problem_size =(aes_decrypt._total_size)/16;
+  int problem_size =19537152;//(aes_decrypt._total_size)/16;
   //19537152;//(aes_decrypt._total_size)/16;
 
   vector<clb::Device> devices;
@@ -113,7 +136,7 @@ do_aesdecrypt(int tscheduler,
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.9, 0.2});
+   hgSched.setRawProportions({0.10, 0.1});
   }
   runtime.setInBuffer(input);
   runtime.setInBuffer(key);

@@ -73,7 +73,7 @@ do_watermarking(int tscheduler,
 
   vector<clb::Device> devices;
 
-  auto platform_cpu = 0;
+  auto platform_cpu = 3;
   auto platform_gpu = 1;
   auto platform_fpga= 2;
 

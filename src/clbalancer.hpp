@@ -15,5 +15,6 @@
 #include "schedulers/dynamic.hpp"
 #include "schedulers/hguided.hpp"
 #include "schedulers/static.hpp"
+#include "schedulers/proportional.hpp"
 
 #endif // CLBALANCER_HPP

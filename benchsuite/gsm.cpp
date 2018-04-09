@@ -138,14 +138,14 @@ cout<<"problem_size"<<problem_size<<"\n";
 
   runtime.printStats();
 
- /* if (check) {
-    auto out = *output.get();
-    gsm.outFrame((unsigned int*)out.data());
+  if (check) {
+//    auto out = *output.get();
+ //   gsm.outFrame((unsigned int*)out.data());
 
   } else {
     cout << "Done\n";
   }
-*/
+
   exit(0);
 }
 

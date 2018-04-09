@@ -61,7 +61,7 @@ def main():
   parser.add_argument('--dir', help='Directory containing the input data.')
   file_test='modelt_dynamic.txt'
   title_name="Watermark dynamic data size=1.25Gb "
-  figure_name="Watermarkwork_im2.png"
+  figure_name="Watermark_D2.png"
   datos=carga_fichero(file_test,'executionKernel: ',0,1,0)   
 
 # hetero_marks = ['v-', '<-', '^-','>-']
@@ -73,10 +73,10 @@ def main():
   # tiempos de ejecuciOn
   ################################################
 
-  samples=10
+  samples=5
   dev=7
   
-  exm=100
+  exm=40
 
   datos2=np.reshape(datos,(exm*dev,samples))
   data_mean=np.average(datos2,axis=1)
@@ -84,7 +84,7 @@ def main():
   print data_mean 
   print data_std
 #  
-  t=np.arange(0,500,5)
+  t=np.arange(1,2000,50)
   #t=[0, 5, 10, 15, 20, 25, 30]
   # t=[3907430*4, 1953715*4, 1302476*4, 976857*4, 781486*4, 651238*4]
   #55820434*4 ]
@@ -97,7 +97,9 @@ def main():
   fig, ax = plt.subplots() 
   
   for x in range(dev):
-    plt.plot(t,data_mean[exm*x:exm*(x+1)],hetero_marks[x], label=text_label[x],color=colors[x])
+   if x>2:
+    data_mean[exm*x]=data_mean[exm*x+1]
+   plt.plot(t,data_mean[exm*x:exm*(x+1)],hetero_marks[x], label=text_label[x],color=colors[x])
   #plt.xscale('log')
   #colors = plt.cm.Pastel1(np.linspace(0,0.8 , exm))
   ##colors = plt.cm.viridis(np.linspace(0,0.8 , exm))

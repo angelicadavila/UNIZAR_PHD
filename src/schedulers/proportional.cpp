@@ -1,9 +1,10 @@
-#include "schedulers/dynamic.hpp"
+#include "schedulers/proportional.hpp"
 
 #include <tuple>
 #include <cassert>
+#include <cmath>
 #include "device.hpp"
-#include "scheduler.hpp"
+#include "proportional.hpp"
 
 #define ATOMIC 1
 // #define ATOMIC 0
@@ -33,7 +34,7 @@ scheduler_thread_func(ProportionalScheduler& sched)
     sched.notifyDevices();
 }
 
-ProportionalScheduler::DynamicScheduler(WorkSplit wsplit)
+ProportionalScheduler::ProportionalScheduler(WorkSplit wsplit)
   : m_wsplit(wsplit)
   , m_has_work(false)
   , m_sema_requests(1)
@@ -51,7 +52,7 @@ ProportionalScheduler::DynamicScheduler(WorkSplit wsplit)
   m_duration_offset_actions.reserve(8); // NOTE to improve
 }
 
-ProportionalScheduler::~DynamicScheduler()
+ProportionalScheduler::~ProportionalScheduler()
 {
   if (m_thread.joinable()) {
     m_thread.join();
@@ -283,12 +284,18 @@ ProportionalScheduler::enq_work(Device* device)
     {
       lock_guard<mutex> guard(m_mutex_work);
         //calulate chunk size proportional to work done until now
-        auto prop=0; 
-      for (auto i=0; i<m_devices;i++){
+        auto prop=0.0; 
+      for (auto i=0; i<(int)m_devices.size();i++){
         prop+=m_chunk_todo[i];
         }
-        prop=prop/m_devices;
-        size+=floor(prop*3)*size;
+      
+      //promedio ejecutado 
+      prop=prop==0?1:prop;
+      prop=m_chunk_todo[id]/prop;
+
+      prop=prop==0?1:prop;
+      cout<<"m_chunk_todo"<<m_chunk_todo[id]<<"Proporcion"<<prop<<"\n";
+      size+=std::floor(prop*4)*size;
 
       size_t offset = m_size_given;
       if(offset+size>m_size)
@@ -321,19 +328,10 @@ ProportionalScheduler::req_work(Device* device)
   saveDuration(ActionType::schedulerStart);
   saveDurationOffset(ActionType::schedulerStart);
 
-#if ATOMIC == 1
   if (m_size_rem_completed > 0) {
     auto idx = m_requests_idx++ % m_requests_max;
     m_requests_list[idx] = device->getID() + 1;
   }
-#else
-  {
-    lock_guard<mutex> guard(m_mutex_work);
-    if (m_size_rem_completed) {
-      m_requests.push(device->getID());
-    }
-  }
-#endif
   notifyCallbacks();
 }
 
@@ -344,10 +342,13 @@ ProportionalScheduler::callback(int queue_index)
   int id = work.device_id;
   m_chunks_done++;
   m_size_rem_completed -= work.size;
-  if (m_size_rem_completed > 0) {
+  //cout<<work.size<<" work_size \n";
+ if (m_size_rem_completed > 0) {
     auto idx = m_requests_idx++ % m_requests_max;
     m_requests_list[idx] = id + 1;
  }
+ else
+   m_device_enable[id]=0; 
   notifyCallbacks();
 }
 
@@ -359,11 +360,11 @@ ProportionalScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
   //try if m_size_rem_given
+  // lock_guard<mutex> guard(m_mutex_work);
    if (m_device_enable[id])  {
     uint next = 0;
     int index = -1;
   
-   //lock_guard<mutex> guard(m_mutex_work);
       next = m_chunk_given[id]++;
       // m_size_rem_given -= m_worksize;
       index = m_queue_id_work[id][next];

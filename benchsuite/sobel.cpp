@@ -107,6 +107,7 @@ do_sobel(int tscheduler,
   clb::StaticScheduler stSched;
   clb::DynamicScheduler dynSched;
   clb::HGuidedScheduler hgSched;
+  clb::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -117,10 +118,14 @@ do_sobel(int tscheduler,
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
-  } else { // tscheduler == 2
+  } else if (tscheduler ==2){ // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
    hgSched.setRawProportions({prop, 0.25});
+  } else if (tscheduler ==3){ // tscheduler == 2
+    runtime.setScheduler(&propSched);
+    propSched.setWorkSize(worksize);
+    //propSched.setRawProportions({prop, 0.25});
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

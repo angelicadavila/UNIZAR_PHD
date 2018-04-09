@@ -76,8 +76,7 @@ do_mersenne(int tscheduler,
  // Mersenne twister is a unitary kernel pipeline or Task execution
 
   vector <char> binary_file;
-  vector <size_t>gws=vector <size_t>(3,0);
-  gws[0]=1;
+  vector <size_t>gws=vector <size_t>(3,1);
   if (tdevices &0x04){  
     clb::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_fpr.aocx"); 

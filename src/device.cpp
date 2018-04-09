@@ -541,7 +541,7 @@ Device::writeBuffers(bool /* dummy */)
  m_kernel.setArg(m_nargs+1,(uint) 1);
  m_queue.enqueueNDRangeKernel(
                           m_kernel, cl::NullRange, 
-                          cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
+                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
                           cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
                           nullptr ,nullptr);
 
@@ -575,6 +575,10 @@ Device::readBuffers()
         Buffer& b = m_out_clb_buffers[i];
         size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
         auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
+      auto address= offset_bytes;
+      if(address & 0x3){
+       cout<<"unaligned \n";
+       }
       //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
       status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
                                   CL_TRUE,

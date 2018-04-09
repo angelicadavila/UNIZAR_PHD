@@ -92,14 +92,14 @@
 //  operations per cycle.
 
 //#include "../host/inc/matrixMult.h"
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 32
 #ifndef SIMD_WORK_ITEMS
 #define SIMD_WORK_ITEMS 4 // default value
 #endif
 
 __kernel 
 __attribute((reqd_work_group_size(BLOCK_SIZE,BLOCK_SIZE,1)))
-__attribute((num_simd_work_items(SIMD_WORK_ITEMS)))
+//__attribute((num_simd_work_items(SIMD_WORK_ITEMS)))
 void matrixMult( // Input and output matrices
                  __global float *restrict C,
                  __global float *A,

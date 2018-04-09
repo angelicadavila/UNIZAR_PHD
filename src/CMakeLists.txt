@@ -30,6 +30,7 @@ set(SOURCES
   runtime.cpp
   schedulers/static.cpp
   schedulers/dynamic.cpp
+  schedulers/proportional.cpp
   schedulers/hguided.cpp
   device.cpp
   clutils.cpp
@@ -44,6 +45,7 @@ set(HEADERS
   runtime.hpp
   schedulers/static.hpp
   schedulers/dynamic.hpp
+  schedulers/proportional.hpp
   schedulers/hguided.hpp
   scheduler.hpp
   device.hpp

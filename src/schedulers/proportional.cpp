@@ -228,40 +228,7 @@ ProportionalScheduler::setDevices(vector<Device*>&& devices)
 void
 ProportionalScheduler::calcProportions()
 {
-  return; // NOTE(dyn)
-  vector<tuple<size_t, size_t>> proportions;
-  int len = m_ndevices;
-  uint last = len - 1;
-  size_t wsize_given_acc = 0;
-  size_t wsize_given = 0;
-  size_t wsize_rem = m_size;
-  switch (m_wsplit) {
-    case WorkSplit::Raw:
-      for (uint i = 0; i < last; ++i) {
-        auto prop = m_raw_proportions[i];
-        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, prop, 128);
-        size_t wsize_offset = wsize_given_acc;
-        proportions.push_back(make_tuple(wsize_given, wsize_offset));
-        wsize_given_acc += wsize_given;
-      }
-      proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the last
-      break;
-    case WorkSplit::By_Devices:
-      for (uint i = 0; i < last; ++i) {
-        // proportions.push_back(  );
-        tie(wsize_given, wsize_rem) = splitWork(wsize_rem, 1.0f / len, 128);
-        // cout << "given: " << wsize_given << " rem: " << wsize_rem << "\n";
-        size_t wsize_offset = wsize_given_acc;
-        proportions.push_back(make_tuple(wsize_given, wsize_offset));
-        wsize_given_acc += wsize_given;
-      }
-      proportions.push_back(make_tuple(wsize_rem, wsize_given_acc)); // the last
-      break;
-  }
-  m_proportions = move(proportions);
-  for (auto prop : m_proportions) {
-    cout << "proportion: size: " << std::get<0>(prop) << " offset:" << std::get<1>(prop) << "\n";
-  }
+  return; // NOTE
 }
 
 void
@@ -277,25 +244,24 @@ void
 ProportionalScheduler::enq_work(Device* device)
 {
   int id = device->getID();
-  //lock_guard<mutex> guard(m_mutex_work);
+  
   if (m_size_rem > 0 ) {
     size_t size = m_worksize;
     size_t index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
         //calulate chunk size proportional to work done until now
         auto prop=0.0; 
       for (auto i=0; i<(int)m_devices.size();i++){
         prop+=m_chunk_todo[i];
         }
       
-      //promedio ejecutado 
+      //execution average 
       prop=prop==0?1:prop;
       prop=m_chunk_todo[id]/prop;
 
-      prop=prop==0?1:prop;
-      cout<<"m_chunk_todo"<<m_chunk_todo[id]<<"Proporcion"<<prop<<"\n";
-      size+=std::floor(prop*4)*size;
+      prop=prop==0?0.1:prop;
+      size+=std::floor(prop*5)*size;
+      //cout<<"size["<<id<<"]= "<<floor(prop*5)<<"\n";
 
       size_t offset = m_size_given;
       if(offset+size>m_size)
@@ -305,15 +271,20 @@ ProportionalScheduler::enq_work(Device* device)
 
       m_size_rem -= size;
       m_size_given += size;
+    //the flow of the program is sequentian between devices and scheduler
+    //does no require mutex
+  //    lock_guard<mutex> guard(m_mutex_work);
+      
       index = m_queue_work.size();
       m_queue_work.push_back(Work(id, offset, size));
       m_queue_id_work[id].push_back(index);
       m_chunk_todo[id]++;
     }
-  } else 
+  }
+  else 
  {
    m_device_enable[id]=0; 
-  }
+ }
 }
 
 void
@@ -360,13 +331,11 @@ ProportionalScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
   //try if m_size_rem_given
-  // lock_guard<mutex> guard(m_mutex_work);
    if (m_device_enable[id])  {
     uint next = 0;
     int index = -1;
   
       next = m_chunk_given[id]++;
-      // m_size_rem_given -= m_worksize;
       index = m_queue_id_work[id][next];
     return index;
   } else {
@@ -377,7 +346,7 @@ ProportionalScheduler::getWorkIndex(Device* device)
 Work
 ProportionalScheduler::getWork(uint queue_index)
 {
-  lock_guard<mutex> guard(m_mutex_work);
+ // lock_guard<mutex> guard(m_mutex_work);
   return m_queue_work[queue_index];
 }
 

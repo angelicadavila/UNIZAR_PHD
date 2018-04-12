@@ -35,6 +35,7 @@ set(SOURCES
   aes_proc.cpp
   aes_decrypt.cpp
   gsm.cpp
+  nw.cpp
   utils/io.cpp
 )
 
@@ -51,6 +52,7 @@ set(HEADERS
   aes_proc.hpp
   aes_decrypt.hpp
   gsm.hpp
+  nw.hpp
   utils/io.hpp
 )
 

@@ -93,12 +93,13 @@
 
 //#include "../host/inc/matrixMult.h"
 #define BLOCK_SIZE 32
+#define BLOCK_SIZE_P 32
 #ifndef SIMD_WORK_ITEMS
 #define SIMD_WORK_ITEMS 4 // default value
 #endif
 
 __kernel 
-__attribute((reqd_work_group_size(BLOCK_SIZE,BLOCK_SIZE,1)))
+//__attribute((reqd_work_group_size(BLOCK_SIZE,BLOCK_SIZE,1)))
 //__attribute((num_simd_work_items(SIMD_WORK_ITEMS)))
 void matrixMult( // Input and output matrices
                  __global float *restrict C,
@@ -106,7 +107,7 @@ void matrixMult( // Input and output matrices
                  __global float *B, 
                  // Widths of matrices.
                  int A_width, int B_width,
-                 uint iterations, const uint offset)
+                 uint iterations,  uint offset)
 {
     // Local storage for a block of input matrices A and B
     __local float A_local[BLOCK_SIZE][BLOCK_SIZE];
@@ -114,7 +115,7 @@ void matrixMult( // Input and output matrices
 
     // Block index
     int block_y = get_group_id(0);
-    int block_x = get_group_id(1)+offset;
+    int block_x = get_group_id(1);
 
     // Local ID index (offset within a block)
     int local_y = get_local_id(0);
@@ -137,7 +138,7 @@ void matrixMult( // Input and output matrices
         //
         // This is actually an optimization that the compiler can perform,
         // but is shown here for illustration purposes.
-        A_local[local_y][local_x] = A[a + A_width * local_y + local_x];
+        A_local[local_y][local_x] = A[a +offset+ A_width * local_y + local_x];
         B_local[local_x][local_y] = B[b + B_width * local_y + local_x];
   
         // Wait for the entire block to be loaded.
@@ -151,16 +152,15 @@ void matrixMult( // Input and output matrices
         //  A_local[local_y][0..BLOCK_SIZE-1] and
         //  B_local[local_x][0..BLOCK_SIZE-1]
         #pragma unroll
-        for (int k = 0; k < BLOCK_SIZE; ++k)
+        for (int k = 0; k < BLOCK_SIZE_P; ++k)
         {
             running_sum += A_local[local_y][k] * B_local[local_x][k];
         }
-
         // Wait for the block to be fully consumed before loading the next
         // block.
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     // Store result in matrix C
-    C[get_global_id(1) * get_global_size(0) + get_global_id(0)] = running_sum;
+    C[get_global_id(0) * (get_global_size(1)) + get_global_id(1)+offset] = running_sum;
 }

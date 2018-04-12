@@ -123,7 +123,7 @@ DynamicScheduler::saveDurationOffset(ActionType action)
 void
 DynamicScheduler::setWorkSize(size_t size)
 {
-  auto bound = 128;
+  auto bound = 64;//128;
   size_t total = m_size;
   size_t times = size / bound;
   size_t rest = size % bound;
@@ -293,7 +293,7 @@ DynamicScheduler::enq_work(Device* device)
     size_t size = m_worksize;
     size_t index = -1;
     {
-      lock_guard<mutex> guard(m_mutex_work);
+      //lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
       if(offset+size>m_size)
       {
@@ -353,7 +353,10 @@ DynamicScheduler::callback(int queue_index)
   if (m_size_rem_completed > 0) {
     auto idx = m_requests_idx++ % m_requests_max;
     m_requests_list[idx] = id + 1;
- }
+  }
+  else{
+    m_device_enable[id]=0;
+  }
 #else
   {
     lock_guard<mutex> guard(m_mutex_work);
@@ -376,12 +379,13 @@ int
 DynamicScheduler::getWorkIndex(Device* device)
 {
   int id = device->getID();
-  lock_guard<mutex> guard(m_mutex_work);
-   if (m_size_rem_given > 0 && m_device_enable[id])  {
+  //lock_guard<mutex> guard(m_mutex_work);
+  // if (m_size_rem_given > 0 && m_device_enable[id])  {
+   if ( m_device_enable[id])  {
     uint next = 0;
     int index = -1;
     next = m_chunk_given[id]++;
-    m_size_rem_given -= m_worksize;
+   // m_size_rem_given -= m_worksize;
     index = m_queue_id_work[id][next];
     return index;
   } else {
@@ -392,7 +396,7 @@ DynamicScheduler::getWorkIndex(Device* device)
 Work
 DynamicScheduler::getWork(uint queue_index)
 {
-  lock_guard<mutex> guard(m_mutex_work);
+  //lock_guard<mutex> guard(m_mutex_work);
   return m_queue_work[queue_index];
 }
 

@@ -99,6 +99,7 @@ do_watermarking(int tscheduler,
   clb::StaticScheduler stSched;
   clb::DynamicScheduler dynSched;
   clb::HGuidedScheduler hgSched;
+  clb::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -109,11 +110,19 @@ do_watermarking(int tscheduler,
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
-  } else { // tscheduler == 2
+  }
+  else if (tscheduler ==2){ // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.3,0.6});
-  }
+    if(tdevices ==7)
+      hgSched.setRawProportions({0.1,0.4,prop});
+    else
+      hgSched.setRawProportions({0.1,prop});
+   }else if (tscheduler == 3){
+    runtime.setScheduler(&propSched);
+    propSched.setWorkSize(worksize);
+   }
+
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);
   runtime.setKernel(kernel, "apply_watermark");

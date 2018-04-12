@@ -77,6 +77,8 @@ do_gsm(int tscheduler,
   
   int problem_size =in_size;//gsm._total_size;
 cout<<"problem_size"<<problem_size<<"\n";
+cout<<"vector input size"<<gsm._total_size<<"\n";
+cout<<"type data"<<sizeof(short)<<"\n";
   vector<clb::Device> devices;
 
   auto platform_cpu = 0;

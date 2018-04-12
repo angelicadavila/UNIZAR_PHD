@@ -498,7 +498,7 @@ Device::initBuffers()
 //    cout << "in [data] " << data << "\n";
 //    cout << "in [address] " << b.get() << "\n";
     cout << "in [size] " << b.size() << "\n";
-//    cout << "in [bytes] " << b.bytes() << "\n";
+    cout << "in [bytes] " << b.bytes() << "\n";
     cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
     m_in_buffers.push_back(move(tmp_buffer));
@@ -511,8 +511,8 @@ Device::initBuffers()
     auto data = b.data();
 //   cout << "out [data] " << data << "\n";
 //   cout << "out [address] " << b.get() << "\n";
-//   cout << "out [size] " << b.size() << "\n";
-//    cout << "out [bytes] " << b.bytes() << "\n";
+    cout << "out [size] " << b.size() << "\n";
+    cout << "out [bytes] " << b.bytes() << "\n";
     cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL,&cl_err);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));

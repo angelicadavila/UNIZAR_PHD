@@ -460,11 +460,11 @@ void gsm_main(__global unsigned short* restrict  input_data,
 {
     word so[N];
     word LARc[M];
- // uint it=get_global_id(0); 
+  uint it=get_global_id(0); 
   for(uint it=0; it<iterations; it ++)
   {
     uint index=offset+N*it;
-
+   #pragma unroll
     for (int i = 0; i < N; i++)
     {
         so[i] = input_data[i+index];
@@ -472,6 +472,7 @@ void gsm_main(__global unsigned short* restrict  input_data,
 
     Gsm_LPC_Analysis (so, LARc);
 
+   #pragma unroll
     for (int i = 0; i < N; i++)
     {
        //main_result += (so[i] != outData[i]);
@@ -479,6 +480,7 @@ void gsm_main(__global unsigned short* restrict  input_data,
        output_data[i+offset] = so[i];
     }
     index=offset+M*it;
+   #pragma unroll
     for (int i = 0; i < M; i++)
     {
        //main_result += (so[i] != outData[i]);

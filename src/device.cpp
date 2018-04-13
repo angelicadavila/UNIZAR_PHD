@@ -486,6 +486,8 @@ Device::initBuffers()
   cl_int cl_err = CL_SUCCESS;
 
   cl_int buffer_in_flags = CL_MEM_READ_WRITE;
+  //cl_int buffer_in_flags[] = {CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA,CL_MEM_READ_WRITE| CL_MEM_BANK_2_ALTERA};
+  //cl_int buffer_out_flags = CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA;
   cl_int buffer_out_flags = CL_MEM_READ_WRITE;
 
   m_in_buffers.reserve(m_in_clb_buffers.size());

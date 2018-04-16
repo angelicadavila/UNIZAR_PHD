@@ -79,7 +79,7 @@ do_gsm(int tscheduler,
 cout<<"problem_size"<<problem_size<<"\n";
 cout<<"vector input size"<<gsm._total_size<<"\n";
 cout<<"type data"<<sizeof(short)<<"\n";
-  vector<clb::Device> devices;
+  vector<ecl::Device> devices;
 
   auto platform_cpu = 0;
   auto platform_gpu = 1;
@@ -87,7 +87,7 @@ cout<<"type data"<<sizeof(short)<<"\n";
 
   vector <char> binary_file;
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/gsm.aocx");
     //vector of kernel dimension. Task Kernel gws==lws
     vector <size_t>gws=vector <size_t>(3,1);
@@ -96,26 +96,26 @@ cout<<"type data"<<sizeof(short)<<"\n";
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
   
     vector <size_t>gws=vector <size_t>(3,1);
     device.setKernel(kernel,gws,gws); 
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
     vector <size_t>gws=vector <size_t>(3,1);
     device1.setKernel(kernel,gws,gws); 
     devices.push_back(move(device1));
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  ecl::HGuidedScheduler hgSched;
   
   cout<<"Manual proportions!";
   
-  clb::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop, 0.26 });

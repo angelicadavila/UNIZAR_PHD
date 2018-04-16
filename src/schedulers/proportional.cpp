@@ -4,12 +4,11 @@
 #include <cassert>
 #include <cmath>
 #include "device.hpp"
-#include "proportional.hpp"
 
 #define ATOMIC 1
 // #define ATOMIC 0
 
-namespace clb {
+namespace ecl {
 
 void
 scheduler_thread_func(ProportionalScheduler& sched)
@@ -230,6 +229,24 @@ ProportionalScheduler::calcProportions()
 {
   return; // NOTE
 }
+void
+ProportionalScheduler::setGWS(NDRange gws)
+{
+  m_gws = gws;
+
+}
+
+void
+ProportionalScheduler::setLWS(size_t lws)
+{
+  m_lws = lws;
+}
+
+void
+ProportionalScheduler::setWSBound(float ws_bound)
+{
+  m_ws_bound = ws_bound;
+}
 
 void
 ProportionalScheduler::start()
@@ -276,7 +293,8 @@ ProportionalScheduler::enq_work(Device* device)
   //    lock_guard<mutex> guard(m_mutex_work);
       
       index = m_queue_work.size();
-      m_queue_work.push_back(Work(id, offset, size));
+      
+      m_queue_work.push_back(Work(id, offset, size, m_ws_bound));
       m_queue_id_work[id].push_back(index);
       m_chunk_todo[id]++;
     }
@@ -363,4 +381,4 @@ ProportionalScheduler::getNextRequest()
   }
   return dev;
 }
-} // namespace clb
+} // namespace ecl

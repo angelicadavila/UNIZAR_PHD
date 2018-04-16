@@ -231,13 +231,13 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   auto in2_array = make_shared<vector<int,vecAllocator<int>>>(size, 2);
   auto out_array = make_shared<vector<int,vecAllocator<int>>>(size, 0);
 
-  vector<clb::Device> devices;
+  vector<ecl::Device> devices;
   int platform_fpga=2;
   int platform_cpu=0;
   int platform_gpu=1;  
   vector <char> binary_file;
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     //available kernes:   vecadd_l    -one compute unit
     //                    vecadd_cu16 -16 compute units. performance aprox. 1/2 cpu
     //                    vecadd_cu32 -32 compute units
@@ -247,19 +247,19 @@ vecadd(__global int* in1, __global int* in2, __global int* out, int size, uint o
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
      devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  ecl::HGuidedScheduler hgSched;
 
-  clb::Runtime runtime(move(devices), size);
+  ecl::Runtime runtime(move(devices), size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop });

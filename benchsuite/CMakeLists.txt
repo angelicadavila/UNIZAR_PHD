@@ -23,9 +23,9 @@ include_directories ("${SRC_DIR}")
 include(SetLibraries)
 
 set(SOURCES
-  assign.cpp
+  #assign.cpp
   vecadd.cpp
-  gaussian.cpp
+  #gaussian.cpp
   ray.cpp
   binomial.cpp
   # taylor.cpp
@@ -47,9 +47,9 @@ set(SOURCES
 )
 
 set(HEADERS
-  assign.hpp
+ # assign.hpp
   vecadd.hpp
-  gaussian.hpp
+ # gaussian.hpp
   ray.hpp
   binomial.hpp
   # taylor.hpp

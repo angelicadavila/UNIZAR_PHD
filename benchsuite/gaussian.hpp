@@ -1,7 +1,7 @@
 #ifndef ENGINECL_BENCHS_GAUSSIAN_HPP
 #define ENGINECL_BENCHS_GAUSSIAN_HPP
 
-#include "clbalancer.hpp"
+#include "EngineCL.hpp"
 #include "vecAllocator.hpp"
 #include <memory>
 #include <ostream>
@@ -12,7 +12,7 @@
 #include <cstdlib>
 #include <omp.h>
 
-#include "clbalancer.hpp"
+#include "EngineCL.hpp"
 #include "utils/io.hpp"
 
 using std::ostream;

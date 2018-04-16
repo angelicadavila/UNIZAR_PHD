@@ -268,7 +268,7 @@ StaticScheduler::enq_work(Device* device)
 
    lock_guard<mutex> guard(m_mutex_work);
     auto index = m_queue_work.size();
-    m_queue_work.push_back(Work(id, offset, size));
+    m_queue_work.push_back(Work(id, offset, size, m_ws_bound));
     m_queue_id_work[id].push_back(index);
 
     m_chunk_todo[id]++;

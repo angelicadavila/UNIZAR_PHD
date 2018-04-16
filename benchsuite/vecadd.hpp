@@ -8,7 +8,7 @@
 
 #include "utils/io.hpp"
 
-#include "clbalancer.hpp"
+#include "EngineCL.hpp"
 
 // void do_vecadd(int tscheduler, int tdevices, bool check);
 

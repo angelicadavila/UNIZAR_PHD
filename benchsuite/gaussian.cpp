@@ -808,18 +808,18 @@ do_gaussian(int tscheduler,
 
   vector <char> binary_file;
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/gaussian_unroll.aocx"); 
     device2.setKernel(binary_file); 
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
 

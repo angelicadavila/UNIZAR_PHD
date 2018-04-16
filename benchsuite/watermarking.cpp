@@ -71,7 +71,7 @@ do_watermarking(int tscheduler,
   
   int problem_size =19537152;//(watermarking._total_size/16);
 
-  vector<clb::Device> devices;
+  vector<ecl::Device> devices;
 
   auto platform_cpu = 3;
   auto platform_gpu = 1;
@@ -79,7 +79,7 @@ do_watermarking(int tscheduler,
 
   vector <char> binary_file;
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_off.aocx");
     //vector of kernel dimension. Task Kernel gws==lws
     vector <size_t>gws=vector <size_t>(3,1);
@@ -88,22 +88,22 @@ do_watermarking(int tscheduler,
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
-  clb::ProportionalScheduler propSched;
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  ecl::HGuidedScheduler hgSched;
+  ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
-  clb::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop, 0.26 });

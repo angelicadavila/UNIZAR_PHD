@@ -102,7 +102,7 @@ public:
 
   void setGWS(NDRange gws) override;
   void setLWS(size_t lws) override;
-  void setWSBound(size_t ws_bound) override;
+  void setWSBound(float ws_bound) override;
 
 private:
   thread m_thread;

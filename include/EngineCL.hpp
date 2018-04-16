@@ -14,7 +14,8 @@
 #include "runtime.hpp"
 #include "scheduler.hpp"
 #include "schedulers/dynamic.hpp"
-// #include "schedulers/hguided.hpp"
+#include "schedulers/hguided.hpp"
+#include "schedulers/proportional.hpp"
 #include "schedulers/static.hpp"
 
 #endif // ENGINECL_HPP

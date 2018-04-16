@@ -104,7 +104,7 @@ do_needleman(int tscheduler,
   
   int problem_size = (needleman._max_cols - 1)/BLOCK_SIZE;
 
-  vector<clb::Device> devices;
+  vector<ecl::Device> devices;
 
   auto platform_cpu = 0;
   auto platform_gpu = 1;
@@ -114,33 +114,33 @@ do_needleman(int tscheduler,
   vector <size_t>gws=vector <size_t>(3,1);
   vector <size_t>lws=vector <size_t>(3,1);
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/nw_16.aocx"); 
     device2.setKernel(binary_file,gws,gws);
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
     gws[0]=0; lws[0]=BLOCK_SIZE;
     device.setKernel(kernel,gws,lws);
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
     gws[0]=0;lws[0]=BLOCK_SIZE;
     device1.setKernel(kernel,gws,lws);
     devices.push_back(move(device1));
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
-  clb::ProportionalScheduler propSched;
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  ecl::HGuidedScheduler hgSched;
+  ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
-  clb::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop, 0.26 });

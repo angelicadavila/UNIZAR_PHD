@@ -163,7 +163,7 @@ HGuidedScheduler::setLWS(size_t lws)
 }
 
 void
-HGuidedScheduler::setWSBound(size_t ws_bound)
+HGuidedScheduler::setWSBound(float ws_bound)
 {
   m_ws_bound = ws_bound;
 }

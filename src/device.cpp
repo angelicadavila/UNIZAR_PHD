@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
- * This file is part of clbalancer which is released under MIT License.
+ * This file is part of eclalancer which is released under MIT License.
  * See file LICENSE for full license details.
  */
 #include "./device.hpp"
@@ -341,7 +341,7 @@ Device::setBarrier_init(shared_ptr<semaphore> barrier)
 }
 
 void
-Device::do_work(size_t offset, size_t size, int queue_index)
+Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 {
   if (!size) {
     return callbackRead(nullptr, CL_COMPLETE, this);
@@ -402,13 +402,14 @@ Device::do_work(size_t offset, size_t size, int queue_index)
   time_ekrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_END>();
   cout<<"**time_krn "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
-  clb::Scheduler* sched = getScheduler();
+  ecl::Scheduler* sched = getScheduler();
   sched->callback(queue_index);
-  saveDuration(clb::ActionType::completeWork);
+  saveDuration(ecl::ActionType::completeWork);
 
 #else
   auto cbdata = new CBData(queue_index, this);
-  evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
+  exit(0);
+ //evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
   m_queue.flush();
 #endif  
   m_works++;
@@ -704,7 +705,7 @@ Device::initKernel()
 void
 Device::setLWS(size_t lws)
 {
-  m_lws = lws;
+  //m_lws = lws;
 }
 
 void

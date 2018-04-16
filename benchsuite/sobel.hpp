@@ -1,7 +1,7 @@
 #ifndef CLBALANCER_BENCHS_SOBEL_HPP
 #define CLBALANCER_BENCHS_SOBEL_HPP
 
-#include "clbalancer.hpp"
+#include "EngineCL.hpp"
 #include "vecAllocator.hpp"
 #include <memory>
 #include <ostream>
@@ -13,7 +13,7 @@
 #include <cstdlib>
 
 
-#include "clbalancer.hpp"
+#include "EngineCL.hpp"
 #include "utils/io.hpp"
 
 // #include "device.hpp"

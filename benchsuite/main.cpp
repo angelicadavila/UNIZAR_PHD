@@ -13,7 +13,7 @@
 // #include "convolution.hpp"
 #include "vecAllocator.hpp"
 #include "assign.hpp"
-#include "gaussian.hpp"
+//#include "gaussian.hpp"
 #include "mandelbrot.hpp"
 #include "nbody.hpp"
 #include "ray.hpp"
@@ -102,7 +102,7 @@ main(int argc, char* argv[])
     auto image_width = size;
     auto filter_width = atoi(argv[8]);
 
-    do_gaussian(tscheduler, tdevices, check, image_width, chunksize, prop, filter_width);
+//    do_gaussian(tscheduler, tdevices, check, image_width, chunksize, prop, filter_width);
   } else if (tbench == 3) {
     auto image_width = size;
     auto scene_path = string(argv[8]);

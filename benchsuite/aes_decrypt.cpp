@@ -94,7 +94,7 @@ do_aesdecrypt(int tscheduler,
   int problem_size =19537152;//(aes_decrypt._total_size)/16;
   //19537152;//(aes_decrypt._total_size)/16;
 
-  vector<clb::Device> devices;
+  vector<ecl::Device> devices;
 
   auto platform_cpu = 0;
   auto platform_gpu = 1;
@@ -103,30 +103,30 @@ do_aesdecrypt(int tscheduler,
   vector <char> binary_file;
   vector <size_t>gws = vector <size_t>(3,1);
   if (tdevices &0x04){  
-    clb::Device device2(platform_fpga,0);
+    ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/aes_decrypt.aocx"); 
     device2.setKernel(binary_file,gws,gws); 
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x01){  
-    clb::Device device(platform_cpu,0);
+    ecl::Device device(platform_cpu,0);
   //  device.setKernel(kernel,gws,gws);
     devices.push_back(move(device));
   }
   if (tdevices &0x02){  
-    clb::Device device1(platform_gpu,0);
+    ecl::Device device1(platform_gpu,0);
   //  device1.setKernel(kernel,gws,gws);
     devices.push_back(move(device1));
   }
 
-  clb::StaticScheduler stSched;
-  clb::DynamicScheduler dynSched;
-  clb::HGuidedScheduler hgSched;
+  ecl::StaticScheduler stSched;
+  ecl::DynamicScheduler dynSched;
+  ecl::HGuidedScheduler hgSched;
   
   cout<<"Manual proportions!";
   
-  clb::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop });

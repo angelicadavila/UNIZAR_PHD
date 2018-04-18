@@ -110,7 +110,7 @@ public:
     cout << "address: " << address << "\n";
   }
 
-  template<typename T>
+/*  template<typename T>
   void setKernel(const T& file,
                  vector <size_t> global_work, 
                  vector <size_t> local_work)
@@ -133,8 +133,40 @@ public:
     for( int i=0; i<(int)local_work.size();i++)
       m_lws[i]=local_work[i];
   }
-  
+  */
 
+  void setKernel(const string& file,
+                 vector <size_t> global_work, 
+                 vector <size_t> local_work)
+  {
+      m_program_type = ProgramType::CustomSource;
+      m_program_source= file;
+  //initializing the parameters of kernel execution
+    m_gws=vector <size_t>(3,1);
+    m_lws=vector <size_t>(3,1);
+    for( int i=0; i<(int)global_work.size();i++)
+      m_gws[i]=global_work[i];
+   
+    for( int i=0; i<(int)local_work.size();i++)
+      m_lws[i]=local_work[i];
+  }
+
+
+  void setKernel(const vector<char>& file,
+                 vector <size_t> global_work, 
+                 vector <size_t> local_work)
+  {
+      m_program_type = ProgramType::CustomBinary;
+      m_program_binary = file;
+  //initializing the parameters of kernel execution
+    m_gws=vector <size_t>(3,1);
+    m_lws=vector <size_t>(3,1);
+    for( int i=0; i<(int)global_work.size();i++)
+      m_gws[i]=global_work[i];
+   
+    for( int i=0; i<(int)local_work.size();i++)
+      m_lws[i]=local_work[i];
+  }
 
   void setKernel(const string& source);
   void setKernel(const vector<char>& source);

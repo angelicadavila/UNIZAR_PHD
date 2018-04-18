@@ -23,7 +23,7 @@
 // uncomment to enable logging
 // #define ECL_LOGGING 1
 #ifndef ECL_LOGGING
-#define ECL_LOGGING 0
+#define ECL_LOGGING 1
 #endif
 #if ECL_LOGGING
 #define IF_LOGGING(x) (x)

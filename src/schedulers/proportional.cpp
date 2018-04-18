@@ -189,11 +189,11 @@ ProportionalScheduler::setTotalSize(size_t size)
 tuple<size_t, size_t>
 ProportionalScheduler::splitWork(size_t size, float prop, size_t bound)
 {
-  return { 0, 0 }; // NOTE(dyn)
+  return std::make_tuple<size_t, size_t>( 0, 0 ); // NOTE(dyn)
   size_t given = bound * (static_cast<size_t>(prop * size) / bound);
   // cout << "given: " << given << "\n";
   size_t rem = size - given;
-  return { given, rem };
+  return std::make_tuple( given, rem );
 }
 
 void

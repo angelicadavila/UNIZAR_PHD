@@ -118,7 +118,7 @@ Device::Device(uint sel_platform, uint sel_device)
   m_works = 0;
   m_works_size = 0;
   m_sema_work = new semaphore(1);
-  m_sema_run = make_unique<semaphore>(1);
+  m_sema_run.reset(new semaphore(1)); //  = make_unique<semaphore>(1);
   m_duration_actions.reserve(1024);     // NOTE to improve
   m_duration_offset_actions.reserve(8); // NOTE to improve
   m_gws= m_gws=vector <size_t>(3,1);
@@ -582,6 +582,51 @@ Device::writeBuffers(bool /* dummy */)
 }
 
 void
+Device::readBuffers()
+{
+  #if CLB_PROFILING == 1
+  cl::Event m_event_read;
+  #endif
+  size_t sizeR=m_prev_readParams[0]; 
+  size_t offsetR=m_prev_readParams[1];
+  auto len = m_out_ecl_buffers.size();
+  cl_int status;  
+  if(sizeR!=0)
+  {
+    for (uint i = 0; i < len; ++i) {
+        Buffer& b = m_out_ecl_buffers[i];
+        size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
+        auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
+      auto address= offset_bytes;
+      if(address & 0x3){
+       cout<<"unaligned \n";
+       }
+      //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+      status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
+                                  CL_TRUE,
+                                  offset_bytes,
+                                  size_bytes,
+                                  b.dataWithOffset(offsetR*m_internal_chunk),
+                                  nullptr,
+                            #if CLB_PROFILING == 1
+                                  &m_event_read);
+                            #else 
+                                  nullptr);
+                            #endif
+        CL_CHECK_ERROR(status,"Reading memory problem");
+      }
+  }
+  #if CLB_PROFILING == 1
+  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
+  time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
+  time_stkrn= m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  time_ekrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cout<<"**time_read "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  #endif
+}
+
+void
 Device::initKernel()
 {
   IF_LOGGING(cout << "initKernel\n");
@@ -685,7 +730,10 @@ Device::initKernel()
       // ArgType size = m_arg_size[i];
       size_t bytes = m_arg_bytes[i];
       void* ptr = m_arg_ptr[i];
+      IF_LOGGING(cout << "[bytes] " << bytes << "\n");
+      IF_LOGGING(cout << "[mem] " << sizeof(cl_mem) << "\n");
       cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
+      
       CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
     } else { // ArgType::LocalAlloc
       IF_LOGGING(cout << "[ArgType::LocalAlloc]\n");

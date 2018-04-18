@@ -186,33 +186,30 @@ public:
   template<typename T>
   void setKernelArg(cl_uint index, const T& value)
   {
-    cout << "setKernelArg T index: " << index << "\n";
+    IF_LOGGING(cout << "setKernelArg T index: " << index << "\n");
     m_arg_index.push_back(index);
-    m_arg_size.push_back(OpenCL::KernelArgumentHandler<T>::size(value));
+    // m_arg_size.push_back(OpenCL::KernelArgumentHandler<T>::size(value));
+    m_arg_type.push_back(ArgType::T);
     m_arg_bytes.push_back(OpenCL::KernelArgumentHandler<T>::size(value));
-    cout << OpenCL::KernelArgumentHandler<T>::size(value) << "\n";
+    IF_LOGGING(cout << OpenCL::KernelArgumentHandler<T>::size(value) << "\n");
     // m_arg_bytes.push_back(sizeof(OpenCL::KernelArgumentHandler<T>::size(value)));
     // NOTE legacy OpenCL 1.2 (added (void*))
     // m_arg_ptr.push_back(OpenCL::KernelArgumentHandler<T>::ptr(value));
     m_arg_ptr.push_back((void*)OpenCL::KernelArgumentHandler<T>::ptr(value));
     m_nargs++;
   }
-
+ 
   template<typename T>
   void setKernelArg(cl_uint index, const shared_ptr<vector<T>>& value)
   {
-    cout << "setKernelArg shared_ptr T index: " << index << "\n";
+    IF_LOGGING(cout << "setKernelArg shared_ptr T index: " << index << "\n");
     m_arg_index.push_back(index);
     auto address = value.get();
 
-    // auto size = OpenCL::KernelArgumentHandler<T>::size(address);
-    // auto bytes = OpenCL::KernelArgumentHandler<T>::size(address);
-    // cout << "size: " << address->size() << "\n";
-    // cout << "bytes (item): " << sizeof(T) << "\n";
     auto bytes = sizeof(T) * address->size();
-    cout << "bytes: " << bytes << "\n";
+    IF_LOGGING(cout << "bytes: " << bytes << "\n");
 
-    m_arg_size.push_back(0);
+    m_arg_type.push_back(ArgType::Vector);
     m_arg_bytes.push_back(bytes);
     m_arg_ptr.push_back(address);
     m_nargs++;

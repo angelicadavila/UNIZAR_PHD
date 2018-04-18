@@ -3,7 +3,11 @@
  * This file is part of EngineCL which is released under MIT License.
  * See file LICENSE for full license details.
  */
+#include <stdexcept>
+
 #include "clutils.hpp"
+
+using std::runtime_error;
 
 bool
 CLUtils::checkErrorFunc(cl_int error, string msg, const char* file, const int line)

@@ -20,7 +20,7 @@ Runtime::Runtime(vector<Device>&& devices, NDRange gws, size_t lws, float ws_bou
 {
   m_barrier = make_shared<semaphore>(m_devices.size());
   m_barrier_init = make_shared<semaphore>(m_devices.size());
-  m_sema_ready = make_unique<semaphore>(1);
+  m_sema_ready.reset(new semaphore(1));
   
   //If the internal chunk size its not set asumme 1 data per kernel execution
   m_internal_chunk=1;
@@ -73,6 +73,14 @@ Runtime::setKernel(const string& source, const string& kernel)
 {
   for (auto& device : m_devices) {
     device.setKernel(source, kernel);
+  }
+}
+
+void
+Runtime::setKernelArgLocalAlloc(cl_uint index, const uint bytes)
+{
+  for (auto& device : m_devices) {
+      device.setKernelArgLocalAlloc(index, bytes);
   }
 }
 

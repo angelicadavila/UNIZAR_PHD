@@ -1,15 +1,13 @@
 #ifndef CLBALANCER_BENCHS_VECALLOCATOR_HPP  
 #define CLBALANCER_BENCHS_VECALLOCATOR_HPP
 
-#include <stdlib.h>
-//#include <cstdlib.h>
-
+#include <cstdlib>
 
 template <typename T>
 class vecAllocator {
 public:
     typedef T value_type;
-    std::size_t N = 64;
+    size_t N = 64;
     typedef T* pointer;
     typedef const T* const_pointer;
 
@@ -22,12 +20,12 @@ public:
         typedef vecAllocator<U> other;
     };
 
-    pointer allocate(std::size_t num, const void* = 0)
+    pointer allocate(size_t num, const void* = 0)
     {
-        return (pointer) (aligned_alloc(N, num*sizeof(value_type)));
+        return reinterpret_cast<pointer>(aligned_alloc(N, num*sizeof(value_type)));
     }
 
-    void deallocate(pointer p,[[maybe_unused]] std::size_t num)
+    void deallocate(pointer p,[[maybe_unused]] size_t num)
     {	
         std::free (p);
     }

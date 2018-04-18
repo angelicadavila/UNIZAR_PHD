@@ -3,13 +3,14 @@
 
 #include <cstdint>
 #include <iostream>
+#include <type_traits>
 #include <vector>
 
 template<typename T, std::size_t N = alignof(T)>
 class aligned_allocator
 {
   //  helper type with the alignment we want
-  using aligned_type = std::aligned_storage_t<sizeof(T), N>;
+ typedef typename std::aligned_storage<sizeof(T), N>::type aligned_type;
 
 public:
   //  type to allocate

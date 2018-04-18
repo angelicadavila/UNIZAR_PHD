@@ -157,7 +157,7 @@ StaticScheduler::splitWork(size_t size, float prop, size_t bound)
     throw runtime_error("given % lws: " + to_string(given) + " % " + to_string(m_lws));
   }
 
-  return { given, rem };
+  return std::make_tuple( given, rem);
 }
 
 void

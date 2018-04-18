@@ -213,7 +213,7 @@ HGuidedScheduler::setTotalSize(size_t size)
 tuple<size_t, size_t>
 HGuidedScheduler::splitWork(size_t /* size */, float /* prop */, size_t /* bound */)
 {
-  return { 0, 0 };
+  return std::make_tuple<size_t, size_t>( 0, 0);
 }
 
 void

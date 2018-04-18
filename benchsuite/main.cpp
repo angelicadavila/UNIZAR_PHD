@@ -12,7 +12,7 @@
 #include "binomial.hpp"
 // #include "convolution.hpp"
 #include "vecAllocator.hpp"
-#include "assign.hpp"
+//#include "assign.hpp"
 //#include "gaussian.hpp"
 #include "mandelbrot.hpp"
 #include "nbody.hpp"
@@ -85,7 +85,7 @@ main(int argc, char* argv[])
 
   auto chunksize = stoi(argv[6]);
 
-  // auto prop = stof(argv[7]);
+  auto prop = stof(argv[7]);
   auto props = string_to_proportions(argv[7]);
 
   if (tbench == 0) {
@@ -102,7 +102,7 @@ main(int argc, char* argv[])
     auto image_width = size;
     auto filter_width = atoi(argv[8]);
 
-//    do_gaussian(tscheduler, tdevices, check, image_width, chunksize, prop, filter_width);
+ //   do_gaussian(tscheduler, tdevices, check, image_width, chunksize, prop, filter_width);
   } else if (tbench == 3) {
     auto image_width = size;
     auto scene_path = string(argv[8]);
@@ -186,7 +186,7 @@ main(int argc, char* argv[])
     // } else if (tbench == 5) {
     //   auto points = atoi(argv[8]);
     //   do_taylor(tscheduler, tdevices, check, size, chunksize, props, points);
-    do_ray(tscheduler, tdevices, check, image_width, chunksize, prop, move(scene_path));
+  //  //do_ray(tscheduler, tdevices, check, image_width, chunksize, prop, move(scene_path));
     // // }else if (tbench == 4){
     // //   auto samples = size;
     // //   samples = (samples / 4) ? (samples / 4) * 4 : 4; // convierte a multiplo de 4

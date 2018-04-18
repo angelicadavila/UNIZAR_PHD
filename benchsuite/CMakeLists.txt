@@ -43,13 +43,14 @@ set(SOURCES
   aes_decrypt.cpp
   gsm.cpp
   nw.cpp
+  utils/rand.cpp
   utils/io.cpp
 )
 
 set(HEADERS
  # assign.hpp
   vecadd.hpp
- # gaussian.hpp
+  #gaussian.hpp
   ray.hpp
   binomial.hpp
   # taylor.hpp

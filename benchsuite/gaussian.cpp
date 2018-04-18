@@ -566,7 +566,7 @@ do_gaussian_base(int tscheduler,
   auto b_array = shared_ptr<vector<cl_float>>(&gaussian._b);
   auto c_array = shared_ptr<vector<cl_uchar4>>(&gaussian._c);
 
-  auto sel_platform = PLATFORM;
+  auto sel_platform = 1;//PLATFORM;
   auto sel_device = tdevices == 0 ? 1 : 0; // invert, tdevices: 0 = CPU, 1 = GPU
 
   vector<char> kernel_bin;
@@ -800,7 +800,7 @@ do_gaussian(int tscheduler,
 
   int problem_size = gaussian._total_size;
 
-  auto platform = PLATFORM;
+  auto platform = 1;//PLATFORM;
 
   auto platform_cpu = 0;
   auto platform_gpu = 1;

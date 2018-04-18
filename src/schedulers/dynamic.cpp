@@ -64,6 +64,14 @@ DynamicScheduler::~DynamicScheduler()
 }
 
 void
+DynamicScheduler::endScheduler()
+{
+    saveDuration(ActionType::schedulerEnd);
+        saveDurationOffset(ActionType::schedulerEnd);
+}
+
+
+void
 DynamicScheduler::printStats()
 {
   auto sum = 0;
@@ -139,9 +147,9 @@ DynamicScheduler::setWorkSize(size_t size)
     m_work_last = rest;
   }
   m_worksize = given;
-  if ((m_worksize % m_lws) != 0) {
-    throw runtime_error("m_worksize % lws: " + to_string(m_worksize) + " % " + to_string(m_lws));
-  }
+  //if ((m_worksize % m_lws) != 0) {
+  //  throw runtime_error("m_worksize % lws: " + to_string(m_worksize) + " % " + to_string(m_lws));
+ // }
   IF_LOGGING(cout << "m_worksize (chunk size): " << m_worksize << "\n");
 }
 
@@ -226,10 +234,10 @@ DynamicScheduler::setTotalSize(size_t size)
 tuple<size_t, size_t>
 DynamicScheduler::splitWork(size_t size, float prop, size_t bound)
 {
-  return { 0, 0 }; // NOTE(dyn)
+  return std::make_tuple<size_t, size_t>( 0, 0); // NOTE(dyn)
   size_t given = bound * (static_cast<size_t>(prop * size) / bound);
   size_t rem = size - given;
-  return { given, rem };
+  return std::make_tuple( given, rem );
 }
 
 void

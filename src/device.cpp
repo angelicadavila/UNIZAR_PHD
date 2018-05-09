@@ -83,7 +83,6 @@ device_thread_func(Device& device)
       device.do_work(work.offset, work.size, work.bound, queue_index);
     } else {
       IF_LOGGING(cout << "device id " << device.getID() << " finished\n");
-      device.notifyBarrier();
      
       //Read the last chunk
       //NOTE set m_prev_events in last chunk from sched to avoid overlapping
@@ -357,7 +356,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   cl_int status;
   if(m_gws[0]!=1) 
     m_gws[0] = size;//pass to global
-#if CLB_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
+#if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
   status=m_queue.enqueueNDRangeKernel(m_kernel,
                                cl::NDRange(offset),
                                cl::NDRange(gws),
@@ -387,12 +386,12 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   m_prev_readParams[0]=size; 
   m_prev_readParams[1]=offset_for_bytes;
  
- #if CLB_OPERATION_BLOCKING_READ == 1
+#if ECL_OPERATION_BLOCKING_READ == 1
   
   //wait finish kernel
   m_queue.finish();
   
-  #if CLB_PROFILING ==1
+  #if ECL_PROFILING ==1
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
   
   time_skrn=m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
@@ -407,7 +406,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 
 #else
   auto cbdata = new CBData(queue_index, this);
-  exit(0);
+ // exit(0);
  //evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
   m_queue.flush();
 #endif  
@@ -613,7 +612,7 @@ Device::readBuffers()
                             #else 
                                   nullptr);
                             #endif
-        CL_CHECK_ERROR(status,"Reading memory problem");
+        //CL_CHECK_ERROR(status,"Reading memory problem");
       }
   }
   #if CLB_PROFILING == 1

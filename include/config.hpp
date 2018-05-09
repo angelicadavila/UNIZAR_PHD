@@ -10,7 +10,7 @@
 #endif
 
 // uncomment to force unsupport:
-// #define ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED 0
+ #define ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED 0
 #ifndef ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED
 // enable if CL_VERSION_1_1 or higher
 #if CL_VERSION_1_1 == 1

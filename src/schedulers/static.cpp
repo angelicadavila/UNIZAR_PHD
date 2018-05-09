@@ -21,8 +21,8 @@ scheduler_thread_func(StaticScheduler& sched)
   IF_LOGGING(cout << "sched thread: wait callbacks\n");
   sched.waitCallbacks();
   IF_LOGGING(cout << "sched thread: notified\n");
-  sched.saveDuration(ActionType::schedulerEnd);
-  sched.saveDurationOffset(ActionType::schedulerEnd);
+  //sched.saveDuration(ActionType::schedulerEnd);
+  //sched.saveDurationOffset(ActionType::schedulerEnd);
 }
 
 StaticScheduler::StaticScheduler(WorkSplit wsplit)

@@ -21,7 +21,7 @@
 // #include "taylor.hpp"
 // #include "vecadd.hpp"
 // #include "matrix_multiplication.hpp"
-#include "vecadd.hpp"
+//#include "vecadd.hpp"
 #include "mersenne.hpp"
 #include "sobel.hpp"
 #include "watermarking.hpp"
@@ -90,9 +90,9 @@ main(int argc, char* argv[])
 
   if (tbench == 0) {
     // do_assign(tscheduler, tdevices, check, size, chunksize, prop);
-    do_vecadd_base(check, size);
+  //  do_vecadd_base(check, size);
   } else if (tbench == 1) {
-    do_vecadd(tscheduler, tdevices, check, size, chunksize, prop);
+//    do_vecadd(tscheduler, tdevices, check, size, chunksize, prop);
     // thread t1(do_vecadd, tscheduler, tdevices, check, size, chunksize, prop);
     // thread t2(do_vecadd, tscheduler, tdevices, check, size, chunksize, prop);
     // t1.join();

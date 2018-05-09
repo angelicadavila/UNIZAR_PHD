@@ -199,8 +199,8 @@ public:
     m_nargs++;
   }
  
-  template<typename T>
-  void setKernelArg(cl_uint index, const shared_ptr<vector<T>>& value)
+  template<typename T, typename Ta>
+  void setKernelArg(cl_uint index, const shared_ptr<vector<T,Ta>>& value)
   {
     IF_LOGGING(cout << "setKernelArg shared_ptr T index: " << index << "\n");
     m_arg_index.push_back(index);

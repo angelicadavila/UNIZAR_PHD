@@ -24,7 +24,7 @@ include(SetLibraries)
 
 set(SOURCES
   #assign.cpp
-  vecadd.cpp
+#  vecadd.cpp
   #gaussian.cpp
   ray.cpp
   binomial.cpp
@@ -49,7 +49,7 @@ set(SOURCES
 
 set(HEADERS
  # assign.hpp
-  vecadd.hpp
+ # vecadd.hpp
   #gaussian.hpp
   ray.hpp
   binomial.hpp

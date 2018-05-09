@@ -55,7 +55,6 @@ device_thread_func(Device& device)
   device.barrier_init();
 
   auto time1 = std::chrono::system_clock::now().time_since_epoch();
-  device.init();
   cout<<"----------init device:"<<device.getID()<<"\n";
   Scheduler* sched = device.getScheduler();
   device.saveDuration(ActionType::deviceStart);
@@ -577,8 +576,9 @@ Device::writeBuffers(bool /* dummy */)
     IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
                     << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
-      m_in_buffers[i], CL_FALSE, 0, b.bytes(), data, NULL, &(m_prev_events.data()[i])));
+      m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
   }
+  m_queue.finish();
 }
 
 void

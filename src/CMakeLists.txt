@@ -32,6 +32,7 @@ set(SOURCES
   schedulers/static.cpp
   schedulers/dynamic.cpp
   schedulers/proportional.cpp
+  schedulers/particle.cpp
   schedulers/hguided.cpp
   device.cpp
   clutils.cpp
@@ -47,6 +48,7 @@ set(HEADERS
   ${INCLUDE_DIR}/schedulers/static.hpp
   ${INCLUDE_DIR}/schedulers/dynamic.hpp
   ${INCLUDE_DIR}/schedulers/proportional.hpp
+  ${INCLUDE_DIR}/schedulers/particle.hpp
   ${INCLUDE_DIR}/schedulers/hguided.hpp
   ${INCLUDE_DIR}/scheduler.hpp
   ${INCLUDE_DIR}/device.hpp

@@ -16,6 +16,7 @@
 #include "schedulers/dynamic.hpp"
 #include "schedulers/hguided.hpp"
 #include "schedulers/proportional.hpp"
+#include "schedulers/particle.hpp"
 #include "schedulers/static.hpp"
 
 #endif // ENGINECL_HPP

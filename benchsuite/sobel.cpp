@@ -108,6 +108,7 @@ do_sobel(int tscheduler,
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
   ecl::ProportionalScheduler propSched;
+  ecl::SwarmScheduler smSched;
   
   cout<<"Manual proportions!";
   
@@ -126,6 +127,9 @@ do_sobel(int tscheduler,
     runtime.setScheduler(&propSched);
     propSched.setWorkSize(worksize);
     //propSched.setRawProportions({prop, 0.25});
+  } else if (tscheduler ==4){ 
+    runtime.setScheduler(&smSched);
+    smSched.setWorkSize(worksize);
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

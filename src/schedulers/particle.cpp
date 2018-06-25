@@ -168,12 +168,15 @@ SwarmScheduler::notifyRequests()
 
 void SwarmScheduler::updateTime(uint id)
 {
-  auto id_particle=m_id_particle[id]-1;
+  auto id_particle=m_id_particle[id];
   auto t2 = std::chrono::system_clock::now().time_since_epoch(); 
   Time_Xi[id][id_particle]=std::chrono::duration_cast<std::chrono::microseconds>(t2 -base_time).count();
   cout<<"\n time_prev:"<<Time_Xi[id][id_particle]<<"\n";
   if (id_particle>0)
     Time_Xi[id][id_particle]-=Time_Xi[id][id_particle-1]; //base measured time
+
+  //next particle
+  m_id_particle[id]++;
   cout<<"\n time:"<<Time_Xi[id][id_particle]<< "\n id particle"<<id_particle;
 }
 
@@ -293,20 +296,20 @@ SwarmScheduler::enq_work(Device* device)
     cout<<"size: "<< size<< " id_Particle: "<<id_particle<<"\n";
     cout<<"size_remaining: "<< m_size_rem<< "\n";
     cout<<"barrier: "<< p_barrier[id] << "\n";
+    cout<<"gbarrier: "<< g_barrier << "\n";
     size_t index = -1;
    uint wait_Xi=1; 
     //next particle
-   if (id_particle<m_num_particles-1)
-     m_id_particle[id]=id_particle+1;
-   else
-     {m_id_particle[id]=0;
-      p_barrier[id]++; //if all particles finished calculate the next position
+  if (id_particle==m_num_particles)
+    {
       g_barrier++; //if all particles finished calculate the next position
+     p_barrier[id]++; 
+     m_id_particle[id]=0;
       wait_Xi=0; 
-     }
-  //wait until all particles have a solution,
+    }
+//if all particles finished calculate the next position
   //we emulate the iteration in the point when all particles finish calculation.
-   if(g_barrier==m_ndevices){
+   if(g_barrier==m_num_particles){
       cout<<"synchronize";
       g_barrier=0;
       //calculate the local and global best

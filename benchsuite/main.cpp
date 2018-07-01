@@ -14,10 +14,10 @@
 #include "vecAllocator.hpp"
 //#include "assign.hpp"
 //#include "gaussian.hpp"
-#include "mandelbrot.hpp"
-#include "nbody.hpp"
-#include "ray.hpp"
-#include "saxpy.hpp"
+//#include "mandelbrot.hpp"
+//#include "nbody.hpp"
+//#include "ray.hpp"
+//#include "saxpy.hpp"
 // #include "taylor.hpp"
 // #include "vecadd.hpp"
 // #include "matrix_multiplication.hpp"
@@ -106,17 +106,17 @@ main(int argc, char* argv[])
   } else if (tbench == 3) {
     auto image_width = size;
     auto scene_path = string(argv[8]);
-    do_ray_base(tscheduler, tdevices, check, image_width, chunksize, props, move(scene_path));
+//    do_ray_base(tscheduler, tdevices, check, image_width, chunksize, props, move(scene_path));
   } else if (tbench == 32) {
     auto image_width = size;
     auto scene_path = string(argv[8]);
-    do_ray(tscheduler, tdevices, check, image_width, chunksize, props, move(scene_path));
+  // do_ray(tscheduler, tdevices, check, image_width, chunksize, props, move(scene_path));
   } else if (tbench == 41) {
     auto samples = size;
-    do_binomial_base(tscheduler, tdevices, check, samples, chunksize, props);
+    //do_binomial_base(tscheduler, tdevices, check, samples, chunksize, props);
   } else if (tbench == 42) {
     auto samples = size;
-    do_binomial(tscheduler, tdevices, check, samples, chunksize, props);
+    //do_binomial(tscheduler, tdevices, check, samples, chunksize, props);
   } else if (tbench == 51) {
     // auto points = atoi(argv[8]);
     // auto width = atoi(argv[8]);
@@ -130,18 +130,18 @@ main(int argc, char* argv[])
     auto xpos = 0.0;
     auto ypos = 0.0;
     auto max_iterations = atoi(argv[8]);
-    do_mandelbrot_base(tscheduler,
-                       tdevices,
-                       check,
-                       chunksize,
-                       props,
-                       width,
-                       height,
-                       xstep,
-                       ystep,
-                       xpos,
-                       ypos,
-                       max_iterations);
+    //do_mandelbrot_base(tscheduler,
+   //                    tdevices,
+   //                    check,
+   //                    chunksize,
+   //                    props,
+   //                    width,
+   //                    height,
+   //                    xstep,
+   //                    ystep,
+   //                    xpos,
+   //                    ypos,
+   //                    max_iterations);
   } else if (tbench == 52) {
     // auto points = atoi(argv[8]);
     // auto width = atoi(argv[8]);
@@ -155,24 +155,24 @@ main(int argc, char* argv[])
     auto xpos = 0.0;
     auto ypos = 0.0;
     auto max_iterations = atoi(argv[8]);
-    do_mandelbrot(tscheduler,
-                  tdevices,
-                  check,
-                  chunksize,
-                  props,
-                  width,
-                  height,
-                  xstep,
-                  ystep,
-                  xpos,
-                  ypos,
-                  max_iterations);
+   // do_mandelbrot(tscheduler,
+   //               tdevices,
+   //               check,
+   //               chunksize,
+   //               props,
+   //               width,
+   //               height,
+   //               xstep,
+   //               ystep,
+   //               xpos,
+   //               ypos,
+   //               max_iterations);
   } else if (tbench == 61) {
     auto num_particles = size;
-    do_nbody_base(tscheduler, tdevices, check, num_particles, chunksize, props);
+   // do_nbody_base(tscheduler, tdevices, check, num_particles, chunksize, props);
   } else if (tbench == 62) {
     auto num_particles = size;
-    do_nbody(tscheduler, tdevices, check, num_particles, chunksize, props);
+   // do_nbody(tscheduler, tdevices, check, num_particles, chunksize, props);
     // } else if (tbench == 81) {
     //   auto width = size;
     //   auto height = size;

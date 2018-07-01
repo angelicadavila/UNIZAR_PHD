@@ -63,7 +63,7 @@ CLUtils::clErrorToString(cl_int error)
       return "CL_MISALIGNED_SUB_BUFFER_OFFSET";
     case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST:
       return "CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST";
-    case CL_COMPILE_PROGRAM_FAILURE:
+    /*case CL_COMPILE_PROGRAM_FAILURE:
       return "CL_COMPILE_PROGRAM_FAILURE";
     case CL_LINKER_NOT_AVAILABLE:
       return "CL_LINKER_NOT_AVAILABLE";
@@ -150,7 +150,7 @@ CLUtils::clErrorToString(cl_int error)
     case CL_INVALID_LINKER_OPTIONS:
       return "CL_INVALID_LINKER_OPTIONS";
     case CL_INVALID_DEVICE_PARTITION_COUNT:
-      return "CL_INVALID_DEVICE_PARTITION_COUNT";
+      return "CL_INVALID_DEVICE_PARTITION_COUNT";*/
     default:
       return "Unknown";
   }

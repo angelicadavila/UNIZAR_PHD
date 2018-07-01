@@ -26,13 +26,13 @@ set(SOURCES
   #assign.cpp
 #  vecadd.cpp
   #gaussian.cpp
-  ray.cpp
-  binomial.cpp
+ # ray.cpp
+ # binomial.cpp
   # taylor.cpp
-  mandelbrot.cpp
+ # mandelbrot.cpp
   nbody.cpp
   # convolution.cpp
-  saxpy.cpp
+  #saxpy.cpp
   # matrix_multiplication.cpp
   mersenne.cpp
   sobel.cpp
@@ -51,13 +51,13 @@ set(HEADERS
  # assign.hpp
  # vecadd.hpp
   #gaussian.hpp
-  ray.hpp
-  binomial.hpp
+ # ray.hpp
+ # binomial.hpp
   # taylor.hpp
-  mandelbrot.hpp
+  #mandelbrot.hpp
   nbody.hpp
   # convolution.hpp
-  saxpy.hpp
+  #saxpy.hpp
   # matrix_multiplication.hpp
   mersenne.hpp
   sobel.hpp

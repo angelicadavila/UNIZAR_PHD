@@ -230,7 +230,8 @@ do_nbody_base(int tscheduler,
   device = move(platform_devices[sel_platform][sel_device]);
 
   cl_int cl_err = CL_SUCCESS;
-  cl::Context context(device);
+  vector<cl::Device>tmp_device(1,device);
+  cl::Context context(tmp_device);
 
   cl::CommandQueue queue(context, device, 0, &cl_err);
   CL_CHECK_ERROR(cl_err, "CommandQueue queue");

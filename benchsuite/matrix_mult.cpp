@@ -124,7 +124,7 @@ do_matrixMult(int tscheduler,
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  ecl::ProportionalScheduler propSched;
+  //ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -141,8 +141,8 @@ do_matrixMult(int tscheduler,
    hgSched.setRawProportions({0.9, 0.2});
   }
    else if( tscheduler == 3){
-    runtime.setScheduler(&propSched);
-    propSched.setWorkSize(worksize);
+   // runtime.setScheduler(&propSched);
+   // propSched.setWorkSize(worksize);
   }
   
   runtime.setInBuffer(input_A);

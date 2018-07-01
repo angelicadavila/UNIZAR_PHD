@@ -136,7 +136,7 @@ do_needleman(int tscheduler,
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  ecl::ProportionalScheduler propSched;
+  //ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -152,8 +152,8 @@ do_needleman(int tscheduler,
     hgSched.setWorkSize(worksize);
    hgSched.setRawProportions({prop, 0.25});
   } else if (tscheduler ==3){ // tscheduler == 2
-    runtime.setScheduler(&propSched);
-    propSched.setWorkSize(worksize);
+   // runtime.setScheduler(&propSched);
+   // propSched.setWorkSize(worksize);
     //propSched.setRawProportions({prop, 0.25});
   }
   runtime.setInBuffer(input_itemsets);

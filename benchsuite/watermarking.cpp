@@ -99,7 +99,7 @@ do_watermarking(int tscheduler,
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  ecl::ProportionalScheduler propSched;
+  //ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -119,8 +119,8 @@ do_watermarking(int tscheduler,
     else
       hgSched.setRawProportions({0.1,prop});
    }else if (tscheduler == 3){
-    runtime.setScheduler(&propSched);
-    propSched.setWorkSize(worksize);
+   // runtime.setScheduler(&propSched);
+   // propSched.setWorkSize(worksize);
    }
 
   runtime.setInBuffer(input);

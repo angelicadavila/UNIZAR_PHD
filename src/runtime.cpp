@@ -89,12 +89,16 @@ Runtime::discoverDevices()
 {
   IF_LOGGING(cout << "discoverDevices\n");
   cl::Platform::get(&m_platforms);
+  string m_info_buffer;
+  m_info_buffer.reserve(128);
   IF_LOGGING(cout << "platforms: " << m_platforms.size() << "\n");
   auto i = 0;
   for (auto& platform : m_platforms) {
     vector<cl::Device> devices;
     platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+    m_platforms[i].getInfo(CL_PLATFORM_NAME, &m_info_buffer);
     IF_LOGGING(cout << "platform: " << i++ << " devices: " << devices.size() << "\n");
+	cout<<m_info_buffer<<"\n";
     m_platform_devices.push_back(move(devices));
   }
 }

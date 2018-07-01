@@ -82,12 +82,12 @@ do_sobel(int tscheduler,
 
   vector<ecl::Device> devices;
 
-  auto platform_cpu = 0;
-  auto platform_gpu = 1;
-  auto platform_fpga= 2;
+  auto platform_cpu = 2;
+  auto platform_gpu = 0;
+  auto platform_fpga= 1;
 
   vector <char> binary_file;
-  if (tdevices &0x04){  
+  if (tdevices &0x02){  
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
@@ -95,11 +95,11 @@ do_sobel(int tscheduler,
     devices.push_back(move(device2));
   }
 
-  if (tdevices &0x01){  
+  if (tdevices &0x04){  
     ecl::Device device(platform_cpu,0);
     devices.push_back(move(device));
   }
-  if (tdevices &0x02){  
+  if (tdevices &0x01){  
     ecl::Device device1(platform_gpu,0);
     devices.push_back(move(device1));
   }
@@ -107,8 +107,8 @@ do_sobel(int tscheduler,
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  ecl::ProportionalScheduler propSched;
-  ecl::SwarmScheduler smSched;
+  //ecl::ProportionalScheduler propSched;
+ // ecl::SwarmScheduler smSched;
   
   cout<<"Manual proportions!";
   
@@ -124,12 +124,12 @@ do_sobel(int tscheduler,
     hgSched.setWorkSize(worksize);
    hgSched.setRawProportions({prop, 0.25});
   } else if (tscheduler ==3){ // tscheduler == 2
-    runtime.setScheduler(&propSched);
-    propSched.setWorkSize(worksize);
+   // runtime.setScheduler(&propSched);
+   // propSched.setWorkSize(worksize);
     //propSched.setRawProportions({prop, 0.25});
   } else if (tscheduler ==4){ 
-    runtime.setScheduler(&smSched);
-    smSched.setWorkSize(worksize);
+  //  runtime.setScheduler(&smSched);
+  //  smSched.setWorkSize(worksize);
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);

@@ -124,6 +124,7 @@ Device::Device(uint sel_platform, uint sel_device)
   //default values
   m_gws[0]=0;//to set the chunk size
   m_lws[0]=128;
+//  m_lws[0]=64;
 }
 
 Device::~Device()
@@ -365,18 +366,20 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
                                nullptr);
 #else
 
-
+  cout<<"----------------------------------------offset---0\n";
  m_kernel.setArg(m_nargs,(uint) size);
  m_kernel.setArg(m_nargs+1,(uint) offset);
  //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
- {status=m_queue.enqueueNDRangeKernel(
+ {
+   status=m_queue.enqueueNDRangeKernel(
                           m_kernel, cl::NullRange, 
                           cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
                           cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
                           nullptr ,&(m_event_kernel));
                           
-  CL_CHECK_ERROR(status,"NDRange problem");}
+  CL_CHECK_ERROR(status,"NDRange problem");
+  }
 #endif
   
   //Conditional Read to overlapping in a Kernel_i with read_i-1
@@ -481,7 +484,10 @@ Device::initContext()
 {
   cl_int cl_err;
   cout << "initContext\n";
-  cl::Context context(m_device, nullptr,&oclContextCallback,nullptr,&cl_err );
+  vector<cl::Device>tmp_device(1,m_device);
+  
+  //cl::Context context(m_device, nullptr,&oclContextCallback,nullptr,&cl_err );
+  cl::Context context(tmp_device, nullptr,&oclContextCallback,nullptr,&cl_err );
   CL_CHECK_ERROR(cl_err, "Context");
   m_context = move(context);
 }

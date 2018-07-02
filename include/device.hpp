@@ -83,7 +83,8 @@ public:
   void setInBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::In);
-    b.set(array);
+    //b.set(array);
+    b.set(array, 445000000);
     m_in_ecl_buffers.push_back(move(b));
 
     auto address = array.get();
@@ -98,7 +99,8 @@ public:
   void setOutBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::Out);
-    b.set(array);
+    //b.set(array);
+    b.set(array, 445000000);
     m_out_ecl_buffers.push_back(move(b));
 
     auto address = array.get();
@@ -261,7 +263,8 @@ private:
   void initContext();
   void initQueue();
   void initBuffers();
-  void writeBuffers(bool dummy = false);
+  //void writeBuffers(bool dummy = false);
+  void writeBuffers(size_t size, size_t offset);
   void initKernel();
   void initEvents();
 

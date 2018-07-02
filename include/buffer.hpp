@@ -56,7 +56,17 @@ public:
     m_address = reinterpret_cast<void*>(v);
     IF_LOGGING(std::cout << "m_size: " << m_size << " m_bytes: " << m_bytes << "\n");
   }
-
+  template<typename T, typename Ta>
+  void set(shared_ptr<vector<T,Ta>> in, int lim_size)
+  {
+    vector<T,Ta>* v = in.get();
+    m_item_size = sizeof(T);
+    m_size = lim_size/m_item_size;
+    m_bytes = lim_size;//sizeof(T) * m_size;
+    m_data = reinterpret_cast<void*>(v->data());
+    m_address = reinterpret_cast<void*>(v);
+    IF_LOGGING(std::cout << "m_size: " << m_size << " m_bytes: " << m_bytes << "\n");
+  }
   void* get();
   void* data();
   void* dataWithOffset(size_t offset);

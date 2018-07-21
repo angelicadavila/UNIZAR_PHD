@@ -84,7 +84,7 @@ public:
   {
     Buffer b(Direction::In);
     //b.set(array);
-    b.set(array, 445000000);
+    b.set(array,getLimMemory() );
     m_in_ecl_buffers.push_back(move(b));
 
     auto address = array.get();
@@ -100,7 +100,7 @@ public:
   {
     Buffer b(Direction::Out);
     //b.set(array);
-    b.set(array, 445000000);
+    b.set(array, getLimMemory());
     m_out_ecl_buffers.push_back(move(b));
 
     auto address = array.get();
@@ -243,10 +243,13 @@ public:
   void waitFinish();
   Runtime* getRuntime();
   void setRuntime(Runtime* runtime);
-  
+  //number of data process by work item 
   void setInternalChunk(int internal_chunk);
   int getInternalChunk();
-
+  //limit of memory per device
+  void setLimMemory(int limit_memory);
+  int getLimMemory();
+  
   void set_globalWorkSize( size_t gws0);
   void set_globalWorkSize( size_t gws0, size_t gws1);
   void set_globalWorkSize( size_t gws0, size_t gws1,size_t gws2);
@@ -327,6 +330,10 @@ private:
 
    //internal chunk size execute in the kernel
   int m_internal_chunk;
+
+  //Memory limit for device
+  int m_lim_memory;
+
   vector<size_t> m_prev_readParams;
 //   size_t m_lws;
 };

@@ -368,8 +368,9 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 
  m_kernel.setArg(m_nargs,(uint) size);
  //m_kernel.setArg(m_nargs+1,(uint) offset);
- m_kernel.setArg(m_nargs+1,(uint) 0);
- //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ uint static_offset=0;
+ m_kernel.setArg(m_nargs+1,(uint) static_offset);
+ cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  
  
@@ -385,17 +386,18 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   }
 #endif
   
+  //m_queue.finish();
   //Conditional Read to overlapping in a Kernel_i with read_i-1
   //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
-  readBuffers();
 
   m_prev_readParams[0]=size; 
   m_prev_readParams[1]=offset_for_bytes;
  
+  readBuffers();
 #if ECL_OPERATION_BLOCKING_READ == 1
   
   //wait finish kernel
-  m_queue.finish();
+ // m_queue.finish();
   
   #if ECL_PROFILING ==1
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
@@ -571,23 +573,18 @@ Device::initBuffers()
 void
 Device::writeBuffers(size_t size, size_t offset)
 {
-//  IF_LOGGING(cout << "writeBuffers\n");
 
   auto len = m_in_ecl_buffers.size();
-  m_prev_events.reserve(len);
-  m_prev_events.resize(len);
   for (uint i = 0; i < len; ++i) {
     Buffer& b = m_in_ecl_buffers[i];
-   // auto data = b.data()+offset*b.itemSize();
-    auto data= b.dataWithOffset(offset*m_internal_chunk);
+    auto data= b.dataWithOffset(offset);//*m_internal_chunk);
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-    //auto size = b.size();
-   // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-     //        << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
-    CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
-      m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//&(m_prev_events.data()[i])));
+    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
+
+  CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+      m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
   }
-  m_queue.finish();
 }
 //void
 //Device::writeBuffers(bool /* dummy */)
@@ -629,8 +626,9 @@ Device::readBuffers()
       if(address & 0x3){
        cout<<"unaligned \n";
        }
-      //cout<<"sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
-      status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
+      cout<< "Read sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+      //status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
+      status= m_queue.enqueueReadBuffer(m_out_buffers[i],
                                   CL_TRUE,0,
                                 //  offset_bytes,
                                   size_bytes,
@@ -840,6 +838,15 @@ Device::getInternalChunk(){
     return m_internal_chunk;
 }
 
+void
+Device::setLimMemory(int limit_memory){
+    m_lim_memory=limit_memory;
+}
+
+int
+Device::getLimMemory(){
+    return m_lim_memory;
+}
 void
 Device::set_globalWorkSize( size_t gws0)
 {

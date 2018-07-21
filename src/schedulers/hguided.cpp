@@ -278,14 +278,19 @@ HGuidedScheduler::normalizeRawProportions()
       sum += prop;
       nprops++;
     }
-    auto wrong = true;
-    if (nprops == last) {
-      props[last] = 1.0f - sum;
-      wrong = false;
-    }
-    if (wrong) {
-      throw runtime_error("proportion exceeds 1.0f and cannot be corrected");
-    }
+
+	for (int i=0; i<=last; i++){
+		m_raw_proportions[i]/=sum;
+		cout<<m_raw_proportions[i]<<" \n";
+	}
+//    auto wrong = true;
+//    if (nprops == last) {
+//      props[last] = 1.0f - sum;
+//      wrong = false;
+//    }
+//    if (wrong) {
+//      throw runtime_error("proportion exceeds 1.0f and cannot be corrected");
+//    }
   }
 }
 
@@ -308,8 +313,13 @@ HGuidedScheduler::enq_work(Device* device)
     size_t min_worksize = m_worksize;
     auto new_size = splitWorkLikeHGuided(m_size_rem, min_worksize, lws, prop);
 
-    size = new_size;
-
+    uint mem_lim=(device->getLimMemory());
+    uint int_chunk=(device->getInternalChunk());
+    //limit memory size
+	if (new_size<(mem_lim*int_chunk))
+	    size = new_size;
+    else
+		size=mem_lim/4;//at maximun bytes
     // IF_LOGGING(cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop:
     // " << prop
     // << " lws: " << lws

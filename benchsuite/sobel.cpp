@@ -92,16 +92,19 @@ do_sobel(int tscheduler,
     binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,gws,gws);
+	device2.setLimMemory(4000000000/2);
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x04){  
     ecl::Device device(platform_cpu,0);
+	device.setLimMemory(4000000000/2);
     devices.push_back(move(device));
   }
   if (tdevices &0x01){  
     ecl::Device device1(platform_gpu,0);
-    devices.push_back(move(device1));
+    device1.setLimMemory(1490000000/2); 
+	devices.push_back(move(device1));
   }
 
   ecl::StaticScheduler stSched;

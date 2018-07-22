@@ -560,8 +560,9 @@ Device::initBuffers()
     IF_LOGGING(cout << "in [data] " << data << "\n");
     IF_LOGGING(cout << "in [address] " << b.get() << "\n");
     IF_LOGGING(cout << "in [size] " << b.size() << "\n");
-    IF_LOGGING(cout << "in [bytes] " << b.bytes() << "\n");
-    cl::Buffer tmp_buffer(m_context, buffer_in_flags, b.bytes(), NULL);
+    uint lim_size=getLimMemory();
+    IF_LOGGING(cout << "in [bytes] " <<  lim_size << "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_in_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
     m_in_buffers.push_back(move(tmp_buffer));
     IF_LOGGING(cout << "in buffer: " << &m_in_buffers[i] << "\n");
@@ -574,8 +575,9 @@ Device::initBuffers()
     IF_LOGGING(cout << "out [data] " << data << "\n");
     IF_LOGGING(cout << "out [address] " << b.get() << "\n");
     IF_LOGGING(cout << "out [size] " << b.size() << "\n");
-    IF_LOGGING(cout << "out [bytes] " << b.bytes() << "\n");
-    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL);
+    uint lim_size=getLimMemory();
+    IF_LOGGING(cout << "out [bytes] " << lim_size << "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_out_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));
     IF_LOGGING(cout << "out buffer: " << &m_out_buffers[i] << "\n");
@@ -587,8 +589,9 @@ Device::initBuffers()
     IF_LOGGING(cout << "out [data] " << data << "\n");
     IF_LOGGING(cout << "out [address] " << b.get() << "\n");
     IF_LOGGING(cout << "out [size] " << b.size() << "\n");
-    IF_LOGGING(cout << "out [bytes] " << b.bytes() << "\n");
-    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL);
+    uint lim_size=getLimMemory();
+    IF_LOGGING(cout << "out [bytes] " <<  lim_size<< "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_out_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_aux_buffers.push_back(move(tmp_buffer));
     IF_LOGGING(cout << "out buffer: " << &m_out_aux_buffers[i] << "\n");

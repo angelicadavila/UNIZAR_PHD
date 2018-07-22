@@ -83,8 +83,8 @@ public:
   void setInBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::In);
-    //b.set(array);
-    b.set(array,getLimMemory() );
+    b.set(array);
+    //b.set(array,getLimMemory() );
     m_in_ecl_buffers.push_back(move(b));
 
     auto address = array.get();
@@ -99,8 +99,8 @@ public:
   void setOutBuffer(shared_ptr<T> array)
   {
     Buffer b(Direction::Out);
-    //b.set(array);
-    b.set(array, getLimMemory());
+    b.set(array);
+   // b.set(array, getLimMemory());
     m_out_ecl_buffers.push_back(move(b));
 
     auto address = array.get();

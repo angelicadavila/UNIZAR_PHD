@@ -12,7 +12,7 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-
+#define frames 20
 namespace ecl {
 
 void
@@ -328,12 +328,14 @@ DynamicScheduler::enq_work(Device* device)
     {
       lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
-      if(offset+size>m_size)
+      if(offset+size>=m_size)
       {
          size=m_size_rem;
      //    m_worksize=size;
       }
-      
+           
+
+ 
       m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();

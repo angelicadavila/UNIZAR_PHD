@@ -59,8 +59,9 @@ do_watermarking(int tscheduler,
 {
 
   int worksize = chunksize;
-
-  Watermarking watermarking(COLS*ROWS);//+256
+  int frames=6;
+  
+  Watermarking watermarking(COLS*ROWS*frames);//+256
 
     string kernel = file_read("support/kernels/watermarking_simd.cl");
 
@@ -70,8 +71,8 @@ do_watermarking(int tscheduler,
  auto output_aux = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out_aux);
 #pragma GCC diagnostic pop
   
-  int problem_size =19537152;//(watermarking._total_size/16);
-
+  int problem_size =19537152*frames;//(watermarking._total_size/16);
+  cout<<"problem Size" << problem_size; 
   vector<ecl::Device> devices;
   #if ECL_GRENDEL == 1 
   auto platform_cpu = 2;
@@ -95,7 +96,7 @@ do_watermarking(int tscheduler,
     //vector of kernel dimension. Task Kernel gws==lws
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,gws,gws);
-   	device2.setLimMemory(4000000000/3);
+   	device2.setLimMemory(1300000000);
     devices.push_back(move(device2));
   }
 
@@ -106,7 +107,7 @@ do_watermarking(int tscheduler,
   }
   if (tdevices & cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-	  device1.setLimMemory(120000000);
+	  device1.setLimMemory(1200000000);
     devices.push_back(move(device1));
   }
 

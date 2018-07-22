@@ -44,7 +44,13 @@ public:
       device.setOutBuffer(array);
     }
   }
-
+  template<typename T>
+  void setOutAuxBuffer(shared_ptr<T> array)
+  {
+    for (auto& device : m_devices) {
+      device.setOutAuxBuffer(array);
+    }
+  }
   void setKernel(const string& source, const string& kernel);
 
   template<typename T>

@@ -101,12 +101,12 @@ do_watermarking(int tscheduler,
 
   if (tdevices & cmp_cpu){  
     ecl::Device device(platform_cpu,0);
-	device.setLimMemory(12000000000/3);
+  	device.setLimMemory(1200000000);
     devices.push_back(move(device));
   }
   if (tdevices & cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-	device1.setLimMemory(1200000000/3);
+	  device1.setLimMemory(120000000);
     devices.push_back(move(device1));
   }
 
@@ -139,7 +139,7 @@ do_watermarking(int tscheduler,
 
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);
-  runtime.setOutBuffer(output_aux);
+  runtime.setOutAuxBuffer(output_aux);
   runtime.setKernel(kernel, "apply_watermark");
   runtime.setKernelArg(0, input);//in
   runtime.setKernelArg(1, output);//out

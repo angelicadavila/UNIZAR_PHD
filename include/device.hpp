@@ -111,6 +111,23 @@ public:
     cout << "array: " << array.get() << "\n";
     cout << "address: " << address << "\n";
   }
+  template<typename T>
+  void setOutAuxBuffer(shared_ptr<T> array)
+  {
+    Buffer b(Direction::Out);
+    //b.set(array);
+    b.set(array, getLimMemory());
+    m_out_aux_ecl_buffers.push_back(move(b));
+
+    auto address = array.get();
+    //m_out_aux_buffers_ptr.push_back(address);
+
+    cout << "ecl::Buffer out get: " << b.get() << "\n";
+    cout << "ecl::Buffer out data: " << b.data() << "\n";
+    cout << "array: " << array.get() << "\n";
+    cout << "address: " << address << "\n";
+  }
+
 
 /*  template<typename T>
   void setKernel(const T& file,
@@ -296,10 +313,16 @@ private:
   vector<void*> m_in_buffers_ptr;
   vector<cl::Buffer> m_in_buffers;
   vector<void*> m_out_buffers_ptr;
+  vector<void*> m_out_aux_buffers_ptr;
   vector<cl::Buffer> m_out_buffers;
+  vector<cl::Buffer> m_out_aux_buffers;
 
   vector<ecl::Buffer> m_in_ecl_buffers;
   vector<ecl::Buffer> m_out_ecl_buffers;
+  vector<ecl::Buffer> m_out_aux_ecl_buffers;
+  vector<cl_uint> m_out_arg_index;
+  vector<cl_uint> m_out_arg_pos;
+  uint switch_out;
 
   cl::Platform m_platform;
   cl::Device m_device;

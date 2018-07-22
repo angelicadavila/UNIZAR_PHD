@@ -30,7 +30,7 @@ set(SOURCES
  # binomial.cpp
   # taylor.cpp
  # mandelbrot.cpp
-  nbody.cpp
+#  nbody.cpp
   # convolution.cpp
   #saxpy.cpp
   # matrix_multiplication.cpp
@@ -55,7 +55,7 @@ set(HEADERS
  # binomial.hpp
   # taylor.hpp
   #mandelbrot.hpp
-  nbody.hpp
+#  nbody.hpp
   # convolution.hpp
   #saxpy.hpp
   # matrix_multiplication.hpp

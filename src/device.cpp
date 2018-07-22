@@ -124,6 +124,9 @@ Device::Device(uint sel_platform, uint sel_device)
   //default values
   m_gws[0]=0;//to set the chunk size
   m_lws[0]=128;
+
+  //define the buffer of aoutput, between global and auxiliar
+  switch_out=0;
 //  m_lws[0]=64;
 }
 
@@ -365,7 +368,14 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
                                nullptr,
                                nullptr);
 #else
-
+ int len=m_out_arg_index.size();
+ for (int j=0;j<len;j++){
+    if (switch_out==0){
+      m_kernel.setArg(m_out_arg_index[j],m_out_buffers[m_out_arg_pos[j]]);
+    }else{
+      m_kernel.setArg(m_out_arg_index[j],m_out_aux_buffers[m_out_arg_pos[j]]);
+    }
+}
  m_kernel.setArg(m_nargs,(uint) size);
  //m_kernel.setArg(m_nargs+1,(uint) offset);
  uint static_offset=0;
@@ -541,6 +551,7 @@ Device::initBuffers()
 
   m_in_buffers.reserve(m_in_ecl_buffers.size());
   m_out_buffers.reserve(m_out_ecl_buffers.size());
+  m_out_aux_buffers.reserve(m_out_ecl_buffers.size());
   
   auto len = m_in_ecl_buffers.size();
   for (uint i = 0; i < len; ++i) {
@@ -568,6 +579,19 @@ Device::initBuffers()
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_buffers.push_back(move(tmp_buffer));
     IF_LOGGING(cout << "out buffer: " << &m_out_buffers[i] << "\n");
+  }
+  len = m_out_aux_ecl_buffers.size();
+  for (uint i = 0; i < len; ++i) {
+    ecl::Buffer& b = m_out_aux_ecl_buffers[i];
+    auto data = b.data();
+    IF_LOGGING(cout << "out [data] " << data << "\n");
+    IF_LOGGING(cout << "out [address] " << b.get() << "\n");
+    IF_LOGGING(cout << "out [size] " << b.size() << "\n");
+    IF_LOGGING(cout << "out [bytes] " << b.bytes() << "\n");
+    cl::Buffer tmp_buffer(m_context, buffer_out_flags, b.bytes(), NULL);
+    CL_CHECK_ERROR(cl_err, "out buffer " + i);
+    m_out_aux_buffers.push_back(move(tmp_buffer));
+    IF_LOGGING(cout << "out buffer: " << &m_out_aux_buffers[i] << "\n");
   }
 }
 void
@@ -628,7 +652,8 @@ Device::readBuffers()
        }
       cout<< "Read sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
       //status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
-      status= m_queue.enqueueReadBuffer(m_out_buffers[i],
+      if (switch_out==0){
+          status= m_queue.enqueueReadBuffer(m_out_buffers[i],
                                   CL_TRUE,0,
                                 //  offset_bytes,
                                   size_bytes,
@@ -639,6 +664,22 @@ Device::readBuffers()
                             #else 
                                   nullptr);
                             #endif
+        switch_out=1;
+      }else{
+    
+         status= m_queue.enqueueReadBuffer(m_out_aux_buffers[i],
+                                  CL_TRUE,0,
+                                //  offset_bytes,
+                                  size_bytes,
+                                  b.dataWithOffset(offsetR*m_internal_chunk),
+                                  nullptr,
+                            #if CLB_PROFILING == 1
+                                  &m_event_read);
+                            #else 
+                                  nullptr);
+                            #endif
+        switch_out=0;
+      }
         //CL_CHECK_ERROR(status,"Reading memory problem");
       }
   }
@@ -731,6 +772,8 @@ Device::initKernel()
           IF_LOGGING(cout << "address: " << address << " position: " << pos
                           << " buffer: " << &m_out_buffers[pos] << "\n");
           cl_err = kernel.setArg(index, m_out_buffers[pos]);
+          m_out_arg_index.push_back(index);
+          m_out_arg_pos.push_back(pos);
           CL_CHECK_ERROR(cl_err, "kernel arg out buffer " + to_string(i));
           assigned = true;
         }

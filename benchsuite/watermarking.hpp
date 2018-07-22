@@ -42,6 +42,7 @@ public:
     : _total_size(img_size)
     ,_input_img(_total_size)
     ,_out(_total_size)
+    ,_out_aux(_total_size)
   {
     init_image();
   }
@@ -54,6 +55,7 @@ public:
 #pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_img;  // image
   vector<int,vecAllocator<int>> _out;  // blurred
+  vector<int,vecAllocator<int>> _out_aux;  // blurred
 #pragma GCC diagnostic pop
 };
 

@@ -12,7 +12,7 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-#define  FRAMES 20
+#define  FRAMES 10
 namespace ecl {
 
 void

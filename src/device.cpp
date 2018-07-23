@@ -380,7 +380,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  //m_kernel.setArg(m_nargs+1,(uint) offset);
  uint static_offset=0;
  m_kernel.setArg(m_nargs+1,(uint) static_offset);
- cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  
  
@@ -606,8 +606,8 @@ Device::writeBuffers(size_t size, size_t offset)
     Buffer& b = m_in_ecl_buffers[i];
     auto data= b.dataWithOffset(offset);//*m_internal_chunk);
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-//    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-//                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
+   // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+   //                << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
 
   CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
@@ -653,7 +653,7 @@ Device::readBuffers()
       if(address & 0x3){
        cout<<"unaligned \n";
        }
-      cout<< "Read sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
+      //cout<< "Read sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
       //status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
       if (switch_out==0){
           status= m_queue.enqueueReadBuffer(m_out_buffers[i],

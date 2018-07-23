@@ -8,7 +8,7 @@
 #define COLS 25920 
 #define ROWS 12060
 
-#define FRAMES 20
+#define FRAMES 10
 //#define ROWS 256
 //#define COLS 128 
 //#define ROWS 12060
@@ -104,12 +104,12 @@ do_watermarking(int tscheduler,
 
   if (tdevices & cmp_cpu){  
     ecl::Device device(platform_cpu,0);
-  	device.setLimMemory(1200000000);
+  	device.setLimMemory (4000000000);
     devices.push_back(move(device));
   }
   if (tdevices & cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-	  device1.setLimMemory(1200000000);
+	  device1.setLimMemory(4040404000000);
     devices.push_back(move(device1));
   }
 

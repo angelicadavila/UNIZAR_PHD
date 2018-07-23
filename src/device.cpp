@@ -606,8 +606,8 @@ Device::writeBuffers(size_t size, size_t offset)
     Buffer& b = m_in_ecl_buffers[i];
     auto data= b.dataWithOffset(offset);//*m_internal_chunk);
     size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
+//    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+//                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
 
   CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//

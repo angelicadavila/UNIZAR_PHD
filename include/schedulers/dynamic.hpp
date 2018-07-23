@@ -106,6 +106,9 @@ public:
   void setWSBound(float ws_bound) override;
 
 private:
+//number of frames of the same problem, emulate data streaming
+  uint m_frames;
+
   thread m_thread;
   size_t m_size;
   vector<Device*> m_devices;

@@ -7,6 +7,8 @@
 
 #define COLS 25920 
 #define ROWS 12060
+
+#define FRAMES 20
 //#define ROWS 256
 //#define COLS 128 
 //#define ROWS 12060
@@ -118,7 +120,7 @@ do_watermarking(int tscheduler,
   
   cout<<"Manual proportions!";
   
-  ecl::Runtime runtime(move(devices), problem_size);
+  ecl::Runtime runtime(move(devices), problem_size*FRAMES);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop, 0.26 });

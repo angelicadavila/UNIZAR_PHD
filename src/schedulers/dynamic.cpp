@@ -12,7 +12,7 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-#define frames 20
+#define  FRAMES 20
 namespace ecl {
 
 void
@@ -54,6 +54,7 @@ DynamicScheduler::DynamicScheduler(WorkSplit wsplit)
   m_time = std::chrono::system_clock::now().time_since_epoch();
   m_duration_actions.reserve(8);        // NOTE to improve
   m_duration_offset_actions.reserve(8); // NOTE to improve
+  m_frames=FRAMES;
 }
 
 DynamicScheduler::~DynamicScheduler()
@@ -325,18 +326,32 @@ DynamicScheduler::enq_work(Device* device)
 
     size_t size = m_worksize;
     size_t index = -1;
+    size_t tmp_cond=0; 
     {
       lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
       if(offset+size>=m_size)
       {
          size=m_size_rem;
-     //    m_worksize=size;
       }
-           
-
+     if (offset==(m_size/FRAMES)){  
+          if (m_frames>0){
+                m_frames--;
+                offset=0;
+                size = m_worksize;
+                m_size_given =0;
+            }
+     }
  
-      m_size_rem -= size;
+      tmp_cond=offset+size;
+     if(tmp_cond>=(m_size/FRAMES)){
+         size=(m_size/FRAMES)-offset;
+           
+         if (size<0){
+             size=m_size_rem;
+         }
+      }
+            m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
       m_queue_work.push_back(Work(id, offset, size, m_ws_bound));

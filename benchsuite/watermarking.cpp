@@ -98,7 +98,7 @@ do_watermarking(int tscheduler,
     //vector of kernel dimension. Task Kernel gws==lws
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,gws,gws);
-   	device2.setLimMemory(1300000000);
+   	device2.setLimMemory(1400000000);
     devices.push_back(move(device2));
   }
 
@@ -109,7 +109,7 @@ do_watermarking(int tscheduler,
   }
   if (tdevices & cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-	  device1.setLimMemory(4040404000000);
+	  device1.setLimMemory(4000000000);
     devices.push_back(move(device1));
   }
 
@@ -119,8 +119,10 @@ do_watermarking(int tscheduler,
   //ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
-  
+ 
+  //problem size global frames 
   ecl::Runtime runtime(move(devices), problem_size*FRAMES);
+  
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     stSched.setRawProportions({ prop, 0.26 });

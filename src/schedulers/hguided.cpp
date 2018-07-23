@@ -9,6 +9,8 @@
 #include "scheduler.hpp"
 #include <tuple>
 
+#define  FRAMES 10
+
 namespace ecl {
 
 void
@@ -232,6 +234,8 @@ HGuidedScheduler::setDevices(vector<Device*>&& devices)
   for (auto& q_id_work : m_queue_id_work) {
     q_id_work.reserve(256);
   }
+  m_frames=FRAMES;
+  
   m_devices_working = 0;
   m_raw_proportions.reserve(m_ndevices);
 }
@@ -312,23 +316,40 @@ HGuidedScheduler::enq_work(Device* device)
     size_t lws = m_lws;
     size_t min_worksize = m_worksize;
     auto new_size = splitWorkLikeHGuided(m_size_rem, min_worksize, lws, prop);
-
+    
     uint mem_lim=(device->getLimMemory());
     uint int_chunk=(device->getInternalChunk());
-    //limit memory size
-	if (new_size<(mem_lim*int_chunk))
-	    size = new_size;
-    else
-		size=mem_lim/4;//at maximun bytes
-    // IF_LOGGING(cout << "enq_work offset: " << offset << " m_size_rem: " << m_size_rem << " prop:
-    // " << prop
-    // << " lws: " << lws
-    // << " new_size: " << new_size << " m_worksize: " << m_worksize << "\n");
+    m_lim_size=mem_lim/(int_chunk*4);
+    uint mult= floor(m_lim_size/m_lws);
+    m_lim_size=mult * m_lws;
 
+    //limit memory size
+  	if (new_size > m_lim_size)
+	    size = m_lim_size;
+
+    if (size+offset>m_size){
+        size=m_size_rem;
+    }
+    if(offset==(m_size/FRAMES)){
+      if (m_frames>0){
+        m_frames--;
+        m_size_given=0;
+        offset=0;
+      }
+    }
+
+    if (offset+size>(m_size/FRAMES)){
+        new_size=(m_size/FRAMES)-offset;
+        size=new_size; 
+        if(new_size>m_lim_size) size=m_lim_size;
+        if (new_size<0){
+          size=m_size_rem;
+        }
+    }
     size_t index = -1;
     {
-      m_size_rem -= new_size;
-      m_size_given += new_size;
+      m_size_rem -= size;
+      m_size_given += size;
       index = m_queue_work.size();
       m_queue_work.push_back(Work(id, offset, size, m_ws_bound));
       m_queue_id_work[id].push_back(index);

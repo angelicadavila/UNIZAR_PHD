@@ -118,7 +118,8 @@ private:
   vector<uint> m_chunk_done;
   uint m_devices_working;
   vector<float> m_raw_proportions;
-
+  uint m_frames;
+  size_t m_lim_size;
   // new
   WorkSplit m_wsplit;
   bool m_has_work;

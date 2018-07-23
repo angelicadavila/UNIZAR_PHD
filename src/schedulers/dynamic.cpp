@@ -338,7 +338,7 @@ DynamicScheduler::enq_work(Device* device)
           if (m_frames>0){
                 m_frames--;
                 offset=0;
-                size = m_worksize;
+                size = m_worksize;//test if it is necessary
                 m_size_given =0;
             }
      }

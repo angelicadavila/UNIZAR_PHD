@@ -43,6 +43,7 @@ set(SOURCES
   aes_decrypt.cpp
   gsm.cpp
   nw.cpp
+  nn.cpp
   utils/rand.cpp
   utils/io.cpp
 )
@@ -68,6 +69,7 @@ set(HEADERS
   aes_decrypt.hpp
   gsm.hpp
   nw.hpp
+  nn.hpp
   utils/io.hpp
   utils/rand.hpp
   utils/memory.hpp

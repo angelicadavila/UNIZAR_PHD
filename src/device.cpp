@@ -380,7 +380,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  //m_kernel.setArg(m_nargs+1,(uint) offset);
  uint static_offset=0;
  m_kernel.setArg(m_nargs+1,(uint) static_offset);
- //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  
  

@@ -15,6 +15,7 @@
 #define COLS 25920
 #define ROWS 12060
 
+#define FRAMES 10
 //#define COLS 1024 
 //#define ROWS 1024
 
@@ -68,43 +69,56 @@ do_sobel(int tscheduler,
 {
 
   int worksize = chunksize;
-
-  Sobel sobel(COLS*ROWS);
+  size_t frames=4;
+  Sobel sobel(COLS*ROWS*frames);
 
   string kernel = file_read("support/kernels/sobel_med.cl");
 
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._input_img);
  auto output = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._out);
+ auto output_aux = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._out_aux);
 #pragma GCC diagnostic pop
   
-  int problem_size = sobel._total_size;
-
+  size_t problem_size = COLS*ROWS*frames*FRAMES;
+  cout <<"Problem Size: "<<problem_size<<"\n";
   vector<ecl::Device> devices;
 
+  #if ECL_GRENDEL == 1 
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
+  auto cmp_cpu  =0x04;  
+  auto cmp_gpu  =0x01;  
+  auto cmp_fpga=0x02;  
+#else
+  auto platform_cpu = 3;
+  auto platform_gpu = 1;
+  auto platform_fpga= 2;
+  auto cmp_cpu =0x01;  
+  auto cmp_gpu =0x02;  
+  auto cmp_fpga=0x04;  
+  #endif
 
   vector <char> binary_file;
-  if (tdevices &0x02){  
+  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,gws,gws);
-	device2.setLimMemory(4000000000/2);
+   	device2.setLimMemory(1400000000);
     devices.push_back(move(device2));
   }
 
-  if (tdevices &0x04){  
+  if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
-	device.setLimMemory(4000000000/2);
+  	device.setLimMemory (4000000000);
     devices.push_back(move(device));
   }
-  if (tdevices &0x01){  
+  if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-    device1.setLimMemory(1490000000/2); 
-	devices.push_back(move(device1));
+  	device1.setLimMemory (4000000000);
+	  devices.push_back(move(device1));
   }
 
   ecl::StaticScheduler stSched;
@@ -136,13 +150,14 @@ do_sobel(int tscheduler,
   }
   runtime.setInBuffer(input);
   runtime.setOutBuffer(output);
+  runtime.setOutAuxBuffer(output_aux);
   runtime.setKernel(kernel, "sobel");
   uint threshold=threshold_test;
   runtime.setKernelArg(0, input);//in
   runtime.setKernelArg(1, output);//out
   runtime.setKernelArg(2, threshold);// 
 //works with 1 per chunk in this versiòn 
-//  runtime.setInternalChunk(64);
+  runtime.setInternalChunk(1);
   runtime.run();
 
   runtime.printStats();

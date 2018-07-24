@@ -29,6 +29,7 @@
 #include "aes_decrypt.hpp"
 #include "gsm.hpp"
 #include "nw.hpp"
+#include "nn.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -211,6 +212,9 @@ main(int argc, char* argv[])
   }
   else if (tbench == 10){
    do_needleman(tscheduler, tdevices, check, size, chunksize, prop);
+  }
+  else if (tbench == 11){
+   do_nearest(tscheduler, tdevices, check, size, chunksize, prop,stof(argv[8]));
   }
   return 0;
 }

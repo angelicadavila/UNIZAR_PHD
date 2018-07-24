@@ -10,6 +10,7 @@
 #define ROWS 12060
 //#define COLS 25920
 //#define ROWS 12060
+#define FRAME 10
 #define ROUNDS 10
 void
 Aes_decrypt::init_image()
@@ -81,42 +82,60 @@ do_aesdecrypt(int tscheduler,
 {
 
   int worksize = chunksize;
-
-  Aes_decrypt aes_decrypt(COLS*ROWS);//+256
+  size_t frames=4;
+  Aes_decrypt aes_decrypt(COLS*ROWS*frames);//+256
 
     string kernel = file_read("support/kernels/aes_decrypt.cl");
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input =  shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._crypt_img);
  auto key =    shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._round_key);
  auto output = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out);
+ auto output_aux = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out_aux);
 #pragma GCC diagnostic pop
   
-  int problem_size =19537152;//(aes_decrypt._total_size)/16;
+  size_t problem_size =COLS*ROWS*frames*FRAME;//(aes_decrypt._total_size)/16;
+  //size_t problem_size =19537152;//(aes_decrypt._total_size)/16;
   //19537152;//(aes_decrypt._total_size)/16;
 
   vector<ecl::Device> devices;
 
+  #if ECL_GRENDEL == 1 
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
+  auto cmp_cpu  =0x04;  
+  auto cmp_gpu  =0x01;  
+  auto cmp_fpga=0x02;  
+#else
+  auto platform_cpu = 3;
+  auto platform_gpu = 1;
+  auto platform_fpga= 2;
+  auto cmp_cpu =0x01;  
+  auto cmp_gpu =0x02;  
+  auto cmp_fpga=0x04;  
+  #endif
 
+ 
   vector <char> binary_file;
   vector <size_t>gws = vector <size_t>(3,1);
   if (tdevices &0x02){  
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/aes_decrypt.aocx"); 
     device2.setKernel(binary_file,gws,gws); 
+   	device2.setLimMemory(1400000000);
     devices.push_back(move(device2));
   }
 
   if (tdevices &0x04){  
     ecl::Device device(platform_cpu,0);
   //  device.setKernel(kernel,gws,gws);
+  	device.setLimMemory (4000000000);
     devices.push_back(move(device));
   }
   if (tdevices &0x01){  
     ecl::Device device1(platform_gpu,0);
   //  device1.setKernel(kernel,gws,gws);
+  	device1.setLimMemory (4000000000);
     devices.push_back(move(device1));
   }
 
@@ -141,6 +160,7 @@ do_aesdecrypt(int tscheduler,
   runtime.setInBuffer(input);
   runtime.setInBuffer(key);
   runtime.setOutBuffer(output);
+  runtime.setOutAuxBuffer(output_aux);
   runtime.setKernel(kernel, "krnl_aes_decrypt");
   runtime.setKernelArg(0, output);//out
   runtime.setKernelArg(1, input);//in
@@ -161,6 +181,4 @@ do_aesdecrypt(int tscheduler,
 
   exit(0);
 }
-
-
 

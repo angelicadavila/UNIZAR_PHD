@@ -45,6 +45,7 @@ public:
     ,_crypt_img(_total_size)
     ,_round_key(11*16)
     ,_out(_total_size)
+    ,_out_aux(_total_size)
   {
     init_image();
   }
@@ -59,6 +60,7 @@ public:
   vector<char,vecAllocator<char>> _crypt_img;  // image
   vector<char,vecAllocator<char>> _round_key;  // image
   vector<char,vecAllocator<char>> _out;  // blurred
+  vector<char,vecAllocator<char>> _out_aux;  // blurred
 #pragma GCC diagnostic pop
 };
 

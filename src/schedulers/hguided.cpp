@@ -10,6 +10,7 @@
 #include <tuple>
 
 #define  FRAMES 10
+//#define  FRAMES 20
 
 namespace ecl {
 
@@ -271,7 +272,8 @@ HGuidedScheduler::normalizeRawProportions()
 
   if (last == 0) {
     m_raw_proportions = { 1.0f };
-  } else {
+  } 
+   else {
     auto sum = 0.0f;
     uint nprops = 0;
     for (auto prop : props) {
@@ -287,6 +289,7 @@ HGuidedScheduler::normalizeRawProportions()
 		m_raw_proportions[i]/=sum;
 		cout<<m_raw_proportions[i]<<" \n";
 	}
+
 //    auto wrong = true;
 //    if (nprops == last) {
 //      props[last] = 1.0f - sum;
@@ -319,10 +322,10 @@ HGuidedScheduler::enq_work(Device* device)
     
     uint mem_lim=(device->getLimMemory());
     uint int_chunk=(device->getInternalChunk());
-    m_lim_size=mem_lim/(int_chunk*4);
+    m_lim_size=mem_lim/(int_chunk*1);
     uint mult= floor(m_lim_size/m_lws);
     m_lim_size=mult * m_lws;
-
+    size=new_size;
     //limit memory size
   	if (new_size > m_lim_size)
 	    size = m_lim_size;

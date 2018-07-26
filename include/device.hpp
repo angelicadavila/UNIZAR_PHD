@@ -95,6 +95,25 @@ public:
     cout << "array: " << array.get() << "\n";
     cout << "address: " << address << "\n";
   }
+  
+  template<typename T>
+  void setInBuffer(shared_ptr<T> array,uint constant)
+  {
+    Buffer b(Direction::In);
+    b.set(array, constant);
+    //b.set(array,getLimMemory() );
+    m_in_ecl_buffers.push_back(move(b));
+
+    auto address = array.get();
+    m_in_buffers_ptr.push_back(address);
+
+    cout << "ecl::Buffer in get: " << b.get() << "\n";
+    cout << "ecl::Buffer in data: " << b.data() << "\n";
+    cout << "array: " << array.get() << "\n";
+    cout << "address: " << address << "\n";
+  }
+
+
   template<typename T>
   void setOutBuffer(shared_ptr<T> array)
   {
@@ -283,7 +302,7 @@ private:
   void initContext();
   void initQueue();
   void initBuffers();
-  //void writeBuffers(bool dummy = false);
+  void writeBuffers(bool dummy = false);
   void writeBuffers(size_t size, size_t offset);
   void initKernel();
   void initEvents();

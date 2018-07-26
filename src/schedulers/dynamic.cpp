@@ -12,7 +12,8 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-#define  FRAMES 10
+//#define  FRAMES 10
+#define  FRAMES 20 //for AES
 namespace ecl {
 
 void
@@ -151,6 +152,11 @@ DynamicScheduler::setWorkSize(size_t size)
   //if ((m_worksize % m_lws) != 0) {
   //  throw runtime_error("m_worksize % lws: " + to_string(m_worksize) + " % " + to_string(m_lws));
  // }
+
+   /*//static
+    
+
+   */
   IF_LOGGING(cout << "m_worksize (chunk size): " << m_worksize << "\n");
 }
 
@@ -322,6 +328,15 @@ void
 DynamicScheduler::enq_work(Device* device)
 {
   int id = device->getID();
+  /*
+   uint now=(m_chunk_done[id]/m_size);
+   uint prop=m_proportion_static[id];
+   if (prop>=now){
+   m_size_rem=0; //finish execution
+    }
+
+  */
+
   if (m_size_rem > 0) {
 
     size_t size = m_worksize;
@@ -343,7 +358,14 @@ DynamicScheduler::enq_work(Device* device)
             }
      }
  
-      tmp_cond=offset+size;
+     /* 
+     uint now=(m_chunk_todo[id]/m_size);
+     if (
+
+
+
+    */ 
+     tmp_cond=offset+size;
      if(tmp_cond>=(m_size/FRAMES)){
          size=(m_size/FRAMES)-offset;
            

@@ -38,6 +38,14 @@ public:
     }
   }
   template<typename T>
+  void setInBuffer(shared_ptr<T> array,uint constant)
+  {
+    for (auto& device : m_devices) {
+      device.setInBuffer(array,constant);
+    }
+  }
+
+ template<typename T>
   void setOutBuffer(shared_ptr<T> array)
   {
     for (auto& device : m_devices) {

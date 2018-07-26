@@ -380,7 +380,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  //m_kernel.setArg(m_nargs+1,(uint) offset);
  uint static_offset=0;
  m_kernel.setArg(m_nargs+1,(uint) static_offset);
- cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+// cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  
  
@@ -455,7 +455,7 @@ Device::init()
   saveDuration(ActionType::initKernel);
   saveDurationOffset(ActionType::initKernel);
   initEvents();
-  //writeBuffers();
+  writeBuffers();
   saveDuration(ActionType::writeBuffers);
   saveDurationOffset(ActionType::writeBuffers);
   // work();
@@ -466,6 +466,8 @@ Device::init()
 void
 Device::notifyBarrier()
 {
+  m_barrier.get()->notify(1);
+  m_barrier.get()->wait(0);
   m_barrier.get()->notify(1);
 }
 //wait all device initialization
@@ -561,6 +563,11 @@ Device::initBuffers()
     IF_LOGGING(cout << "in [address] " << b.get() << "\n");
     IF_LOGGING(cout << "in [size] " << b.size() << "\n");
     uint lim_size=getLimMemory();
+    auto constant_size=b.constant();
+    
+    if (constant_size){
+       lim_size=b.bytes();
+    } 
     IF_LOGGING(cout << "in [bytes] " <<  lim_size << "\n");
     cl::Buffer tmp_buffer(m_context, buffer_in_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "in buffer " + i);
@@ -604,34 +611,37 @@ Device::writeBuffers(size_t size, size_t offset)
   auto len = m_in_ecl_buffers.size();
   for (uint i = 0; i < len; ++i) {
     Buffer& b = m_in_ecl_buffers[i];
+   if ((b.constant()==0)){
     auto data= b.dataWithOffset(offset);//*m_internal_chunk);
-    size_t size_bytes = b.byBytes(size)*m_internal_chunk;
-   // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-   //                << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
+    size_t size_bytes = b.byBytes(size)*(m_internal_chunk);
+//  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+//                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
 
-  CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+      CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
   }
+  }
 }
-//void
-//Device::writeBuffers(bool /* dummy */)
-//{
-//  IF_LOGGING(cout << "writeBuffers\n");
-//
-//  auto len = m_in_ecl_buffers.size();
-//  m_prev_events.reserve(len);
-//  m_prev_events.resize(len);
-//  for (uint i = 0; i < len; ++i) {
-//    Buffer& b = m_in_ecl_buffers[i];
-//    auto data = b.data();
-//    auto size = b.size();
-//    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-//                    << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
-//    CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
-//      m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
-//  }
-//  m_queue.finish();
-//}
+void
+Device::writeBuffers(bool /* dummy */)
+{
+  IF_LOGGING(cout << "writeBuffers\n");
+
+  auto len = m_in_ecl_buffers.size();
+  m_prev_events.reserve(len);
+  m_prev_events.resize(len);
+  for (uint i = 0; i < len; ++i) {
+    Buffer& b = m_in_ecl_buffers[i];
+  if(b.constant()){
+    auto data = b.data();
+    auto size = b.size();
+    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+                    << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
+    CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+      m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
+  }}
+  m_queue.finish();
+}
 
 void
 Device::readBuffers()

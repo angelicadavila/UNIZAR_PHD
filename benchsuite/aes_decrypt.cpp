@@ -10,7 +10,7 @@
 #define ROWS 12060
 //#define COLS 25920
 //#define ROWS 12060
-#define FRAME 10
+#define FRAME 20
 #define ROUNDS 10
 void
 Aes_decrypt::init_image()
@@ -82,7 +82,7 @@ do_aesdecrypt(int tscheduler,
 {
 
   int worksize = chunksize;
-  size_t frames=4;
+  size_t frames=6;
   Aes_decrypt aes_decrypt(COLS*ROWS*frames);//+256
 
     string kernel = file_read("support/kernels/aes_decrypt.cl");
@@ -92,8 +92,7 @@ do_aesdecrypt(int tscheduler,
  auto output = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out);
  auto output_aux = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out_aux);
 #pragma GCC diagnostic pop
-  
-  size_t problem_size =COLS*ROWS*frames*FRAME;//(aes_decrypt._total_size)/16;
+  size_t problem_size =19537152*frames*FRAME;//(aes_decrypt._total_size)/16;
   //size_t problem_size =19537152;//(aes_decrypt._total_size)/16;
   //19537152;//(aes_decrypt._total_size)/16;
 
@@ -118,7 +117,7 @@ do_aesdecrypt(int tscheduler,
  
   vector <char> binary_file;
   vector <size_t>gws = vector <size_t>(3,1);
-  if (tdevices &0x02){  
+  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/aes_decrypt.aocx"); 
     device2.setKernel(binary_file,gws,gws); 
@@ -126,16 +125,19 @@ do_aesdecrypt(int tscheduler,
     devices.push_back(move(device2));
   }
 
-  if (tdevices &0x04){  
+  if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
   //  device.setKernel(kernel,gws,gws);
   	device.setLimMemory (4000000000);
     devices.push_back(move(device));
   }
-  if (tdevices &0x01){  
+  if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
   //  device1.setKernel(kernel,gws,gws);
   	device1.setLimMemory (4000000000);
+     vector <size_t>lws = vector <size_t>(3,1);
+     lws[0]=2; gws[0]=0;
+    device1.setKernel(kernel,gws,lws);
     devices.push_back(move(device1));
   }
 
@@ -156,9 +158,18 @@ do_aesdecrypt(int tscheduler,
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
    hgSched.setRawProportions({0.10, 0.1});
+   if (tdevices==7)
+      hgSched.setRawProportions({0.26,.25,0.49});
+   else if (tdevices==3)
+      hgSched.setRawProportions({ 5.10,0.92});
+   else if (tdevices==5)
+      //hgSched.setRawProportions({ 1.19, 5.10});
+      hgSched.setRawProportions({ 1, 1});
+   else if (tdevices==6)
+      hgSched.setRawProportions({ 1.19,0.92}); 
   }
   runtime.setInBuffer(input);
-  runtime.setInBuffer(key);
+  runtime.setInBuffer(key,1);
   runtime.setOutBuffer(output);
   runtime.setOutAuxBuffer(output_aux);
   runtime.setKernel(kernel, "krnl_aes_decrypt");

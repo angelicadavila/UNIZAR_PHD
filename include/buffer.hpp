@@ -41,6 +41,7 @@ public:
   size_t size();
   size_t itemSize();
   size_t bytes();
+  uint  constant();
 
   template<typename T>
   std::string type_name();
@@ -54,17 +55,19 @@ public:
     m_bytes = sizeof(T) * m_size;
     m_data = reinterpret_cast<void*>(v->data());
     m_address = reinterpret_cast<void*>(v);
+    m_const = 0;
     IF_LOGGING(std::cout << "m_size: " << m_size << " m_bytes: " << m_bytes << "\n");
   }
   template<typename T, typename Ta>
-  void set(shared_ptr<vector<T,Ta>> in, int lim_size)
+  void set(shared_ptr<vector<T,Ta>> in, uint constant)
   {
     vector<T,Ta>* v = in.get();
     m_item_size = sizeof(T);
-    m_size = lim_size/m_item_size;
-    m_bytes = lim_size;//sizeof(T) * m_size;
+    m_size = v->size();
+    m_bytes = sizeof(T) * m_size;
     m_data = reinterpret_cast<void*>(v->data());
     m_address = reinterpret_cast<void*>(v);
+    m_const = 1;
     IF_LOGGING(std::cout << "m_size: " << m_size << " m_bytes: " << m_bytes << "\n");
   }
   void* get();
@@ -78,6 +81,7 @@ private:
   size_t m_item_size;
   size_t m_size;
   size_t m_bytes;
+  uint m_const;//if the input size of input value do not change
   void* m_data;
   void* m_address;
 };

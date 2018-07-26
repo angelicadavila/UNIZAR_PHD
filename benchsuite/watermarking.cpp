@@ -134,7 +134,7 @@ do_watermarking(int tscheduler,
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
     if(tdevices ==7)
-      hgSched.setRawProportions({0.2,0.4,prop});
+      hgSched.setRawProportions({0.4,0.57,0.17});
     else
       hgSched.setRawProportions({0.1,prop});
    }else if (tscheduler == 3){

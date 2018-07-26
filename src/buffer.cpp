@@ -45,6 +45,12 @@ Buffer::data()
   return m_data;
 }
 
+uint
+Buffer::constant()
+{
+  return m_const;
+}
+
 void*
 Buffer::dataWithOffset(size_t offset)
 {

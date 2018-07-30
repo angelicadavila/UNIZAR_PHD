@@ -56,7 +56,8 @@ do_watermarking(int tscheduler,
             bool check,
             uint image_size,
             int chunksize,
-            float prop
+            float prop,
+            float prop2
            )
 {
 
@@ -113,7 +114,8 @@ do_watermarking(int tscheduler,
     devices.push_back(move(device1));
   }
 
-  ecl::StaticScheduler stSched;
+  //ecl::StaticScheduler stSched;
+  ecl::StaticLongScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
   //ecl::ProportionalScheduler propSched;
@@ -125,7 +127,9 @@ do_watermarking(int tscheduler,
   
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop, 0.26 });
+    runtime.setScheduler(&stSched);
+    //stSched.setRawProportions({ prop2, prop,20.0-(prop+prop2) });
+    stSched.setRawProportions({ 0.2, 0.25,0.55 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
@@ -134,7 +138,8 @@ do_watermarking(int tscheduler,
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
     if(tdevices ==7)
-      hgSched.setRawProportions({0.4,0.57,0.17});
+      //hgSched.setRawProportions({0.4,0.57,0.17});
+      hgSched.setRawProportions({0.18,0.39,0.43});
     else
       hgSched.setRawProportions({0.1,prop});
    }else if (tscheduler == 3){

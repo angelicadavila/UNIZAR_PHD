@@ -30,7 +30,8 @@ do_aesdecrypt(int tscheduler,
             bool check,
             uint N_rand,
             int chunksize,
-            float prop
+            float prop,
+            float prop2
             );
 
 

@@ -77,7 +77,8 @@ do_aesdecrypt(int tscheduler,
             bool check,
             uint image_size,
             int chunksize,
-            float prop
+            float prop,
+            float prop2
            )
 {
 
@@ -141,7 +142,7 @@ do_aesdecrypt(int tscheduler,
     devices.push_back(move(device1));
   }
 
-  ecl::StaticScheduler stSched;
+  ecl::StaticLongScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
   
@@ -150,7 +151,9 @@ do_aesdecrypt(int tscheduler,
   ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    //stSched.setRawProportions({ prop });
+    //stSched.setRawProportions({ prop, prop2, 20.0-(prop+prop2)});
+    stSched.setRawProportions({ 0.15, 0.25, 0.6});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

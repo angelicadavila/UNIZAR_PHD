@@ -12,8 +12,8 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-//#define  FRAMES 10
-#define  FRAMES 20 //for AES
+#define  FRAMES 10
+//#define  FRAMES 20 //for AES
 namespace ecl {
 
 void

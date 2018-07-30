@@ -87,7 +87,8 @@ main(int argc, char* argv[])
   auto chunksize = stoi(argv[6]);
 
   auto prop = stof(argv[7]);
-  auto props = string_to_proportions(argv[7]);
+  auto prop2 = stof(argv[8]);
+  auto props = 0;//string_to_proportions(argv[7]);
 
   if (tbench == 0) {
     // do_assign(tscheduler, tdevices, check, size, chunksize, prop);
@@ -194,18 +195,17 @@ main(int argc, char* argv[])
     // //   auto steps = atoi(argv[8]);
     // //   do_binomial(tscheduler, tdevices, check, samples, chunksize, prop, steps;
   }else if (tbench == 4){
-   cout<<"mersenne size*64\n";
-   auto N_rand = size*64;
-   do_mersenne(tscheduler, tdevices, check, N_rand, chunksize, prop);
+   auto N_rand = size;
+   do_mersenne(tscheduler, tdevices, check, N_rand, chunksize, prop,prop2);
   }else if (tbench == 5){
-   do_sobel(tscheduler, tdevices, check, 1, chunksize, prop);
+   do_sobel(tscheduler, tdevices, check, 1, chunksize, prop,prop2);
   }else if (tbench == 6){
-   do_watermarking(tscheduler,tdevices,check,1,chunksize,prop);
+   do_watermarking(tscheduler,tdevices,check,1,chunksize,prop,prop2);
   }else if (tbench ==7){
    do_matrixMult(tscheduler, tdevices, check, size, chunksize, prop, atoi(argv[8]));
   }
   else if (tbench ==8){
-   do_aesdecrypt(tscheduler, tdevices, check, size, chunksize, prop );
+   do_aesdecrypt(tscheduler, tdevices, check, size, chunksize, prop,prop2 );
   }
   else if (tbench == 9){
    do_gsm(tscheduler,tdevices,check,size,chunksize,prop);

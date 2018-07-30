@@ -18,5 +18,6 @@
 #include "schedulers/proportional.hpp"
 #include "schedulers/particle.hpp"
 #include "schedulers/static.hpp"
+#include "schedulers/static_long.hpp"
 
 #endif // ENGINECL_HPP

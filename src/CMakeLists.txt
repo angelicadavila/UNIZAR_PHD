@@ -30,6 +30,7 @@ set(SOURCES
   buffer.cpp
   runtime.cpp
   schedulers/static.cpp
+  schedulers/static_long.cpp
   schedulers/dynamic.cpp
   #schedulers/proportional.cpp
  # schedulers/particle.cpp
@@ -46,6 +47,7 @@ set(HEADERS
   ${INCLUDE_DIR}/semaphore.hpp
   ${INCLUDE_DIR}/runtime.hpp
   ${INCLUDE_DIR}/schedulers/static.hpp
+  ${INCLUDE_DIR}/schedulers/static_long.hpp
   ${INCLUDE_DIR}/schedulers/dynamic.hpp
 #  ${INCLUDE_DIR}/schedulers/proportional.hpp
 #  ${INCLUDE_DIR}/schedulers/particle.hpp

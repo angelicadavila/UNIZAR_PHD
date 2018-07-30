@@ -322,7 +322,7 @@ HGuidedScheduler::enq_work(Device* device)
     
     uint mem_lim=(device->getLimMemory());
     uint int_chunk=(device->getInternalChunk());
-    m_lim_size=mem_lim/(int_chunk*1);
+    m_lim_size=mem_lim/(int_chunk*4);
     uint mult= floor(m_lim_size/m_lws);
     m_lim_size=mult * m_lws;
     size=new_size;
@@ -344,8 +344,8 @@ HGuidedScheduler::enq_work(Device* device)
     if (offset+size>(m_size/FRAMES)){
         new_size=(m_size/FRAMES)-offset;
         size=new_size; 
-        if(new_size>m_lim_size) size=m_lim_size;
-        if (new_size<0){
+        if(size>m_lim_size) size=m_lim_size;
+        if (size<0){
           size=m_size_rem;
         }
     }

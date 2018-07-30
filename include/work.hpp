@@ -8,7 +8,7 @@
 
 // #include <ostream>
 #include <string>
-
+#include <math.h>  
 using std::runtime_error;
 using std::to_string;
 
@@ -47,8 +47,15 @@ splitWorkLikeHGuided(size_t total, size_t min_worksize, size_t lws, float comp_p
   if (total < ret) {
     ret = total;
   }
+  
+//  ret=static_cast<size_t>(floor(ret/128)*128); 
   if ((ret % lws) != 0) {
-    throw runtime_error("ret % lws: " + to_string(ret) + " % " + to_string(lws));
+      
+  ret=static_cast<size_t>(floor(ret/128)*128); 
+//  rem = static_cast<size_t>(ret) % lws;
+  
+//   ret=floor(ret/128)*128; 
+  //  throw runtime_error("ret % lws: " + to_string(ret) + " % " + to_string(lws));
   }
   return ret;
 }

@@ -44,6 +44,7 @@ public:
     ,_input_itemsets(_total_size)
     ,_reference(_total_size)
     ,_output_itemsets(_total_size)
+    ,_output_itemsets_aux(_total_size)
   {
     init_vectors();
   }
@@ -57,6 +58,7 @@ public:
   vector<int,vecAllocator<int>> _input_itemsets;  
   vector<int,vecAllocator<int>> _reference;  
   vector<int,vecAllocator<int>> _output_itemsets;  
+  vector<int,vecAllocator<int>> _output_itemsets_aux;  
 #pragma GCC diagnostic pop
 };
 

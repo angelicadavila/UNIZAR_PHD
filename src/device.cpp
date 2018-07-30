@@ -377,10 +377,11 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
     }
 }
  m_kernel.setArg(m_nargs,(uint) size);
+ //m_kernel.setArg(m_nargs,(ulong) size);
  //m_kernel.setArg(m_nargs+1,(uint) offset);
  uint static_offset=0;
  m_kernel.setArg(m_nargs+1,(uint) static_offset);
-// cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+ //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
  //if(getID()==0)
  
  
@@ -620,12 +621,13 @@ Device::writeBuffers(size_t size, size_t offset)
       CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
   }
+  else writeBuffers(); 
   }
 }
 void
 Device::writeBuffers(bool /* dummy */)
 {
-  IF_LOGGING(cout << "writeBuffers\n");
+ // IF_LOGGING(cout << "writeBuffers\n");
 
   auto len = m_in_ecl_buffers.size();
   m_prev_events.reserve(len);
@@ -635,8 +637,8 @@ Device::writeBuffers(bool /* dummy */)
   if(b.constant()){
     auto data = b.data();
     auto size = b.size();
-    IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-                    << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
+   // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+  //                  << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
     CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
   }}

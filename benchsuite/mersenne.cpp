@@ -2,40 +2,16 @@
 #include <iostream>
 #include <fstream>
 
+#define FRAMES 10
 void
 Mersenne::init_seed()
 {
   srand(0);
-  for (auto i=0 ; i<_total_size; i++){
-     _input_seed[i]=rand();
+  for (auto i=0 ; i<MT_N; i++){
+     _input_seed[i]=rand()+2;
      _out[i]=0;
   }
 
-/*    unsigned int state = 777;
-    uint ival[VECTOR];
-    #pragma unroll VECTOR
-    for (int i=0; i<64; i++) {
-       ival[i] = 777;
-    }
-    for (unsigned int n=0; n<MT_N; n++) {
-       #pragma unroll
-       for (int i=0; i<VECTOR-1; i++) {
-          ival[i] = ival[i+1];
-       }
-       ival[VECTOR-1] = state;
-       state = (1812433253U * (state ^ (state >> 30)) + n) & 0xffffffffUL;
-       if ((n & (VECTOR-1)) == 47) {
-          vec_uint_ty I0, I1, I2, I3;
-          #pragma unroll VECTOR_DIV4
-          for (int i=0; i<VECTOR_DIV4; i++) {
-             I0[i]=ival[i];
-             I1[i]=ival[i+1*VECTOR_DIV4];
-             I2[i]=ival[i+2*VECTOR_DIV4];
-             I3[i]=ival[i+3*VECTOR_DIV4];
-          }
-       }
-    }
-*/
 }
 
 
@@ -51,74 +27,100 @@ do_mersenne(int tscheduler,
             bool check,
             uint N_rand,
             int chunksize,
-            float prop
+            float prop,
+            float prop2
            )
 {
 
   int worksize = chunksize;
+  
+  size_t frames=4;
+  size_t dim=static_cast<int>(N_rand);
+  Mersenne mersenne(N_rand*64*frames);
 
-  Mersenne mersenne(N_rand);
-
-  string kernel = file_read("support/kernels/mersenne_kernel.cl");
+  //string kernel = file_read("support/kernels/mersenne_kernel.cl");
+  string kernel = file_read("support/kernels/mersenne_kernel_box.cl");
 #pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&mersenne._input_seed);
  auto output = shared_ptr<vector<float,vecAllocator<float>>>(&mersenne._out);
+ auto output_aux = shared_ptr<vector<float,vecAllocator<float>>>(&mersenne._out_aux);
 #pragma GCC diagnostic pop
+  //size_t problem_size =(mersenne._total_size/(size_t)64)*frames*FRAMES;
+  size_t problem_size =dim*frames*FRAMES;
   
-  int problem_size = mersenne._total_size/64;
-
   vector<ecl::Device> devices;
 
+   #if ECL_GRENDEL == 1 
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
-  
+  auto cmp_cpu  =0x04;  
+  auto cmp_gpu  =0x01;  
+  auto cmp_fpga=0x02;  
+#else
+  auto platform_cpu = 3;
+  auto platform_gpu = 1;
+  auto platform_fpga= 2;
+  auto cmp_cpu =0x01;  
+  auto cmp_gpu =0x02;  
+  auto cmp_fpga=0x04;  
+  #endif
+
+
  // Mersenne twister is a unitary kernel pipeline or Task execution
 
   vector <char> binary_file;
   vector <size_t>gws=vector <size_t>(3,1);
-  if (tdevices &0x02){  
+  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_fpr.aocx"); 
+    //binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_fpr.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_box.aocx"); 
     device2.setKernel(binary_file,gws,gws); 
+   	device2.setLimMemory(2000000000);
     devices.push_back(move(device2));
   }
-  if (tdevices &0x04){  
+  if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
     device.setKernel(kernel,gws,gws);
+  	device.setLimMemory ((uint)6000000000);
     devices.push_back(move(device));
   }
-  if (tdevices &0x01){  
+  if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
     device1.setKernel(kernel,gws,gws);
+  	device1.setLimMemory ((uint)6000000000);
     devices.push_back(move(device1));
   }
 
-  ecl::StaticScheduler stSched;
+  ecl::StaticLongScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
 cout<<"Manual proportions!";
   ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop });
+    //stSched.setRawProportions({ prop });
+    //stSched.setRawProportions({ prop,20.0-(prop+prop2),prop2 });
+    stSched.setRawProportions({ 0.4,0.55,0.05 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.9, 0.2});
+   hgSched.setRawProportions({0.32, 0.62,0.06});
   }
-  runtime.setInBuffer(input);
+  runtime.setInBuffer(input,1);
   runtime.setOutBuffer(output);
+  runtime.setOutAuxBuffer(output_aux);
   //Mersenne its specialized in every device gws(1,1,1) lws(1,1,1)
   runtime.setKernel(kernel, "mersenne_twister_generate");//the default is gws(0,1,1) when gws[0]=chunk_size. lws(128,1,1)
 
   runtime.setKernelArg(0, input);//in
   runtime.setKernelArg(1, output);//out
   
-  runtime.setInternalChunk(64);
+  runtime.setInternalChunk(32);
+  //runtime.setInternalChunk(64);
   runtime.run();
 
   runtime.printStats();

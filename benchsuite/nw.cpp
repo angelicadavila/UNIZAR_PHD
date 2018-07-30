@@ -8,6 +8,7 @@
 #define BLOCK_SIZE 16
 #define penalty 10
 
+#define FRAMES 10
 void
 Needleman::init_vectors()
 {
@@ -69,7 +70,7 @@ Needleman::init_vectors()
 string
 Needleman::get_kernel_str()
 {
-
+   return 0;
 }
 
 // Dump frame data in PPM format.
@@ -89,10 +90,10 @@ do_needleman(int tscheduler,
 {
   //sequence with equal size
   int worksize = chunksize;
-  
-  sq_length*=BLOCK_SIZE; 
+  size_t frames=6; 
+  sq_length*=BLOCK_SIZE*6; 
   cout<<"length sequence"<<sq_length<<"\n";
-  Needleman needleman(sq_length);
+  Needleman needleman(sq_length+1);
 
   string kernel = file_read("support/kernels/nw.cl");
 
@@ -100,36 +101,52 @@ do_needleman(int tscheduler,
  auto reference       = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._reference);
  auto input_itemsets  = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._input_itemsets);
  auto output_itemsets = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._output_itemsets);
+ auto output_itemsets_aux = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._output_itemsets_aux);
 #pragma GCC diagnostic pop
   
-  int problem_size = (needleman._max_cols - 1)/BLOCK_SIZE;
+  int problem_size = ((needleman._max_cols )/BLOCK_SIZE)*10;
 
   vector<ecl::Device> devices;
 
-  auto platform_cpu = 0;
+  #if ECL_GRENDEL == 1 
+  auto platform_cpu = 2;
+  auto platform_gpu = 0;
+  auto platform_fpga= 1;
+  auto cmp_cpu  =0x04;  
+  auto cmp_gpu  =0x01;  
+  auto cmp_fpga =0x02;  
+  #else
+  auto platform_cpu = 3;
   auto platform_gpu = 1;
   auto platform_fpga= 2;
+  auto cmp_cpu =0x01;  
+  auto cmp_gpu =0x02;  
+  auto cmp_fpga=0x04;  
+  #endif
 
   vector <char> binary_file;
   vector <size_t>gws=vector <size_t>(3,1);
   vector <size_t>lws=vector <size_t>(3,1);
-  if (tdevices &0x04){  
+  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/nw_16.aocx"); 
     device2.setKernel(binary_file,gws,gws);
+   	device2.setLimMemory(1000000000);
     devices.push_back(move(device2));
   }
 
-  if (tdevices &0x01){  
+  if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
     gws[0]=0; lws[0]=BLOCK_SIZE;
     device.setKernel(kernel,gws,lws);
+  	device.setLimMemory (3000000000);
     devices.push_back(move(device));
   }
-  if (tdevices &0x02){  
+  if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
     gws[0]=0;lws[0]=BLOCK_SIZE;
     device1.setKernel(kernel,gws,lws);
+  	device1.setLimMemory (3000000000);
     devices.push_back(move(device1));
   }
 
@@ -159,6 +176,7 @@ do_needleman(int tscheduler,
   runtime.setInBuffer(input_itemsets);
   runtime.setInBuffer(reference);
   runtime.setOutBuffer(output_itemsets);
+  runtime.setOutAuxBuffer(output_itemsets_aux);
   runtime.setKernel(kernel, "nw_kernel1");
   runtime.setKernelArg(0, reference);//in
   runtime.setKernelArg(1, input_itemsets);//out

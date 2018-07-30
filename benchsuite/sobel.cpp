@@ -64,7 +64,8 @@ do_sobel(int tscheduler,
             bool check,
             uint image_size,
             int chunksize,
-            float prop
+            float prop,
+            float prop2
            )
 {
 
@@ -121,7 +122,8 @@ do_sobel(int tscheduler,
 	  devices.push_back(move(device1));
   }
 
-  ecl::StaticScheduler stSched;
+ // ecl::StaticScheduler stSched;
+  ecl::StaticLongScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
   //ecl::ProportionalScheduler propSched;
@@ -132,7 +134,9 @@ do_sobel(int tscheduler,
   ecl::Runtime runtime(move(devices), problem_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions({ prop, 0.26 });
+    //stSched.setRawProportions({0.17,0.16, 0.67});
+   // stSched.setRawProportions({prop,prop2, 20.0-(prop+prop2)});
+   stSched.setRawProportions({0.15,0.05, 0.8});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

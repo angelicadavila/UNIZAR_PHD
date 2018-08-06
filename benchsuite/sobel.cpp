@@ -143,7 +143,8 @@ do_sobel(int tscheduler,
   } else if (tscheduler ==2){ // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-    hgSched.setRawProportions({0.17,0.43, 0.40});
+   // hgSched.setRawProportions({0.17,0.43, 0.40});
+    hgSched.setRawProportions({0.16,0.16, 0.67});
   } else if (tscheduler ==3){ // tscheduler == 2
    // runtime.setScheduler(&propSched);
    // propSched.setWorkSize(worksize);

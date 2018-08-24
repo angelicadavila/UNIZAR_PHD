@@ -1,0 +1,86 @@
+Reprogramming device [0] with handle 1
+problem Size117222912Manual proportions!m_worksize (chunk size): 19537216
+m_size: 1875571200 m_bytes: 7502284800
+ecl::Buffer in get: 0x7ffe26187a28
+ecl::Buffer in data: 0x7ff60aed4040
+array: 0x7ffe26187a28
+address: 0x7ffe26187a28
+m_size: 1875571200 m_bytes: 7502284800
+ecl::Buffer out get: 0x7ffe26187a48
+ecl::Buffer out data: 0x7ff44bc17040
+array: 0x7ffe26187a48
+address: 0x7ffe26187a48
+m_size: 1875571200 m_bytes: 7502284800
+ecl::Buffer out get: 0x7ffe26187a68
+ecl::Buffer out data: 0x7ff28c95a040
+array: 0x7ffe26187a68
+address: 0x7ffe26187a68
+Using custom Kernel
+setKernelArg shared_ptr T index: 0
+bytes: 7502284800
+setKernelArg shared_ptr T index: 1
+bytes: 7502284800
+setKernelArg T index: 2
+4
+setKernelArg T index: 3
+4
+discoverDevices
+platforms: 4
+platform: 0 devices: 1
+Experimental OpenCL 2.1 CPU Only Platform
+platform: 1 devices: 1
+NVIDIA CUDA
+platform: 2 devices: 1
+Intel(R) FPGA SDK for OpenCL(TM)
+platform: 3 devices: 1
+Intel(R) OpenCL
+Runtime is waitReady
+Runtime is waiting
+Runtime is ready
+2 - 0
+initContext
+initQueue
+initBuffers
+in [data] 0x7ff60aed4040
+in [address] 0x7ffe26187a28
+in [size] 1875571200
+in [bytes] 1400000000
+in buffer: 0x7ff268000970
+out [data] 0x7ff44bc17040
+out [address] 0x7ffe26187a48
+out [size] 1875571200
+out [bytes] 1400000000
+out buffer: 0x7ff26801a8a0
+out [data] 0x7ff28c95a040
+out [address] 0x7ffe26187a68
+out [size] 1875571200
+out [bytes] 1400000000
+out buffer: 0x7ff26801a8c0
+initKernel
+size: 65688408
+Kernel should receive the last argument as 'uint offset' (ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 0)
+ Building info: Trivial build
+[i] 0
+[ArgType::Vector]
+[value] 0x7ffe26187a28
+[address] 0x7ffe26187a28
+it: 0x7ffe26187a28
+address: 0x7ffe26187a28 position: 0 buffer: 0x7ff268000970
+[i] 1
+[ArgType::Vector]
+[value] 0x7ffe26187a48
+[address] 0x7ffe26187a48
+address: 0x7ffe26187a48 position: 0 buffer: 0x7ff26801a8a0
+[i] 2
+[ArgType::T]
+[value] 0x7ffe26188644
+[bytes] 4
+[mem] 8
+[i] 3
+[ArgType::T]
+[value] 0x7ffe26188648
+[bytes] 4
+[mem] 8
+writeBuffers
+----------init device:0
+/build/debug/clbalancer 0 4 6 0 19537200  19537200 0.52 21

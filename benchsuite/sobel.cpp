@@ -135,8 +135,8 @@ do_sobel(int tscheduler,
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     //stSched.setRawProportions({0.17,0.16, 0.67});
-   // stSched.setRawProportions({prop,prop2, 20.0-(prop+prop2)});
-   stSched.setRawProportions({0.15,0.05, 0.8});
+    stSched.setRawProportions({prop,prop2, 20.0-(prop+prop2)});
+  // stSched.setRawProportions({0.15,0.05, 0.8});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

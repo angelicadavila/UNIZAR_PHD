@@ -124,7 +124,9 @@ Device::Device(uint sel_platform, uint sel_device)
   //default values
   m_gws[0]=0;//to set the chunk size
   m_lws[0]=128;
-
+  //multi-kernel implementation
+  m_kernel_str.reserve(8);
+  m_num_kernel=0;
   //define the buffer of aoutput, between global and auxiliar
   switch_out=0;
 //  m_lws[0]=64;
@@ -300,7 +302,8 @@ Device::setKernel(const string& source, const string& kernel)
   } else {
     IF_LOGGING(cout << "Using custom Kernel\n");
   }
-  m_kernel_str = kernel;
+  m_kernel_str.push_back ( kernel);
+  m_num_kernel++; 
 }
 
 void
@@ -318,6 +321,47 @@ Device::setKernel(const string& source)
   m_program_type = ProgramType::CustomSource;
   m_program_source = source;
 }
+
+void 
+Device::setKernel(const vector<char>& file,
+                 const string& kernel,   
+                 vector <size_t> global_work, 
+                 vector <size_t> local_work)
+{
+    m_program_type = ProgramType::CustomBinary;
+    m_program_binary = file;
+  //initializing the parameters of kernel execution
+    m_gws=vector <size_t>(3,1);
+    m_lws=vector <size_t>(3,1);
+    for( int i=0; i<(int)global_work.size();i++)
+      m_gws[i]=global_work[i];
+   
+    for( int i=0; i<(int)local_work.size();i++)
+      m_lws[i]=local_work[i];
+  m_kernel_str.push_back ( kernel);
+  m_num_kernel++; 
+
+}
+
+void 
+Device::setKernel(const vector<char>& file,
+                 vector <size_t> global_work, 
+                 vector <size_t> local_work)
+{
+    m_program_type = ProgramType::CustomBinary;
+    m_program_binary = file;
+  //initializing the parameters of kernel execution
+    m_gws=vector <size_t>(3,1);
+    m_lws=vector <size_t>(3,1);
+    for( int i=0; i<(int)global_work.size();i++)
+      m_gws[i]=global_work[i];
+   
+    for( int i=0; i<(int)local_work.size();i++)
+      m_lws[i]=local_work[i];
+
+}
+
+
 
 void
 Device::waitEvent()
@@ -361,40 +405,44 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   if(m_gws[0]!=1) 
     m_gws[0] = size;//pass to global
 #if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-  status=m_queue.enqueueNDRangeKernel(m_kernel,
-                               cl::NDRange(offset),
-                               cl::NDRange(gws),
-                               cl::NDRange(CL_LWS),
-                               nullptr,
-                               nullptr);
+//  status=m_queue.enqueueNDRangeKernel(m_kernel,
+//                               cl::NDRange(offset),
+//                               cl::NDRange(gws),
+//                               cl::NDRange(CL_LWS),
+//                               nullptr,
+//                               nullptr);
 #else
  int len=m_out_arg_index.size();
- for (int j=0;j<len;j++){
-    if (switch_out==0){
-      m_kernel.setArg(m_out_arg_index[j],m_out_buffers[m_out_arg_pos[j]]);
-    }else{
-      m_kernel.setArg(m_out_arg_index[j],m_out_aux_buffers[m_out_arg_pos[j]]);
-    }
-}
- m_kernel.setArg(m_nargs,(uint) size);
- //m_kernel.setArg(m_nargs,(ulong) size);
- //m_kernel.setArg(m_nargs+1,(uint) offset);
- uint static_offset=0;
- m_kernel.setArg(m_nargs+1,(uint) static_offset);
- //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
- //if(getID()==0)
- 
- 
-   writeBuffers(size,offset);
-{
-  status=m_queue.enqueueNDRangeKernel(
-                          m_kernel, cl::NullRange, 
-                          cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
-                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
-                          nullptr ,&(m_event_kernel));
-                          
-  CL_CHECK_ERROR(status,"NDRange problem");
-  }
+
+ writeBuffers(size,offset);
+
+  for (int h=0;h<m_num_kernel;h++){
+     for (int j=0;j<len;j++){
+        if (switch_out==0){
+          m_kernel[h].setArg(m_out_arg_index[j],m_out_buffers[m_out_arg_pos[j]]);
+        }else{
+          m_kernel[h].setArg(m_out_arg_index[j],m_out_aux_buffers[m_out_arg_pos[j]]);
+        }
+      }
+    //Divide load betwee the number of kernels in the program
+     m_kernel[h].setArg(m_nargs,(uint) size/m_num_kernel);
+     //m_kernel.setArg(m_nargs,(ulong) size);
+     uint static_offset=0;
+     m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+     //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+     //if(getID()==0)
+     
+     
+      {  
+      status=m_queue.enqueueNDRangeKernel(
+                              m_kernel[h], cl::NullRange, 
+                              cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
+                              cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+                              nullptr ,&(m_event_kernel));
+                              
+      CL_CHECK_ERROR(status,"NDRange problem");
+      }
+   }
 #endif
   
   //m_queue.finish();
@@ -712,6 +760,9 @@ void
 Device::initKernel()
 {
   IF_LOGGING(cout << "initKernel\n");
+  //vectors to suppor multi-kernel program
+  //maximun 8 kernels in a program
+  m_kernel.reserve(1024);
 
   cl_int cl_err;
 
@@ -749,9 +800,11 @@ Device::initKernel()
     IF_LOGGING(cout << " Building info: " << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device)
                     << "\n");
   }
-
-  cl::Kernel kernel(program, m_kernel_str.c_str(), &cl_err);
-  CL_CHECK_ERROR(cl_err, "kernel");
+  vector <cl::Kernel> kernel;
+  for (uint i = 0; i < m_num_kernel; i++) {
+    kernel.push_back(cl::Kernel(program, m_kernel_str[i].c_str(), &cl_err));
+    CL_CHECK_ERROR(cl_err, "kernel");
+  }
 
   auto len = m_arg_index.size();
   auto unassigned = m_in_buffers_ptr.size();
@@ -773,8 +826,10 @@ Device::initKernel()
           pos = distance(m_in_buffers_ptr.begin(), it);
           IF_LOGGING(cout << "address: " << address << " position: " << pos
                           << " buffer: " << &m_in_buffers[pos] << "\n");
-          cl_err = kernel.setArg(index, m_in_buffers[pos]);
-          CL_CHECK_ERROR(cl_err, "kernel arg in buffer " + to_string(i));
+          for (uint h = 0; h < m_num_kernel; h++) {
+            cl_err = kernel[h].setArg(index, m_in_buffers[pos]);
+            CL_CHECK_ERROR(cl_err, "kernel arg in buffer " + to_string(i));
+          }
           unassigned--;
           assigned = true;
         }
@@ -786,7 +841,8 @@ Device::initKernel()
           auto pos = distance(m_out_buffers_ptr.begin(), it);
           IF_LOGGING(cout << "address: " << address << " position: " << pos
                           << " buffer: " << &m_out_buffers[pos] << "\n");
-          cl_err = kernel.setArg(index, m_out_buffers[pos]);
+          for (uint h = 0; h < m_num_kernel; h++) 
+            cl_err = kernel[h].setArg(index, m_out_buffers[pos]);
           m_out_arg_index.push_back(index);
           m_out_arg_pos.push_back(pos);
           CL_CHECK_ERROR(cl_err, "kernel arg out buffer " + to_string(i));
@@ -801,8 +857,10 @@ Device::initKernel()
           size_t bytes = m_arg_bytes[i];
           vector<void*>* vptr = reinterpret_cast<vector<void*>*>(m_arg_ptr[i]);
           void* ptr = vptr->data();
-          cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
-          CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+          for (uint h = 0; h < m_num_kernel; h++) {
+            cl_err = kernel[h].setArg((cl_uint)i, bytes, ptr);
+            CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+          }
         } else {
           throw runtime_error("unknown kernel arg address " + to_string(i));
         }
@@ -816,9 +874,10 @@ Device::initKernel()
       void* ptr = m_arg_ptr[i];
       IF_LOGGING(cout << "[bytes] " << bytes << "\n");
       IF_LOGGING(cout << "[mem] " << sizeof(cl_mem) << "\n");
-      cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
-      
-      CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+      for (uint h = 0; h < m_num_kernel; h++) {
+        cl_err = kernel[h].setArg((cl_uint)i, bytes, ptr);
+        CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+      }
     } else { // ArgType::LocalAlloc
       IF_LOGGING(cout << "[ArgType::LocalAlloc]\n");
       IF_LOGGING(cout << "empy space __local\n");
@@ -826,8 +885,11 @@ Device::initKernel()
       size_t bytes = m_arg_bytes[i];
       void* ptr = m_arg_ptr[i];
       // ptr should be NULL
-      cl_err = kernel.setArg((cl_uint)i, bytes, ptr);
-      CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+      
+      for (uint h = 0; h < m_num_kernel; h++) {
+        cl_err = kernel[h].setArg((cl_uint)i, bytes, ptr);
+        CL_CHECK_ERROR(cl_err, "kernel arg " + to_string(i));
+      }
     }
   }
 

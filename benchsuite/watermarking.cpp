@@ -7,7 +7,7 @@
 
 #define COLS 25920 
 #define ROWS 12060
-
+//for Journal of super
 #define FRAMES 10
 //#define ROWS 256
 //#define COLS 128 
@@ -128,8 +128,8 @@ do_watermarking(int tscheduler,
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     runtime.setScheduler(&stSched);
-    //stSched.setRawProportions({ prop2, prop,20.0-(prop+prop2) });
-    stSched.setRawProportions({ 0.2, 0.25,0.55 });
+    stSched.setRawProportions({ prop2, prop,20.0-(prop+prop2) });
+    //stSched.setRawProportions({ 0.2, 0.25,0.55 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(worksize);

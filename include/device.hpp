@@ -189,23 +189,8 @@ public:
       m_lws[i]=local_work[i];
   }
 
-
-  void setKernel(const vector<char>& file,
-                 vector <size_t> global_work, 
-                 vector <size_t> local_work)
-  {
-      m_program_type = ProgramType::CustomBinary;
-      m_program_binary = file;
-  //initializing the parameters of kernel execution
-    m_gws=vector <size_t>(3,1);
-    m_lws=vector <size_t>(3,1);
-    for( int i=0; i<(int)global_work.size();i++)
-      m_gws[i]=global_work[i];
-   
-    for( int i=0; i<(int)local_work.size();i++)
-      m_lws[i]=local_work[i];
-  }
-
+  void setKernel (const vector<char>&file, const string& kernel,vector<size_t>global_work,vector<size_t>local_work);
+  void setKernel (const vector<char>&file, vector<size_t>global_work,vector<size_t>local_work);
   void setKernel(const string& source);
   void setKernel(const vector<char>& source);
   void setKernel(const string& source, const string& kernel); // used by Runtime/Scheduler
@@ -348,10 +333,11 @@ private:
   cl::Context m_context;
   cl::CommandQueue m_queue;
   cl::CommandQueue m_queueRead;
-  cl::Kernel m_kernel;
   cl::UserEvent m_end;
-  string m_kernel_str;
-
+  //string m_kernel_str;
+  vector<string> m_kernel_str;
+  vector<cl::Kernel> m_kernel;
+  
   vector<cl::Event> m_prev_events;
 
   int m_id;
@@ -377,7 +363,9 @@ private:
   int m_lim_memory;
 
   vector<size_t> m_prev_readParams;
-//   size_t m_lws;
+
+  //number of kernels in a program
+  uint m_num_kernel;
 };
 
 } // namespace ecl

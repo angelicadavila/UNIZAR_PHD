@@ -104,10 +104,11 @@ do_sobel(int tscheduler,
   vector <char> binary_file;
   if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble_oe.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,"sobel",gws,gws);
     device2.setKernel(binary_file,"sobel2",gws,gws);
+    //device2.setKernel(binary_file,"sobel3",gws,gws);
    	device2.setLimMemory(1400000000);
     devices.push_back(move(device2));
   }

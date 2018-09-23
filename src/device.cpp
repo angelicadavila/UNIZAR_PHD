@@ -595,10 +595,11 @@ Device::initBuffers()
   IF_LOGGING(cout << "initBuffers\n");
   cl_int cl_err = CL_SUCCESS;
 
-  cl_int buffer_in_flags = CL_MEM_READ_WRITE;
-  //cl_int buffer_in_flags[] = {CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA,CL_MEM_READ_WRITE| CL_MEM_BANK_2_ALTERA};
+  cl_int buffer_in_flags = CL_MEM_READ_WRITE|CL_CHANNEL_1_INTELFPGA;
+  //cl_int buffer_in_flags[] = {CL_MEM_READ_WRITE| CL_CHANNEL_1_INTELFPGA,CL_MEM_READ_WRITE| CL_CHANNEL_2_INTELFPGA};
   //cl_int buffer_out_flags = CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA;
-  cl_int buffer_out_flags = CL_MEM_READ_WRITE;
+  cl_int buffer_out_flags = CL_MEM_READ_WRITE|CL_CHANNEL_1_INTELFPGA;
+  cl_int buffer_outaux_flags = CL_MEM_READ_WRITE|CL_CHANNEL_2_INTELFPGA;
 
   m_in_buffers.reserve(m_in_ecl_buffers.size());
   m_out_buffers.reserve(m_out_ecl_buffers.size());
@@ -647,7 +648,7 @@ Device::initBuffers()
     IF_LOGGING(cout << "out [size] " << b.size() << "\n");
     uint lim_size=getLimMemory();
     IF_LOGGING(cout << "out [bytes] " <<  lim_size<< "\n");
-    cl::Buffer tmp_buffer(m_context, buffer_out_flags, lim_size, NULL);
+    cl::Buffer tmp_buffer(m_context, buffer_outaux_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_aux_buffers.push_back(move(tmp_buffer));
     IF_LOGGING(cout << "out buffer: " << &m_out_aux_buffers[i] << "\n");

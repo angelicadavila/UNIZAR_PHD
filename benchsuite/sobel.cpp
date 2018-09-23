@@ -109,7 +109,8 @@ do_sobel(int tscheduler,
     device2.setKernel(binary_file,"sobel",gws,gws);
     device2.setKernel(binary_file,"sobel2",gws,gws);
     //device2.setKernel(binary_file,"sobel3",gws,gws);
-   	device2.setLimMemory(1400000000);
+   	//device2.setLimMemory(1400000000);
+   	device2.setLimMemory(1000000000);
     devices.push_back(move(device2));
   }
 

@@ -331,7 +331,7 @@ private:
   cl::Platform m_platform;
   cl::Device m_device;
   cl::Context m_context;
-  cl::CommandQueue m_queue;
+  vector<cl::CommandQueue> m_queue;
   cl::CommandQueue m_queueRead;
   cl::UserEvent m_end;
   //string m_kernel_str;

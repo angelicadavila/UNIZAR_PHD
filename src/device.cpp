@@ -427,14 +427,14 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
     //Divide load betwee the number of kernels in the program
      m_kernel[h].setArg(m_nargs,(uint) size/m_num_kernel);
      //m_kernel.setArg(m_nargs,(ulong) size);
-     uint static_offset=0;
+     uint static_offset=size/m_num_kernel;
      m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
      //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
      //if(getID()==0)
      
      
       {  
-      status=m_queue.enqueueNDRangeKernel(
+      status=m_queue[h].enqueueNDRangeKernel(
                               m_kernel[h], cl::NullRange, 
                               cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
                               cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
@@ -445,7 +445,6 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
    }
 #endif
   
-  //m_queue.finish();
   //Conditional Read to overlapping in a Kernel_i with read_i-1
   //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
 
@@ -453,6 +452,8 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   m_prev_readParams[1]=offset_for_bytes;
  
   readBuffers();
+  m_queue[1].finish();
+  m_queue[0].finish();
 #if ECL_OPERATION_BLOCKING_READ == 1
   
   //wait finish kernel
@@ -475,7 +476,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   auto cbdata = new CBData(queue_index, this);
  // exit(0);
  //evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
-  m_queue.flush();
+  m_queue[1].flush();
 #endif  
   m_works++;
   m_works_size += size;
@@ -566,19 +567,21 @@ Device::initQueue()
 
   cl::Context& context = m_context;
   cl::Device& device = m_device;
-  
-  cl::CommandQueue queue(context, device, 
-                          #if CLB_PROFILING==1
+  vector<cl::CommandQueue> queue;
+  for (uint i = 0; i < m_num_kernel; i++){
+  queue.push_back(cl::CommandQueue(context, device, 
+                          #if ECL_PROFILING==1
                           CL_QUEUE_PROFILING_ENABLE,
                           #else
                           0,
                           #endif
-                          &cl_err);
+                          &cl_err));
   CL_CHECK_ERROR(cl_err, "CommandQueue queue");
+  }
   m_queue = move(queue);
   
   cl::CommandQueue queueRead(context, device,
-                          #if CLB_PROFILING==1
+                          #if ECL_PROFILING==1
                           CL_QUEUE_PROFILING_ENABLE,
                           #else
                           0,
@@ -667,7 +670,7 @@ Device::writeBuffers(size_t size, size_t offset)
 //  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
 //                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
 
-      CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+      CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
   }
   else writeBuffers(); 
@@ -688,10 +691,10 @@ Device::writeBuffers(bool /* dummy */)
     auto size = b.size();
    // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
   //                  << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
-    CL_CHECK_ERROR(m_queue.enqueueWriteBuffer(
+    CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
   }}
-  m_queue.finish();
+  m_queue[0].finish();
 }
 
 void
@@ -717,7 +720,7 @@ Device::readBuffers()
       //cout<< "Read sizebyte: "<<size_bytes<<" offsetby: "<<offset_bytes<<"\n";
       //status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
       if (switch_out==0){
-          status= m_queue.enqueueReadBuffer(m_out_buffers[i],
+          status= m_queueRead.enqueueReadBuffer(m_out_buffers[i],
                                   CL_TRUE,0,
                                 //  offset_bytes,
                                   size_bytes,
@@ -731,7 +734,7 @@ Device::readBuffers()
         switch_out=1;
       }else{
     
-         status= m_queue.enqueueReadBuffer(m_out_aux_buffers[i],
+         status= m_queueRead.enqueueReadBuffer(m_out_aux_buffers[i],
                                   CL_TRUE,0,
                                 //  offset_bytes,
                                   size_bytes,
@@ -915,7 +918,8 @@ Device::initEvents()
 void
 Device::wait_queue()
 {
-  m_queue.finish();
+  m_queue[0].finish();
+  m_queue[1].finish();
   m_queueRead.finish();
 }
 

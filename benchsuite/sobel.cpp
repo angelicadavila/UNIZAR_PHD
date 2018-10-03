@@ -15,7 +15,7 @@
 #define COLS 25920
 #define ROWS 12060
 
-#define FRAMES 10
+#define FRAMES 1
 //#define COLS 1024 
 //#define ROWS 1024
 
@@ -104,13 +104,16 @@ do_sobel(int tscheduler,
   vector <char> binary_file;
   if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble_oe.aocx"); 
+    //binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble_oe.aocx"); 
+    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_cuatro_oe.aocx"); 
+    //binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
     device2.setKernel(binary_file,"sobel",gws,gws);
     device2.setKernel(binary_file,"sobel2",gws,gws);
-    //device2.setKernel(binary_file,"sobel3",gws,gws);
+    device2.setKernel(binary_file,"sobel3",gws,gws);
+    device2.setKernel(binary_file,"sobel4",gws,gws);
    	//device2.setLimMemory(1400000000);
-   	device2.setLimMemory(1000000000);
+   	device2.setLimMemory(1300000000);
     devices.push_back(move(device2));
   }
 
@@ -118,12 +121,14 @@ do_sobel(int tscheduler,
     ecl::Device device(platform_cpu,0);
   	device.setLimMemory (4000000000);
     device.setKernel(kernel,"sobel");
+    device.setKernel(kernel,"sobel2");
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
   	device1.setLimMemory (4000000000);
     device1.setKernel(kernel,"sobel");
+    //device1.setKernel(kernel,"sobel2");
 	  devices.push_back(move(device1));
   }
 

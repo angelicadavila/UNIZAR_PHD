@@ -86,6 +86,8 @@ device_thread_func(Device& device)
      
       //Read the last chunk
       //NOTE set m_prev_events in last chunk from sched to avoid overlapping
+      device.switch_out=(device.switch_out^1)&0x01;  
+        
       device.readBuffers();
       device.wait_queue();
       sched->endScheduler();
@@ -413,11 +415,12 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 //                               nullptr);
 #else
  int len=m_out_arg_index.size();
-
- writeBuffers(size,offset);
-
+ //Write Input buffer. In Stencils should manaje previous data in the kernel, not in memory 
+  writeBuffers(size,offset);
+  
   for (int h=0;h<m_num_kernel;h++){
      for (int j=0;j<len;j++){
+        
         if (switch_out==0){
           m_kernel[h].setArg(m_out_arg_index[j],m_out_buffers[m_out_arg_pos[j]]);
         }else{
@@ -425,13 +428,13 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
         }
       }
     //Divide load betwee the number of kernels in the program
-     m_kernel[h].setArg(m_nargs,(uint) size/m_num_kernel);
-     //m_kernel.setArg(m_nargs,(ulong) size);
-     uint static_offset=size/m_num_kernel;
+     uint iterations=(uint)(size/m_num_kernel);
+    // cout<<"Iter="<<iterations<<"\n";
+     m_kernel[h].setArg(m_nargs,iterations);
+     uint static_offset=h*iterations*m_internal_chunk;
+   //  cout<<"offset="<<static_offset<<"\n";
      m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
      //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
-     //if(getID()==0)
-     
      
       {  
       status=m_queue[h].enqueueNDRangeKernel(
@@ -443,17 +446,20 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
       CL_CHECK_ERROR(status,"NDRange problem");
       }
    }
+
+   //change the output buffer to overlap kernel and read execution
+    switch_out=(switch_out^1)&0x01;
 #endif
   
   //Conditional Read to overlapping in a Kernel_i with read_i-1
   //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
-
+    readBuffers();
   m_prev_readParams[0]=size; 
   m_prev_readParams[1]=offset_for_bytes;
- 
-  readBuffers();
-  m_queue[1].finish();
-  m_queue[0].finish();
+  
+  for (int h=0;h<m_num_kernel;h++){
+      m_queue[h].finish();
+  }
 #if ECL_OPERATION_BLOCKING_READ == 1
   
   //wait finish kernel
@@ -476,7 +482,8 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   auto cbdata = new CBData(queue_index, this);
  // exit(0);
  //evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
-  m_queue[1].flush();
+  for (int h=0;h<m_num_kernel;h++)
+    m_queue[h].flush();
 #endif  
   m_works++;
   m_works_size += size;
@@ -569,6 +576,7 @@ Device::initQueue()
   cl::Device& device = m_device;
   vector<cl::CommandQueue> queue;
   for (uint i = 0; i < m_num_kernel; i++){
+  cout<<"Create queue["<<i<<"]\n";
   queue.push_back(cl::CommandQueue(context, device, 
                           #if ECL_PROFILING==1
                           CL_QUEUE_PROFILING_ENABLE,
@@ -598,11 +606,11 @@ Device::initBuffers()
   IF_LOGGING(cout << "initBuffers\n");
   cl_int cl_err = CL_SUCCESS;
 
-  cl_int buffer_in_flags = CL_MEM_READ_WRITE|CL_CHANNEL_1_INTELFPGA;
+  cl_int buffer_in_flags = CL_MEM_READ_WRITE;//|CL_CHANNEL_1_INTELFPGA;
   //cl_int buffer_in_flags[] = {CL_MEM_READ_WRITE| CL_CHANNEL_1_INTELFPGA,CL_MEM_READ_WRITE| CL_CHANNEL_2_INTELFPGA};
   //cl_int buffer_out_flags = CL_MEM_READ_WRITE| CL_MEM_BANK_1_ALTERA;
-  cl_int buffer_out_flags = CL_MEM_READ_WRITE|CL_CHANNEL_1_INTELFPGA;
-  cl_int buffer_outaux_flags = CL_MEM_READ_WRITE|CL_CHANNEL_2_INTELFPGA;
+  cl_int buffer_out_flags = CL_MEM_READ_WRITE;//|CL_CHANNEL_1_INTELFPGA;
+  cl_int buffer_outaux_flags = CL_MEM_READ_WRITE;//|CL_CHANNEL_2_INTELFPGA;
 
   m_in_buffers.reserve(m_in_ecl_buffers.size());
   m_out_buffers.reserve(m_out_ecl_buffers.size());
@@ -670,11 +678,11 @@ Device::writeBuffers(size_t size, size_t offset)
 //  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
 //                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
 
-      CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
+     CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
-  }
-  else writeBuffers(); 
-  }
+   }
+    else writeBuffers(); 
+   }
 }
 void
 Device::writeBuffers(bool /* dummy */)
@@ -700,13 +708,13 @@ Device::writeBuffers(bool /* dummy */)
 void
 Device::readBuffers()
 {
-  #if CLB_PROFILING == 1
+  #if ECL_PROFILING == 1
   cl::Event m_event_read;
   #endif
   size_t sizeR=m_prev_readParams[0]; 
   size_t offsetR=m_prev_readParams[1];
   auto len = m_out_ecl_buffers.size();
-  cl_int status;  
+  cl_int status;
   if(sizeR!=0)
   {
     for (uint i = 0; i < len; ++i) {
@@ -726,12 +734,11 @@ Device::readBuffers()
                                   size_bytes,
                                   b.dataWithOffset(offsetR*m_internal_chunk),
                                   nullptr,
-                            #if CLB_PROFILING == 1
+                            #if ECL_PROFILING == 1
                                   &m_event_read);
                             #else 
                                   nullptr);
                             #endif
-        switch_out=1;
       }else{
     
          status= m_queueRead.enqueueReadBuffer(m_out_aux_buffers[i],
@@ -740,17 +747,16 @@ Device::readBuffers()
                                   size_bytes,
                                   b.dataWithOffset(offsetR*m_internal_chunk),
                                   nullptr,
-                            #if CLB_PROFILING == 1
+                            #if ECL_PROFILING == 1
                                   &m_event_read);
                             #else 
                                   nullptr);
                             #endif
-        switch_out=0;
       }
         //CL_CHECK_ERROR(status,"Reading memory problem");
       }
   }
-  #if CLB_PROFILING == 1
+  #if ECL_PROFILING == 1
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
   time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
@@ -918,8 +924,8 @@ Device::initEvents()
 void
 Device::wait_queue()
 {
-  m_queue[0].finish();
-  m_queue[1].finish();
+  for (uint h = 0; h < m_num_kernel; h++) 
+         m_queue[h].finish();
   m_queueRead.finish();
 }
 

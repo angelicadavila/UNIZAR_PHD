@@ -281,6 +281,7 @@ public:
   
   void readBuffers();
 
+  uint switch_out;
 private:
   void useRuntimeDiscovery();
   void initByIndex(uint sel_platform, uint sel_device);
@@ -326,7 +327,6 @@ private:
   vector<ecl::Buffer> m_out_aux_ecl_buffers;
   vector<cl_uint> m_out_arg_index;
   vector<cl_uint> m_out_arg_pos;
-  uint switch_out;
 
   cl::Platform m_platform;
   cl::Device m_device;

@@ -88,9 +88,23 @@ do_matrixMult(int tscheduler,
 
   vector<ecl::Device> devices;
 
+  #if ECL_GRENDEL == 1 
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
+  auto cmp_cpu  =0x04;  
+  auto cmp_gpu  =0x01;  
+  auto cmp_fpga=0x02;  
+#else
+  auto platform_cpu = 3;
+  auto platform_gpu = 1;
+  auto platform_fpga= 2;
+  auto cmp_cpu =0x01;  
+  auto cmp_gpu =0x02;  
+  auto cmp_fpga=0x04;  
+  #endif
+
+
 // 64 its the block size
 // C=A*B
   vector <size_t>gws=vector <size_t>(3,1);
@@ -101,20 +115,20 @@ do_matrixMult(int tscheduler,
   lws[0]=64; lws[1]=64;
 
   vector <char> binary_file;
-  if (tdevices &0x02){  
+  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
     binary_file =file_read_binary("./benchsuite/altera_kernel/matrix_mult2.aocx"); 
     device2.setKernel(binary_file,gws,lws); 
     devices.push_back(move(device2));
   }
 
-  if (tdevices &0x04){  
+  if (tdevices &cmp_cpu){  
     lws[0]=32; lws[1]=32;
     ecl::Device device(platform_cpu,0);
     device.setKernel(kernel, gws, lws);
     devices.push_back(move(device));
   }
-  if (tdevices &0x01){  
+  if (tdevices &cmp_gpu){  
     lws[0]=32; lws[1]=32;
     ecl::Device device1(platform_gpu,0);
     device1.setKernel(kernel,gws,lws);

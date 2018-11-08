@@ -44,6 +44,7 @@ set(SOURCES
   gsm.cpp
   nw.cpp
   nn.cpp
+  mandelbrot.cpp
   utils/rand.cpp
   utils/io.cpp
 )
@@ -70,6 +71,7 @@ set(HEADERS
   gsm.hpp
   nw.hpp
   nn.hpp
+  mandelbrot.hpp
   utils/io.hpp
   utils/rand.hpp
   utils/memory.hpp

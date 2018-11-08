@@ -30,6 +30,7 @@
 #include "gsm.hpp"
 #include "nw.hpp"
 #include "nn.hpp"
+#include "mandelbrot.hpp"
 // #include "binomial.hpp"
 
 // #include <omp.h>
@@ -216,5 +217,9 @@ main(int argc, char* argv[])
   else if (tbench == 11){
    do_nearest(tscheduler, tdevices, check, size, chunksize, prop,stof(argv[8]));
   }
+  else if (tbench == 12){
+   do_mandelbrot(tscheduler, tdevices, check, size, chunksize, prop, atoi(argv[8]));
+  }
+
   return 0;
 }

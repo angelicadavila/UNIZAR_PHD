@@ -3,7 +3,7 @@
 
 #define CL_LWS 128
 
-#define ECL_GRENDEL 0
+#define ECL_GRENDEL 1
 // uncomment to use blocking calls:
 #define ECL_OPERATION_BLOCKING_READ 1
 #ifndef ECL_OPERATION_BLOCKING_READ

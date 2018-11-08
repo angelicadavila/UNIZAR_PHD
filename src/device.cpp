@@ -404,15 +404,9 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
-  if(m_gws[0]!=1) 
-    m_gws[0] = size;//pass to global
+  if(m_gws[1]!=1) 
+    m_gws[1] = size;//pass to global
 #if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
-//  status=m_queue.enqueueNDRangeKernel(m_kernel,
-//                               cl::NDRange(offset),
-//                               cl::NDRange(gws),
-//                               cl::NDRange(CL_LWS),
-//                               nullptr,
-//                               nullptr);
 #else
  int len=m_out_arg_index.size();
  //Write Input buffer. In Stencils should manaje previous data in the kernel, not in memory 
@@ -434,13 +428,15 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
      uint static_offset=h*iterations*m_internal_chunk;
    //  cout<<"offset="<<static_offset<<"\n";
      m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
-     //cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+     cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
      
       {  
       status=m_queue[h].enqueueNDRangeKernel(
                               m_kernel[h], cl::NullRange, 
                               cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
-                              cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+    //                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+
+                              cl::NullRange,
                               nullptr ,&(m_event_kernel));
                               
       CL_CHECK_ERROR(status,"NDRange problem");

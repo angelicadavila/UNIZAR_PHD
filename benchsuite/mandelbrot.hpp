@@ -1,84 +1,61 @@
 #ifndef ENGINECL_BENCHS_MANDELBROT_HPP
 #define ENGINECL_BENCHS_MANDELBROT_HPP
 
+#include "vecAllocator.hpp"
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
-#include "utils/io.hpp"
+#include <omp.h>
+#include <cmath>
+#include <cstdlib>
+
 
 #include "EngineCL.hpp"
+#include "utils/io.hpp"
 
-#include <ostream>
+// #include "device.hpp"
+// #include "runtime.hpp"
+// #include "sched.hpp"
 
-#include "main.hpp"
-// typedef cl_uchar4 Pixel;
+using std::ostream;
 
-// #define PIXEL_BIT_DEPTH 24
-// #define BITMAP_HEADER_SIZE 14
-// #define BITMAP_INFO_HEADER_SIZE 40
-
-// typedef struct bmp_magic
-// {
-//   unsigned char magic[2];
-// } bmp_magic_t;
-
-// typedef struct
-// {
-//   uint32_t filesz;
-//   uint16_t creator1;
-//   uint16_t creator2;
-//   uint32_t bmp_offset;
-// } BMP_HEADER;
-
-// typedef struct
-// {
-//   uint32_t header_sz;
-//   int32_t width;
-//   int32_t height;
-//   uint16_t nplanes;
-//   uint16_t bitspp;
-//   uint32_t compress_type;
-//   uint32_t bmp_bytesz;
-//   int32_t hres;
-//   int32_t vres;
-//   uint32_t ncolors;
-//   uint32_t nimpcolors;
-// } BMP_INFO_HEADER;
-// using std::ostream;
-
-// inline ostream&
-// operator<<(ostream& os, cl_uchar4& t)
-// {
-//   os << "(" << (int)t.s[0] << "," << (int)t.s[1] << "," << (int)t.s[2] << "," << (int)t.s[3] <<
-//   ")"; return os;
-// }
-void
-do_mandelbrot_base(int tscheduler,
-                   int tdevices,
-                   uint check,
-                   int chunksize,
-                   vector<float>& props,
-                   int width,
-                   int height,
-                   double xpos,
-                   double ypos,
-                   double xstep,
-                   double ystep,
-                   uint max_iterations);
+#define THRESHOLD 0.51
 
 void
 do_mandelbrot(int tscheduler,
-              int tdevices,
-              uint check,
-              int chunksize,
-              vector<float>& props,
-              int width,
-              int height,
-              double xpos,
-              double ypos,
-              double xstep,
-              double ystep,
-              uint max_iterations);
+            int tdevices,
+            bool check,
+            uint m_height,
+            int chunksize,
+            float prop,
+            uint m_width
+            );
+
+
+// here it comes the threshold when operating with floats and doing roundings
+
+class Mandelbrot
+{
+public:
+  Mandelbrot(int _size)
+    : _total_size(_size)
+    ,_out(_total_size)
+    ,_out_aux(_total_size)
+  {
+    init_matrix();
+  }
+  void init_matrix();
+  void verify_out(unsigned *frameData);
+  string get_kernel_str();
+
+  // private:
+  int _total_size;
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+  vector<uint,vecAllocator<uint>> _out;  //output 
+  vector<uint,vecAllocator<uint>> _out_aux;  //output 
+#pragma GCC diagnostic pop
+};
 
 #endif /* ENGINECL_BENCHS_MANDELBROT_HPP */

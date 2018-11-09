@@ -409,7 +409,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 #if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 #else
  int len=m_out_arg_index.size();
- //Write Input buffer. In Stencils should manaje previous data in the kernel, not in memory 
+ //Write Input buffer. In Stencils should manage previous data in the kernel, not in memory 
   writeBuffers(size,offset);
   
   for (int h=0;h<m_num_kernel;h++){
@@ -427,7 +427,8 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
      m_kernel[h].setArg(m_nargs,iterations);
      uint static_offset=h*iterations*m_internal_chunk;
    //  cout<<"offset="<<static_offset<<"\n";
-     m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+     //m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+     m_kernel[h].setArg(m_nargs+1,(uint) offset/m_internal_chunk);
      cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
      
       {  
@@ -437,7 +438,10 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
     //                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
 
                               cl::NullRange,
-                              nullptr ,&(m_event_kernel));
+                              nullptr ,
+//			      &(m_event_kernel)
+			      nullptr
+				);
                               
       CL_CHECK_ERROR(status,"NDRange problem");
       }
@@ -664,16 +668,18 @@ Device::initBuffers()
 void
 Device::writeBuffers(size_t size, size_t offset)
 {
-
   auto len = m_in_ecl_buffers.size();
-  for (uint i = 0; i < len; ++i) {
+  cout<<"len"<<len<<"\n"; 
+  for (uint i = 0; i < len; i++) {
+  cout<<"for\n"; 
     Buffer& b = m_in_ecl_buffers[i];
+    cout<<b.constant()<<"\n";
    if ((b.constant()==0)){
     auto data= b.dataWithOffset(offset);//*m_internal_chunk);
     size_t size_bytes = b.byBytes(size)*(m_internal_chunk);
 //  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
 //                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
-
+     cout<<"bytes:"<<size_bytes<<"\n";
      CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
       m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
    }

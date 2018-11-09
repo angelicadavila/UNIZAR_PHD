@@ -41,12 +41,12 @@ void hw_mandelbrot_frame (
 							const unsigned int windowWidth,
 							const double aStartY,
 							const double aScale,
-							const int Iterations,
-							const int offset
+							const int iter, //EngineCL
+							const int offset //EngineCL
 )
 {
 
-        const double y0 = aStartY - (double)offset * aScale ; 
+        const double y0 = aStartY -( (double)offset) * aScale ; 
 	// Work-item position
 	const size_t windowPosX = get_global_id(0);
 	const size_t windowPosY = get_global_id(1);
@@ -79,7 +79,6 @@ void hw_mandelbrot_frame (
 		// Increment iteration count
 		iterations++;
 	}
-
 	// Output black if we never finished, and a color from the look up table otherwise
-	framebuffer[windowWidth * windowPosY + windowPosX] = (iterations == maxIterations)? BLACK : ORANGE ;
+	framebuffer[windowWidth * windowPosY + windowPosX] =(iterations == maxIterations)? BLACK : ORANGE ;
 }

@@ -26,7 +26,6 @@ Mandelbrot::get_kernel_str()
 void 
 Mandelbrot::verify_out(unsigned *frameData) {
 
-
 }
 
 
@@ -43,10 +42,11 @@ do_mandelbrot(int tscheduler,
 
 //  m_height=2048;
   double x0=-2.0;
-  double stepSize=10;
+//  double stepSize=0.1;
   int  maxIterations=1000;
   int windowWidth=m_height;
   double aStartY=1.15;
+//  double aScale=0.35;
   double aScale=0.0035;
   
 
@@ -70,17 +70,14 @@ do_mandelbrot(int tscheduler,
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
-  auto cmp_cpu  =0x04;  
-  auto cmp_gpu  =0x01;  
-  auto cmp_fpga=0x02;  
-#else
+  #else
   auto platform_cpu = 3;
   auto platform_gpu = 1;
   auto platform_fpga= 2;
-  auto cmp_cpu =0x01;  
-  auto cmp_gpu =0x02;  
-  auto cmp_fpga=0x04;  
   #endif
+  auto cmp_cpu  =0x01;  
+  auto cmp_gpu  =0x02;  
+  auto cmp_fpga=0x04;  
 
 
 // 64 its the block size
@@ -88,6 +85,7 @@ do_mandelbrot(int tscheduler,
   vector <size_t>gws=vector <size_t>(3,1);
   gws[1]=0; //size_divided
   gws[0]=m_height;//B_size
+  gws[2]=1;//B_size
 
   vector <size_t>lws=vector <size_t>(3,1);
 //  lws[0]=nullptr; lws[1]=nullptr, lws[2]=nullptr;
@@ -103,14 +101,16 @@ do_mandelbrot(int tscheduler,
   }
 
   if (tdevices &cmp_cpu){  
-    lws[0]=32; lws[1]=32;
+//    lws[0]=32; lws[1]=32;
     ecl::Device device(platform_cpu,0);
+    device.setLimMemory(12000000000);
     device.setKernel(kernel, gws, lws);
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
-    lws[0]=32; lws[1]=32;
+//    lws[0]=32; lws[1]=32;
     ecl::Device device1(platform_gpu,0);
+    device1.setLimMemory(300000000);
     device1.setKernel(kernel,gws,lws);
     devices.push_back(move(device1));
   }
@@ -138,12 +138,11 @@ do_mandelbrot(int tscheduler,
    // runtime.setScheduler(&propSched);
    // propSched.setWorkSize(worksize);
   }
- 
   runtime.setOutBuffer(output);
   runtime.setOutAuxBuffer(output_aux); 
   runtime.setKernel(kernel, "hw_mandelbrot_frame");
   runtime.setKernelArg(0,x0) ;//out
-  runtime.setKernelArg(1,stepSize );//in
+  runtime.setKernelArg(1,aScale );//in
   runtime.setKernelArg(2, maxIterations);//in
   runtime.setKernelArg(3, output);// width
   runtime.setKernelArg(4, windowWidth);//height
@@ -158,8 +157,14 @@ do_mandelbrot(int tscheduler,
 
   if (check) {
     auto out = *output.get();
-    mandelbrot.verify_out((unsigned int*)out.data());
-
+//    mandelbrot.verify_out((unsigned int*)out.data())
+//    ;
+//
+     std::ofstream myfile;
+     myfile.open ("mandelbrot.txt"); 
+     for(int dat=0; dat<(int)out.size(); dat++) 
+  	 myfile<<out[dat]<<"\n";
+     myfile.close();
   } else {
     cout << "Done Mandelbrot\n";
   }

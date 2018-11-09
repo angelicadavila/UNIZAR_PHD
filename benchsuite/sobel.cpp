@@ -89,9 +89,9 @@ do_sobel(int tscheduler,
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
-  auto cmp_cpu  =0x04;  
-  auto cmp_gpu  =0x01;  
-  auto cmp_fpga=0x02;  
+  auto cmp_cpu  =0x01;  
+  auto cmp_gpu  =0x02;  
+  auto cmp_fpga=0x04;  
 #else
   auto platform_cpu = 3;
   auto platform_gpu = 1;

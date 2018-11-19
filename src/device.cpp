@@ -14,6 +14,7 @@
 #include <thread>
 #include <iostream>
 #include <functional>
+#include <assert.h>  
 struct CBData
 {
   int queue_index;
@@ -40,6 +41,7 @@ callbackRead(cl_event /*event*/, cl_int /*status*/, void* data)
 
 void oclContextCallback (const char *errinfo, const void *, size_t, void *) {
      printf ("Context callback: %s\n", errinfo);
+     exit(0);
  }
 
 
@@ -428,8 +430,11 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
      uint static_offset=h*iterations*m_internal_chunk;
    //  cout<<"offset="<<static_offset<<"\n";
      //m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+     
+//     m_kernel[h].setArg(m_nargs+1,(uint) offset+h*iterations);
+    //for mandelbrot
      m_kernel[h].setArg(m_nargs+1,(uint) offset/m_internal_chunk);
-     cout<<"offset: "<<offset<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
+     cout<<"id: "<<m_id;
      
       {  
       status=m_queue[h].enqueueNDRangeKernel(
@@ -442,9 +447,10 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
 //			      &(m_event_kernel)
 			      nullptr
 				);
-                              
-      CL_CHECK_ERROR(status,"NDRange problem");
+//      clGetProfileInfoIntelFPGA((cl_event)(&m_event_kernel));                            
+        CL_CHECK_ERROR(status,"NDRange problem");
       }
+     cout<<" num_kernel: " <<h<<"offset: "<<offset+h*iterations<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
    }
 
    //change the output buffer to overlap kernel and read execution
@@ -453,7 +459,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
   
   //Conditional Read to overlapping in a Kernel_i with read_i-1
   //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
-    readBuffers();
+  readBuffers();
   m_prev_readParams[0]=size; 
   m_prev_readParams[1]=offset_for_bytes;
   
@@ -718,10 +724,11 @@ Device::readBuffers()
   auto len = m_out_ecl_buffers.size();
   cl_int status;
   if(sizeR!=0)
-  {
+  {cout<<"reading";
     for (uint i = 0; i < len; ++i) {
         Buffer& b = m_out_ecl_buffers[i];
         size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
+        assert(size_bytes<m_lim_memory);
         auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
       auto address= offset_bytes;
       if(address & 0x3){
@@ -741,6 +748,8 @@ Device::readBuffers()
                             #else 
                                   nullptr);
                             #endif
+                              
+//      clGetProfileInfoIntelFPGA((cl_event)(&m_event_read);                            
       }else{
     
          status= m_queueRead.enqueueReadBuffer(m_out_aux_buffers[i],
@@ -965,7 +974,10 @@ void
 Device::setInternalChunk(int internal_chunk){
     m_internal_chunk=internal_chunk;
 }
-
+int
+Device::getWorkSize(){
+    return m_works_size;
+}
 int
 Device::getInternalChunk(){
     return m_internal_chunk;

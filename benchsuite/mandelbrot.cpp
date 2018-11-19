@@ -40,18 +40,24 @@ do_mandelbrot(int tscheduler,
            )
 {
 
-//  m_height=2048;
-  double x0=-2.0;
+ // m_height =40960;
+ // m_width =m_height;
+  m_height =20480;
+  m_width = 81920;
+  double x0=-0.5;
+//  double x0=-0.7;
 //  double stepSize=0.1;
   int  maxIterations=1000;
-  int windowWidth=m_height;
-  double aStartY=1.15;
-//  double aScale=0.35;
-  double aScale=0.0035;
+  int windowWidth=m_width;
+  double aStartY=0.0;
+//  double aStartY=0.0;
+//  double aScale=0.35;//to 2048
+//double aScale=0.0000035;
+  double aScale=0.000015;
   
 
   int worksize = chunksize;
-  int _size=m_height*m_height;
+  int _size=m_width * m_height;
   Mandelbrot mandelbrot(_size);
 
   
@@ -94,7 +100,7 @@ do_mandelbrot(int tscheduler,
   if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
     binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_kernel.aocx"); 
-    device2.setKernel(binary_file,"hw_mandelbrot_frame",gws,lws);
+    device2.setKernel(binary_file,gws,lws);
     device2.setLimMemory(2000000000);
 //    device2.setKernel(binary_file,gws,lws); 
     devices.push_back(move(device2));
@@ -103,7 +109,8 @@ do_mandelbrot(int tscheduler,
   if (tdevices &cmp_cpu){  
 //    lws[0]=32; lws[1]=32;
     ecl::Device device(platform_cpu,0);
-    device.setLimMemory(12000000000);
+    //device.setLimMemory(6000000000);
+    device.setLimMemory(2000000000);
     device.setKernel(kernel, gws, lws);
     devices.push_back(move(device));
   }
@@ -132,7 +139,8 @@ do_mandelbrot(int tscheduler,
   } else if( tscheduler == 2){
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);
-   hgSched.setRawProportions({0.9, 0.2});
+    hgSched.setRawProportions({0.237, 0.434, 0.329});
+//   hgSched.setRawProportions({0.5});
   }
    else if( tscheduler == 3){
    // runtime.setScheduler(&propSched);
@@ -150,7 +158,7 @@ do_mandelbrot(int tscheduler,
   runtime.setKernelArg(6, aScale);//height
 
   //works with 1 per chunk in this version 
-  runtime.setInternalChunk(m_height); //procesing the per rows
+  runtime.setInternalChunk(m_width); //procesing the per rows
   runtime.run();
 
   runtime.printStats();

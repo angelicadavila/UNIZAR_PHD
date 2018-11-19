@@ -267,6 +267,8 @@ public:
   //number of data process by work item 
   void setInternalChunk(int internal_chunk);
   int getInternalChunk();
+  //return the number of works of each device
+  int getWorkSize();
   //limit of memory per device
   void setLimMemory(int limit_memory);
   int getLimMemory();

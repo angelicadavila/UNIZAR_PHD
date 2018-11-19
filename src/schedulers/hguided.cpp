@@ -8,8 +8,8 @@
 #include "device.hpp"
 #include "scheduler.hpp"
 #include <tuple>
-
-#define  FRAMES 10
+#include <iomanip>
+#define  FRAMES 1
 //#define  FRAMES 20
 
 namespace ecl {
@@ -72,16 +72,34 @@ HGuidedScheduler::printStats()
   for (uint i = 0; i < len; ++i) {
     sum += m_chunk_done[i];
   }
+  std::cout << std::setprecision(2) << std::fixed;
   IF_LOGGING(cout << "HGuidedScheduler:\n");
   IF_LOGGING(cout << "chunks: " << sum << "\n");
+  for (uint i = 0; i < len; ++i) {
+    cout<<"chunkPerDevice_"<< i <<": "<<((double)m_chunk_done[i]/(double)sum)*100<<" %.\n";
+  }
+  sum=0;
+  for (uint i = 0; i < len; ++i) {
+    sum+=m_devices[i]->getWorkSize();
+  }
+  for (uint i = 0; i < len; ++i) {
+    cout<<"WorkPerDevice_"<< i <<": "<<((double)m_devices[i]->getWorkSize()/(double)sum)*100<<" %.\n";
+  }
+
   IF_LOGGING(cout << "duration offsets from init:\n");
   for (auto& t : m_duration_offset_actions) {
     IF_LOGGING(Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t)));
   }
+  
+  auto first_item=m_duration_offset_actions.size()-m_duration_offset_actions.size()/2; 
+  auto last_time=(std::get<0>(m_duration_offset_actions[m_duration_offset_actions.size()-1]));
+  auto time_imbalance=last_time-(std::get<0>(m_duration_offset_actions[first_item]));
 
   auto last_item=m_duration_offset_actions.size()-1; 
   auto init_time=(std::get<0>(m_duration_offset_actions[0]));
   auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
+//  cout<< "imbalanceKernel: "<<time_imbalance<<" us.\n"; 
+  cout<< "imbalanceKernel: "<<((double)time_imbalance/(double)time_run_sched)*100<<" %.\n"; 
   cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
 }
 
@@ -327,8 +345,10 @@ HGuidedScheduler::enq_work(Device* device)
     m_lim_size=mult * m_lws;
     size=new_size;
     //limit memory size
-  	if (new_size > m_lim_size)
+    if (new_size > m_lim_size){
 	    size = m_lim_size;
+       cout<<"warning: lim_size memory, no schedule\n";
+    }
 
     if (size+offset>m_size){
         size=m_size_rem;
@@ -344,7 +364,10 @@ HGuidedScheduler::enq_work(Device* device)
     if (offset+size>(m_size/FRAMES)){
         new_size=(m_size/FRAMES)-offset;
         size=new_size; 
-        if(size>m_lim_size) size=m_lim_size;
+        if(size>m_lim_size) {
+		size=m_lim_size;
+ 		cout<<"warning: lim_size memory, no schedule\n";	
+	}
         if (size<0){
           size=m_size_rem;
         }

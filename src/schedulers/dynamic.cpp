@@ -80,18 +80,35 @@ DynamicScheduler::printStats()
   auto sum = 0;
   auto len = m_devices.size();
   for (uint i = 0; i < len; ++i) {
-    sum += m_chunk_done[i];
+    sum += m_chunk_todo[i];
   }
   cout << "DynamicScheduler:\n";
   cout << "chunks: " << sum << "\n";
   cout << "chunks (ATOMIC): " << m_chunks_done << "\n";
+  sum= m_chunks_done;
+  for (uint i = 0; i < len; ++i) {
+    cout<<"chunkPerDevice_"<< i <<": "<<((double)m_chunk_todo[i]/(double)sum)*100<<" %.\n";
+  }
+  sum=0;
+  for (uint i = 0; i < len; ++i) {
+    sum+=m_devices[i]->getWorkSize();
+  }
+  for (uint i = 0; i < len; ++i) {
+    cout<<"WorkPerDevice_"<< i <<": "<<((double)m_devices[i]->getWorkSize()/(double)sum)*100<<" %.\n";
+  }
   cout << "duration offsets from init:\n";
   for (auto& t : m_duration_offset_actions) {
     Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
+  auto first_item=m_duration_offset_actions.size()-m_duration_offset_actions.size()/2; 
+  auto last_time=(std::get<0>(m_duration_offset_actions[m_duration_offset_actions.size()-1]));
+  auto time_imbalance=last_time-(std::get<0>(m_duration_offset_actions[first_item]));
+
+
   auto last_item=m_duration_offset_actions.size()-1; 
   auto init_time=(std::get<0>(m_duration_offset_actions[0]));
   auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
+  cout<< "imbalanceKernel: "<<((double)time_imbalance/(double)time_run_sched)*100<<" %.\n"; 
   cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
 }
 
@@ -166,23 +183,6 @@ DynamicScheduler::setGWS(NDRange gws)
 {
   m_gws = gws;
 
-  // auto dims = m_gws.dimensions();
-
-  // auto size = gws.space();
-
-  // m_size = size;
-
-  // size = 16384;
-  // auto lws_space = 8 * 8;
-  // auto max_chunks = size / lws_space; // 256
-  // auto chunks = max_chunks;
-  // m_worksize = lws_space * chunks;
-
-  // m_has_work = true;
-  // m_size_rem = size;           // NOTE(dyn) statement
-  // m_size_given = 0;            // NOTE(dyn) used for the offset
-  // m_size_rem_given = size;     // NOTE(dyn)
-  // m_size_rem_completed = size; // NOTE(dyn)
 }
 
 void
@@ -359,13 +359,6 @@ DynamicScheduler::enq_work(Device* device)
             }
      }
  
-     /* 
-     uint now=(m_chunk_todo[id]/m_size);
-     if (
-
-
-
-    */ 
      tmp_cond=offset+size;
      if(tmp_cond>=(m_size/FRAMES)){
          size=(m_size/FRAMES)-offset;

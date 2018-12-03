@@ -45,7 +45,7 @@ Aes_decrypt::init_image()
 string
 Aes_decrypt::get_kernel_str()
 {
-
+  return 0;
 }
 
 //write the frame bmp resultant
@@ -87,12 +87,12 @@ do_aesdecrypt(int tscheduler,
   Aes_decrypt aes_decrypt(COLS*ROWS*frames);//+256
 
     string kernel = file_read("support/kernels/aes_decrypt.cl");
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input =  shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._crypt_img);
  auto key =    shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._round_key);
  auto output = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out);
  auto output_aux = shared_ptr<vector<char,vecAllocator<char>>>(&aes_decrypt._out_aux);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   size_t problem_size =19537152*frames*FRAME;//(aes_decrypt._total_size)/16;
   //size_t problem_size =19537152;//(aes_decrypt._total_size)/16;
   //19537152;//(aes_decrypt._total_size)/16;

@@ -52,10 +52,10 @@ public:
 
   // private:
   int _total_size;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<uint,vecAllocator<uint>> _out;  //output 
   vector<uint,vecAllocator<uint>> _out_aux;  //output 
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* ENGINECL_BENCHS_MANDELBROT_HPP */

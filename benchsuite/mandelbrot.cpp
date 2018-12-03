@@ -42,8 +42,10 @@ do_mandelbrot(int tscheduler,
 
  // m_height =40960;
  // m_width =m_height;
-  m_height =20480;
-  m_width = 81920;
+  m_height=20480;
+  m_width = 8192;
+//  m_height =20480;
+//  m_width = 81920;
   double x0=-0.5;
 //  double x0=-0.7;
 //  double stepSize=0.1;
@@ -52,8 +54,9 @@ do_mandelbrot(int tscheduler,
   double aStartY=0.0;
 //  double aStartY=0.0;
 //  double aScale=0.35;//to 2048
-//double aScale=0.0000035;
-  double aScale=0.000015;
+   // double aScale=0.0000035;
+  //double aScale=0.000015;
+  double aScale=0.00015;
   
 
   int worksize = chunksize;
@@ -63,10 +66,10 @@ do_mandelbrot(int tscheduler,
   
   string kernel = file_read("support/kernels/mandelbrot_kernel.cl");
 
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto output = shared_ptr<vector<uint,vecAllocator<uint>>>(&mandelbrot._out);
  auto output_aux = shared_ptr<vector<uint,vecAllocator<uint>>>(&mandelbrot._out_aux); 
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
  //rows of the matrix 
   int problem_size =(m_height);
 
@@ -90,7 +93,7 @@ do_mandelbrot(int tscheduler,
 // C=A*B
   vector <size_t>gws=vector <size_t>(3,1);
   gws[1]=0; //size_divided
-  gws[0]=m_height;//B_size
+  gws[0]=m_width;//B_size
   gws[2]=1;//B_size
 
   vector <size_t>lws=vector <size_t>(3,1);
@@ -99,9 +102,11 @@ do_mandelbrot(int tscheduler,
   vector <char> binary_file;
   if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
-    binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_kernel.aocx"); 
+    //binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_kernel.aocx"); 
+    binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_prof.aocx"); 
     device2.setKernel(binary_file,gws,lws);
     device2.setLimMemory(2000000000);
+    device2.setGwsDim(1);
 //    device2.setKernel(binary_file,gws,lws); 
     devices.push_back(move(device2));
   }
@@ -112,20 +117,22 @@ do_mandelbrot(int tscheduler,
     //device.setLimMemory(6000000000);
     device.setLimMemory(2000000000);
     device.setKernel(kernel, gws, lws);
+    device.setGwsDim(1);
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
 //    lws[0]=32; lws[1]=32;
     ecl::Device device1(platform_gpu,0);
-    device1.setLimMemory(300000000);
+    device1.setLimMemory(500000000);
     device1.setKernel(kernel,gws,lws);
+    device1.setGwsDim(1);
     devices.push_back(move(device1));
   }
 
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  //ecl::ProportionalScheduler propSched;
+  ecl::ProportionalScheduler propSched;
   
   cout<<"Manual proportions!";
   
@@ -135,16 +142,16 @@ do_mandelbrot(int tscheduler,
     stSched.setRawProportions({ prop });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
-    dynSched.setWorkSize(worksize);
+    dynSched.setWorkSize(worksize,1);
   } else if( tscheduler == 2){
     runtime.setScheduler(&hgSched);
-    hgSched.setWorkSize(worksize);
+    hgSched.setWorkSize(worksize,1);
     hgSched.setRawProportions({0.237, 0.434, 0.329});
 //   hgSched.setRawProportions({0.5});
   }
    else if( tscheduler == 3){
-   // runtime.setScheduler(&propSched);
-   // propSched.setWorkSize(worksize);
+    runtime.setScheduler(&propSched);
+    propSched.setWorkSize(worksize);
   }
   runtime.setOutBuffer(output);
   runtime.setOutAuxBuffer(output_aux); 

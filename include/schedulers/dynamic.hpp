@@ -63,6 +63,7 @@ public:
 
   // NOTE(dyn) new func
   void setWorkSize(size_t size); // , size_t bound = CL_LWS);
+  void setWorkSize(size_t size,size_t frame); // , size_t bound = CL_LWS);
 
   // NOTE(dyn) new func
   bool hasWork();

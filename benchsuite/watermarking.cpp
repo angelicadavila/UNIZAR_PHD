@@ -8,7 +8,8 @@
 #define COLS 25920 
 #define ROWS 12060
 //for Journal of super
-#define FRAMES 10
+//#define FRAMES 10
+#define FRAMES 1
 //#define ROWS 256
 //#define COLS 128 
 //#define ROWS 12060
@@ -26,7 +27,7 @@ Watermarking::init_image()
   string
   Watermarking::get_kernel_str()
   {
-
+    return 0;
   }
 
   // Dump frame data in PPM format.
@@ -62,17 +63,19 @@ Watermarking::init_image()
   {
 
     int worksize = chunksize;
-    int frames=6;
+    int frames=1;
+    //JSC 2018
+    //int frames=6;
     
     Watermarking watermarking(COLS*ROWS*frames);//+256
 
       string kernel = file_read("support/kernels/watermarking_simd.cl");
 
-  #pragma GCC diagnostic ignored "-Wignored-attributes"
+//  #pragma GCC diagnostic ignored "-Wignored-attributes"
    auto input = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._input_img);
    auto output = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out);
    auto output_aux = shared_ptr<vector<int,vecAllocator<int>>>(&watermarking._out_aux);
-  #pragma GCC diagnostic pop
+//  #pragma GCC diagnostic pop
     
     int problem_size =19537152*frames;//(watermarking._total_size/16);
     cout<<"problem Size" << problem_size; 
@@ -81,9 +84,9 @@ Watermarking::init_image()
     auto platform_cpu = 2;
     auto platform_gpu = 0;
     auto platform_fpga= 1;
-    auto cmp_cpu  =0x04;  
-    auto cmp_gpu  =0x01;  
-    auto cmp_fpga =0x02;  
+    auto cmp_cpu  =0x01;  
+    auto cmp_gpu  =0x02;  
+    auto cmp_fpga =0x04;  
     #else
     auto platform_cpu = 3;
     auto platform_gpu = 1;
@@ -95,7 +98,8 @@ Watermarking::init_image()
     vector <char> binary_file;
     if (tdevices & cmp_fpga){  
       ecl::Device device2(platform_fpga,0);
-      binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_fpga.aocx");
+      //binary_file	=file_read_binary("./benchsuite/altera_kernel/watermarking_fpga.aocx");
+      binary_file	=file_read_binary("./benchsuite/altera_kernel/watermark_prof.aocx");
       //vector of kernel dimension. Task Kernel gws==lws
       vector <size_t>gws=vector <size_t>(3,1);
       device2.setKernel(binary_file,gws,gws);
@@ -128,15 +132,15 @@ Watermarking::init_image()
     if (tscheduler == 0) {
       runtime.setScheduler(&stSched);
       runtime.setScheduler(&stSched);
-      stSched.setRawProportions({ prop2, prop,20.0-(prop+prop2) });
+      stSched.setRawProportions({ prop2, prop,(float)20.0-(prop+prop2) });
       //stSched.setRawProportions({ 0.2, 0.25,0.55 });
     } else if (tscheduler == 1) {
       runtime.setScheduler(&dynSched);
-      dynSched.setWorkSize(worksize);
+      dynSched.setWorkSize(worksize,FRAMES);
     }
     else if (tscheduler ==2){ // tscheduler == 2
     runtime.setScheduler(&hgSched);
-    hgSched.setWorkSize(worksize);
+    hgSched.setWorkSize(worksize,FRAMES);
     if(tdevices ==7)
       //hgSched.setRawProportions({0.4,0.57,0.17});
       hgSched.setRawProportions({0.18,0.39,0.43});

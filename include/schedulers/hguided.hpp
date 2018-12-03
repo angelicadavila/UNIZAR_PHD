@@ -60,6 +60,7 @@ public:
 
   // NOTE(dyn) new func
   void setWorkSize(size_t size);
+  void setWorkSize(size_t size,size_t frame);
 
   // NOTE(dyn) new func
   bool hasWork();

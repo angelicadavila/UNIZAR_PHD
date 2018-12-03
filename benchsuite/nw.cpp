@@ -97,12 +97,12 @@ do_needleman(int tscheduler,
 
   string kernel = file_read("support/kernels/nw.cl");
 
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto reference       = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._reference);
  auto input_itemsets  = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._input_itemsets);
  auto output_itemsets = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._output_itemsets);
  auto output_itemsets_aux = shared_ptr<vector<int,vecAllocator<int>>>(&needleman._output_itemsets_aux);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   
   int problem_size = ((needleman._max_cols )/BLOCK_SIZE)*10;
 

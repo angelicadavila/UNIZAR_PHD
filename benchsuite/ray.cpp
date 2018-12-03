@@ -244,6 +244,10 @@ do_ray_base(int tscheduler,
   out_pixels.get()->assign(data.C, data.C + image_size);
   auto out_ptr = reinterpret_cast<Pixel*>(out_pixels.get()->data());
 
+  auto out_aux_pixels = make_shared<vector<Pixel>>(image_size);
+  out_aux_pixels.get()->assign(data.C, data.C + image_size);
+  auto out_aux__ptr = reinterpret_cast<Pixel*>(out_aux_pixels.get()->data());
+
   auto lws = 128;
   auto gws = image_size;
 
@@ -327,7 +331,8 @@ do_ray_base(int tscheduler,
   device = move(platfordevices[sel_platform][sel_device]);
 
   cl_int cl_err = CL_SUCCESS;
-  cl::Context context(device);
+  vector<cl::Device>tmp_device(1,device);
+  cl::Context context(tmp_device);
 
   cl::CommandQueue queue(context, device, 0, &cl_err);
   CL_CHECK_ERROR(cl_err, "CommandQueue queue");
@@ -456,15 +461,16 @@ do_ray(int tscheduler,
        uint check,
        int wsize,
        int chunksize,
-       vector<float>& props,
-       string scene_path)
+       float prop,
+       float prop2
+       )
 {
   bool use_binaries = (check >= 10) ? true : false;
   check = (check >= 10) ? check - 10 : check;
 
-  string kernel_str;
+  string kernel;
   try {
-    kernel_str = file_read("support/kernels/ray.cl");
+    kernel = file_read("support/kernels/ray.cl");
   } catch (std::ios::failure& e) {
     cout << "io failure: " << e.what() << "\n";
   }
@@ -478,7 +484,7 @@ do_ray(int tscheduler,
   data.height = wsize;
   auto image_size = wsize * wsize;
   data.total_size = image_size;
-  data.scene = scene_path.c_str();
+  data.scene = "support/ray_scenes/ray1.scn";
 
   int depth = data.depth;
   int fast_norm = data.fast_norm;
@@ -506,92 +512,76 @@ do_ray(int tscheduler,
   out_pixels.get()->assign(data.C, data.C + image_size);
   auto out_ptr = reinterpret_cast<Pixel*>(out_pixels.get()->data());
 
-  auto lws = 128;
-  auto gws = image_size;
+  auto out_aux_pixels = make_shared<vector<Pixel>>(image_size);
+  out_aux_pixels.get()->assign(data.C, data.C + image_size);
+  auto out_aux_ptr = reinterpret_cast<Pixel*>(out_aux_pixels.get()->data());
+ // auto lws = 128;
+ // auto gws = image_size;
 
   auto platform = PLATFORM;
 
-  vector<char> kernel_bin;
-  if (use_binaries) {
-    switch (tdevices) {
-      case 200:
-        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:1.cl.bin");
-        break;
-      case 201:
-        kernel_bin = file_read_binary("support/kernels/ray_sapu:0:0.cl.bin");
-        break;
-      case 300:
-        kernel_bin = file_read_binary("support/kernels/ray_batel:1:0.cl.bin");
-        break;
-      case 301:
-        kernel_bin = file_read_binary("support/kernels/ray_batel:1:1.cl.bin");
-        break;
-      case 310:
-        kernel_bin = file_read_binary("support/kernels/ray_batel:0:0.cl.bin");
-        break;
+    #if ECL_GRENDEL == 1 
+    auto platform_cpu = 2;
+    auto platform_gpu = 0;
+    auto platform_fpga= 1;
+    auto cmp_cpu  =0x01;  
+    auto cmp_gpu  =0x02;  
+    auto cmp_fpga =0x04;  
+    #else
+    auto platform_cpu = 3;
+    auto platform_gpu = 1;
+    auto platform_fpga= 2;
+    auto cmp_cpu =0x01;  
+    auto cmp_gpu =0x02;  
+    auto cmp_fpga=0x04;  
+    #endif
+    vector<ecl::Device> devices;
+    vector <char> binary_file;
+    vector <size_t>gws=vector <size_t>(3,1)  ;
+    gws[0]=0;
+    vector <size_t>lws=vector <size_t>(3,1);
+    lws[0]=128;
+    if (tdevices & cmp_fpga){  
+      ecl::Device device2(platform_fpga,0);
+      binary_file	=file_read_binary("./benchsuite/altera_kernel/ray.aocx");
+      device2.setKernel(binary_file,gws,gws);
+      device2.setLimMemory(1400000000);
+      devices.push_back(move(device2));
     }
-  }
 
-  auto time_init = std::chrono::system_clock::now().time_since_epoch();
-
-  vector<ecl::Device> devices;
-  switch (tdevices) {
-    case 200: {
-      ecl::Device cpu(0, 1);
-      if (use_binaries) {
-        cpu.setKernel(kernel_bin);
-      }
-      devices.push_back(move(cpu));
-    } break;
-    case 201: {
-      ecl::Device igpu(0, 0);
-      if (use_binaries) {
-        igpu.setKernel(kernel_bin);
-      }
-      devices.push_back(move(igpu));
-    } break;
-    case 300: {
-      ecl::Device cpu(1, 0);
-      if (use_binaries) {
-        cpu.setKernel(kernel_bin);
-      }
-      devices.push_back(move(cpu));
-    } break;
-    case 301: {
-      ecl::Device phi(1, 1);
-      if (use_binaries) {
-        phi.setKernel(kernel_bin);
-      }
-      devices.push_back(move(phi));
-    } break;
-    case 310: {
-      ecl::Device gpu(0, 0);
-      if (use_binaries) {
-        gpu.setKernel(kernel_bin);
-      }
-      devices.push_back(move(gpu));
-    } break;
-  }
+    if (tdevices & cmp_cpu){  
+      ecl::Device CPU (platform_cpu,0);
+      CPU.setKernel(kernel,gws,gws);
+      CPU.setLimMemory (4000000000);
+      devices.push_back(move(CPU));
+    }
+    if (tdevices & cmp_gpu){  
+      ecl::Device GPU(platform_gpu,0);
+      GPU.setKernel(kernel,gws,gws);
+      GPU.setLimMemory(4000000000);
+      devices.push_back(move(GPU));
+    }
 
   ecl::StaticScheduler stSched;
   ecl::DynamicScheduler dynSched;
-  // ecl::HGuidedScheduler hgSched;
+  ecl::HGuidedScheduler hgSched;
 
-  ecl::Runtime runtime(move(devices), gws, lws);
+  ecl::Runtime runtime(move(devices),image_size);
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
-    stSched.setRawProportions(props);
+    stSched.setRawProportions({prop, prop2});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
     dynSched.setWorkSize(chunksize);
-    // } else { // tscheduler == 2
-    //   runtime.setScheduler(&hgSched);
-    //   hgSched.setWorkSize(worksize);
-    //   hgSched.setRawProportions({ prop });
+  } else { // tscheduler == 2
+       runtime.setScheduler(&hgSched);
+       hgSched.setWorkSize(chunksize);
+       hgSched.setRawProportions({ prop, prop2 });
   }
   runtime.setInBuffer(in_prim_list);
   runtime.setOutBuffer(out_pixels);
-  runtime.setKernel(kernel_str, "raytracer_kernel");
+  runtime.setOutAuxBuffer(out_aux_pixels);
+  runtime.setKernel(kernel, "raytracer_kernel");
 
   runtime.setKernelArg(0, out_pixels);
   runtime.setKernelArg(1, width);
@@ -608,13 +598,13 @@ do_ray(int tscheduler,
   // runtime.setKernelArg(10, n_primitives * sizeof(Primitive), ArgType::LocalAlloc);
   runtime.setKernelArgLocalAlloc(10, n_primitives * sizeof(Primitive));
   // runtime.setKernelArg(10, sizeof(Primitive) * n_primitives);
-
+  runtime.setInternalChunk(1);
   runtime.run();
 
-  auto t2 = std::chrono::system_clock::now().time_since_epoch();
-  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
+//  auto t2 = std::chrono::system_clock::now().time_since_epoch();
+//  size_t diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - time_init).count();
 
-  cout << "time: " << diff_ms << "\n";
+  //cout << "time: " << diff_ms << "\n";
 
   runtime.printStats();
 

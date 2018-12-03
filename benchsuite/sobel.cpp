@@ -16,6 +16,8 @@
 #define ROWS 12060
 
 #define FRAMES 1
+//#define FRAMES 1
+
 //#define COLS 1024 
 //#define ROWS 1024
 
@@ -34,7 +36,7 @@ Sobel::init_image()
 string
 Sobel::get_kernel_str()
 {
-
+  return 0;
 }
 
 // Dump frame data in PPM format.
@@ -70,16 +72,18 @@ do_sobel(int tscheduler,
 {
 
   int worksize = chunksize;
-  size_t frames=2;
+//  size_t frames=2;
+  size_t frames=1;
+
   Sobel sobel(COLS*ROWS*frames);
 
   string kernel = file_read("support/kernels/sobel_med.cl");
 
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._input_img);
  auto output = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._out);
  auto output_aux = shared_ptr<vector<int,vecAllocator<int>>>(&sobel._out_aux);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   
   size_t problem_size = COLS*ROWS*frames*FRAMES;
   cout <<"Problem Size: "<<problem_size<<"\n";
@@ -103,34 +107,35 @@ do_sobel(int tscheduler,
 
   vector <char> binary_file;
   if (tdevices &cmp_fpga){  
-    ecl::Device device2(platform_fpga,0);
-    //binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble_oe.aocx"); 
+    ecl::Device FPGA(platform_fpga,0);
+   // binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_doble_oe.aocx"); 
     //binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_cuatro_oe.aocx"); 
 //    binary_file	=file_read_binary("./benchsuite/altera_kernel/laplacian.aocx"); 
     //binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
-    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
+  //  binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel_3w.aocx"); 
+   binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel.aocx"); 
 //    binary_file	=file_read_binary("./benchsuite/altera_kernel/sobel5.aocx"); 
     vector <size_t>gws=vector <size_t>(3,1);
-    device2.setKernel(binary_file,"sobel",gws,gws);
+    FPGA.setKernel(binary_file,"sobel",gws,gws);
 //    device2.setKernel(binary_file,"gauss_laplace",gws,gws);
 //    device2.setKernel(binary_file,"sobel2",gws,gws);
 //    device2.setKernel(binary_file,"sobel3",gws,gws);
 //    device2.setKernel(binary_file,"sobel4",gws,gws);
    	//device2.setLimMemory(1400000000);
-   	device2.setLimMemory(1300000000);
-    devices.push_back(move(device2));
+   	FPGA.setLimMemory(1300000000);
+    devices.push_back(move(FPGA));
   }
 
   if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
-  	device.setLimMemory (4000000000);
+  	device.setLimMemory (1400000000);
     device.setKernel(kernel,"sobel");
 //    device.setKernel(kernel,"sobel2");
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
-  	device1.setLimMemory (1000000000);
+  	device1.setLimMemory (300000000);
     device1.setKernel(kernel,"sobel");
     //device1.setKernel(kernel,"sobel2");
 	  devices.push_back(move(device1));
@@ -140,7 +145,7 @@ do_sobel(int tscheduler,
   ecl::StaticLongScheduler stSched;
   ecl::DynamicScheduler dynSched;
   ecl::HGuidedScheduler hgSched;
-  //ecl::ProportionalScheduler propSched;
+  ecl::ProportionalScheduler propSched;
  // ecl::SwarmScheduler smSched;
   
   cout<<"Manual proportions!";
@@ -149,20 +154,20 @@ do_sobel(int tscheduler,
   if (tscheduler == 0) {
     runtime.setScheduler(&stSched);
     //stSched.setRawProportions({0.17,0.16, 0.67});
-    stSched.setRawProportions({prop,prop2, 20.0-(prop+prop2)});
+    stSched.setRawProportions({prop,prop2, (float)20.0-(prop+prop2)});
   // stSched.setRawProportions({0.15,0.05, 0.8});
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
-    dynSched.setWorkSize(worksize);
+    dynSched.setWorkSize(worksize,FRAMES);
   } else if (tscheduler ==2){ // tscheduler == 2
     runtime.setScheduler(&hgSched);
-    hgSched.setWorkSize(worksize);
+    hgSched.setWorkSize(worksize,FRAMES);
    // hgSched.setRawProportions({0.17,0.43, 0.40});
     hgSched.setRawProportions({0.16,0.16, 0.67});
   } else if (tscheduler ==3){ // tscheduler == 2
-   // runtime.setScheduler(&propSched);
-   // propSched.setWorkSize(worksize);
-    //propSched.setRawProportions({prop, 0.25});
+    runtime.setScheduler(&propSched);
+    propSched.setWorkSize(worksize);
+//    propSched.setRawProportions({prop, 0.25,0.25});
   } else if (tscheduler ==4){ 
   //  runtime.setScheduler(&smSched);
   //  smSched.setWorkSize(worksize);

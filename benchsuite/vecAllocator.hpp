@@ -25,7 +25,8 @@ public:
         return reinterpret_cast<pointer>(aligned_alloc(N, num*sizeof(value_type)));
     }
 
-    void deallocate(pointer p,[[maybe_unused]] size_t num)
+    //void deallocate(pointer p,[[maybe_unused]] size_t num)
+    void deallocate(pointer p,size_t num)
     {	
         std::free (p);
     }

@@ -53,11 +53,11 @@ public:
 
   // private:
   size_t _total_size;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_seed;  // image
   vector<float,vecAllocator<float>> _out;  // blurred
   vector<float,vecAllocator<float>> _out_aux;  // 
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* CLBALANCER_BENCHS_MERSENNE_HPP */

@@ -56,13 +56,13 @@ public:
   
   // private:
   int _total_size;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_img;  // image
   vector<char,vecAllocator<char>> _crypt_img;  // image
   vector<char,vecAllocator<char>> _round_key;  // image
   vector<char,vecAllocator<char>> _out;  // blurred
   vector<char,vecAllocator<char>> _out_aux;  // blurred
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* CLBALANCER_BENCHS_AES_HPP */

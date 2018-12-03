@@ -10,6 +10,7 @@
 #include <tuple>
 #include <iomanip>
 #define  FRAMES 1
+
 //#define  FRAMES 20
 
 namespace ecl {
@@ -101,6 +102,7 @@ HGuidedScheduler::printStats()
 //  cout<< "imbalanceKernel: "<<time_imbalance<<" us.\n"; 
   cout<< "imbalanceKernel: "<<((double)time_imbalance/(double)time_run_sched)*100<<" %.\n"; 
   cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
+  cout<< "executionKernel: "<<time_run_sched/1000<<" ms.\n"; 
 }
 
 void
@@ -131,7 +133,12 @@ HGuidedScheduler::saveDurationOffset(ActionType action)
   size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
-
+void
+HGuidedScheduler::setWorkSize(size_t size,size_t frame)
+{
+  setWorkSize(size);
+  m_frames=frame;
+}
 /**
  * Min Chunk size
  */
@@ -163,6 +170,7 @@ HGuidedScheduler::setWorkSize(size_t size)
   if (m_worksize % bound != 0) {
     throw runtime_error("worksize if not multiple of LWS");
   }
+  m_frames=FRAMES;
 }
 
 void
@@ -253,8 +261,6 @@ HGuidedScheduler::setDevices(vector<Device*>&& devices)
   for (auto& q_id_work : m_queue_id_work) {
     q_id_work.reserve(256);
   }
-  m_frames=FRAMES;
-  
   m_devices_working = 0;
   m_raw_proportions.reserve(m_ndevices);
 }
@@ -303,7 +309,7 @@ HGuidedScheduler::normalizeRawProportions()
       nprops++;
     }
 
-	for (int i=0; i<=last; i++){
+	for (uint i=0; i<=last; i++){
 		m_raw_proportions[i]/=sum;
 		cout<<m_raw_proportions[i]<<" \n";
 	}
@@ -353,7 +359,7 @@ HGuidedScheduler::enq_work(Device* device)
     if (size+offset>m_size){
         size=m_size_rem;
     }
-    if(offset==(m_size/FRAMES)){
+    if(offset==(m_size/m_frames)){
       if (m_frames>0){
         m_frames--;
         m_size_given=0;
@@ -361,16 +367,16 @@ HGuidedScheduler::enq_work(Device* device)
       }
     }
 
-    if (offset+size>(m_size/FRAMES)){
-        new_size=(m_size/FRAMES)-offset;
+    if (offset+size>(m_size/m_frames)){
+        new_size=(m_size/m_frames)-offset;
         size=new_size; 
         if(size>m_lim_size) {
 		size=m_lim_size;
  		cout<<"warning: lim_size memory, no schedule\n";	
 	}
-        if (size<0){
-          size=m_size_rem;
-        }
+        //if (size<0){
+        //  size=m_size_rem;
+       // }
     }
     size_t index = -1;
     {

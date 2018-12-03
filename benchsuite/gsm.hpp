@@ -53,11 +53,11 @@ public:
 
   // private:
   int _total_size;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<short,vecAllocator<short>> _input;  // voice
   vector<short,vecAllocator<short>> _out1;  // Code
   vector<short,vecAllocator<short>> _out2;  // LARc
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* CLBALANCER_BENCHS_GSM_HPP */

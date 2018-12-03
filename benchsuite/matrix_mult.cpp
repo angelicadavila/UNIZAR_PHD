@@ -7,6 +7,7 @@
 #define ROWS 1080
 #define COLS 1920
 
+#define FRAMES 1
 // Randomly generate a floating-point number between -10 and 10.
 float rand_float() {
   return float(rand()) / float(RAND_MAX) * 20.0f - 10.0f;
@@ -78,11 +79,11 @@ do_matrixMult(int tscheduler,
   
   string kernel = file_read("support/kernels/matrix_mult.cl");
 
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input_A = shared_ptr<vector<float,vecAllocator<float>>>(&matrixMult._input_A);
  auto input_B = shared_ptr<vector<float,vecAllocator<float>>>(&matrixMult._input_B);
  auto output = shared_ptr<vector<float,vecAllocator<float>>>(&matrixMult._out);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
  //rows of the matrix 
   int problem_size =(m_height);
 
@@ -148,7 +149,7 @@ do_matrixMult(int tscheduler,
     stSched.setRawProportions({ prop });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
-    dynSched.setWorkSize(worksize);
+    dynSched.setWorkSize(worksize,FRAMES);
   } else if( tscheduler == 2){
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);

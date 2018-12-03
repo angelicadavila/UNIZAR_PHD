@@ -113,8 +113,8 @@ do_ray(int tscheduler,
        uint check,
        int wsize,
        int chunksize,
-       vector<float>& props,
-       string scene_path);
+       float prop,
+       float prop2);
 
 int
 ray_begin(data_t* data);

@@ -53,11 +53,11 @@ public:
 
   // private:
   int _total_size;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<float,vecAllocator<float>> _input_A;  // input
   vector<float,vecAllocator<float>> _input_B;  // input
   vector<float,vecAllocator<float>> _out;  //output 
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* CLBALANCER_BENCHS_MATRIXMULT_HPP */

@@ -15,6 +15,7 @@
 #include <functional>
 #include <tuple>
 #include <utility>
+#include <fstream>
 
 #include <cmath>
 
@@ -33,6 +34,7 @@ using std::to_string;
 using std::tuple;
 using std::unique_ptr;
 using std::vector;
+//using std::fstream;
 
 namespace ecl {
 enum class ActionType;
@@ -195,6 +197,7 @@ public:
   void setKernel(const vector<char>& source);
   void setKernel(const string& source, const string& kernel); // used by Runtime/Scheduler
   void setID(int id);
+  void setGwsDim(uint dim);
   int getID();
   void waitWork();
   void notifyWork();
@@ -270,8 +273,8 @@ public:
   //return the number of works of each device
   int getWorkSize();
   //limit of memory per device
-  void setLimMemory(int limit_memory);
-  int getLimMemory();
+  void setLimMemory(size_t limit_memory);
+  size_t getLimMemory();
   
   void set_globalWorkSize( size_t gws0);
   void set_globalWorkSize( size_t gws0, size_t gws1);
@@ -306,9 +309,9 @@ private:
 
   thread m_thread;
   string m_info_buffer;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<cl_uint> m_arg_index;
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   vector<size_t> m_gws;
   vector<size_t> m_lws;
   vector<ArgType> m_arg_type;
@@ -362,12 +365,16 @@ private:
   int m_internal_chunk;
 
   //Memory limit for device
-  int m_lim_memory;
+  size_t m_lim_memory;
 
   vector<size_t> m_prev_readParams;
 
   //number of kernels in a program
   uint m_num_kernel;
+  //select de dimension to assign chunk size
+  uint m_gws_dim;
+
+
 };
 
 } // namespace ecl

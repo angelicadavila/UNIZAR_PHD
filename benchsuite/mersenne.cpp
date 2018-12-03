@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#define FRAMES 10
+#define FRAMES 1
 void
 Mersenne::init_seed()
 {
@@ -33,18 +33,20 @@ do_mersenne(int tscheduler,
 {
 
   int worksize = chunksize;
-  
-  size_t frames=4;
+  //JSC
+  //
+//  size_t frames=4;
+  size_t frames=1;
   size_t dim=static_cast<int>(N_rand);
   Mersenne mersenne(N_rand*64*frames);
 
   //string kernel = file_read("support/kernels/mersenne_kernel.cl");
   string kernel = file_read("support/kernels/mersenne_kernel_box.cl");
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<int,vecAllocator<int>>>(&mersenne._input_seed);
  auto output = shared_ptr<vector<float,vecAllocator<float>>>(&mersenne._out);
  auto output_aux = shared_ptr<vector<float,vecAllocator<float>>>(&mersenne._out_aux);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   //size_t problem_size =(mersenne._total_size/(size_t)64)*frames*FRAMES;
   size_t problem_size =dim*frames*FRAMES;
   
@@ -54,9 +56,9 @@ do_mersenne(int tscheduler,
   auto platform_cpu = 2;
   auto platform_gpu = 0;
   auto platform_fpga= 1;
-  auto cmp_cpu  =0x04;  
-  auto cmp_gpu  =0x01;  
-  auto cmp_fpga=0x02;  
+  auto cmp_cpu  =0x01;  
+  auto cmp_gpu  =0x02;  
+  auto cmp_fpga=0x04;  
 #else
   auto platform_cpu = 3;
   auto platform_gpu = 1;
@@ -104,7 +106,7 @@ cout<<"Manual proportions!";
     stSched.setRawProportions({ 0.4,0.55,0.05 });
   } else if (tscheduler == 1) {
     runtime.setScheduler(&dynSched);
-    dynSched.setWorkSize(worksize);
+    dynSched.setWorkSize(worksize,FRAMES);
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
     hgSched.setWorkSize(worksize);

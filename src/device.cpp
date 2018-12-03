@@ -13,6 +13,7 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <fstream>
 #include <functional>
 #include <assert.h>  
 struct CBData
@@ -88,13 +89,16 @@ device_thread_func(Device& device)
      
       //Read the last chunk
       //NOTE set m_prev_events in last chunk from sched to avoid overlapping
+        #if ECL_NOOVERLAP ==0
       device.switch_out=(device.switch_out^1)&0x01;  
-        
       device.readBuffers();
+        #else
+      cout<<"warning: No overlapping \n";
+        #endif
       device.wait_queue();
       sched->endScheduler();
       cout << "device id " << device.getID() << " finished\n";
-			device.notifyBarrier();
+      device.notifyBarrier();
       cont = false;
     }
   }
@@ -128,6 +132,7 @@ Device::Device(uint sel_platform, uint sel_device)
   //default values
   m_gws[0]=0;//to set the chunk size
   m_lws[0]=128;
+  m_gws_dim=0;
   //multi-kernel implementation
   m_kernel_str.reserve(8);
   m_num_kernel=0;
@@ -161,6 +166,9 @@ Device::printStats()
   }
   cout << "works: " << m_works << " works_size: " << m_works_size << "\n";
   size_t acc = 0;
+
+  size_t d_run=0;
+  size_t d_end=0;
   size_t total = 0;
   cout << "duration increments:\n";
   for (auto& t : m_duration_actions) {
@@ -175,10 +183,22 @@ Device::printStats()
   }
   cout << " completeWork: " << acc << " us.\n";
   cout << " total: " << total << " us.\n";
+  cout << " RunningTime: " << d_end-d_run << " us.\n";
   cout << "duration offsets from init:\n";
   for (auto& t : m_duration_offset_actions) {
-    Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
+     auto d = std::get<0>(t);
+    auto action = std::get<1>(t);
+   if (action ==ActionType::deviceRun ) {
+       d_run=d; 
+    }
+    if (action == ActionType::deviceEnd) {
+       d_end=d;
+    }
+   Inspector::printActionTypeDuration(std::get<1>(t), std::get<0>(t));
   }
+  cout << " RunningTime: " << d_end-d_run << " us.\n";
+  cout << " RunningTime: " << (d_end-d_run)/1000 << " ms.\n";
+
 }
 
 void
@@ -310,6 +330,16 @@ Device::setKernel(const string& source, const string& kernel)
   m_num_kernel++; 
 }
 
+//select de dimension of gws (global work offset) to be sized
+//dim=0 gws[0]=size of chunk
+//dim=1 gws[1]=size of chunk 
+void 
+Device::setGwsDim(
+		 uint dim
+)
+{ 
+  m_gws_dim=dim; 
+}
 void
 Device::setKernel(const vector<char>& binary)
 {
@@ -406,7 +436,12 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  auto offset_for_bytes=offset;//use to read offset_bytes
   offset*=m_internal_chunk;
   cl_int status;
-  if(m_gws[1]!=1) 
+  if(m_gws_dim==0){
+    if (m_gws[0]!=1) 
+     m_gws[0] = size;//pass to global
+//for mandelbrot
+  }
+  else 
     m_gws[1] = size;//pass to global
 #if ECL_KERNEL_GLOBAL_WORK_OFFSET_SUPPORTED == 1
 #else
@@ -414,7 +449,7 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
  //Write Input buffer. In Stencils should manage previous data in the kernel, not in memory 
   writeBuffers(size,offset);
   
-  for (int h=0;h<m_num_kernel;h++){
+  for (uint h=0;h<m_num_kernel;h++){
      for (int j=0;j<len;j++){
         
         if (switch_out==0){
@@ -429,64 +464,92 @@ Device::do_work(size_t offset, size_t size, float bound, int queue_index)
      m_kernel[h].setArg(m_nargs,iterations);
      uint static_offset=h*iterations*m_internal_chunk;
    //  cout<<"offset="<<static_offset<<"\n";
-     //m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
-     
+//     m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+/*     
+  if(m_gws_dim==0) 
 //     m_kernel[h].setArg(m_nargs+1,(uint) offset+h*iterations);
-    //for mandelbrot
+     m_kernel[h].setArg(m_nargs+1,(uint) static_offset);
+   else //for mandelbrot
      m_kernel[h].setArg(m_nargs+1,(uint) offset/m_internal_chunk);
+
+*/
+     m_kernel[h].setArg(m_nargs+1,(uint) 0);
+    
+    //m_kernel[h].setArg(m_nargs+1,(uint) offset/m_internal_chunk);
+    #if ECL_PROFILING ==0
      cout<<"id: "<<m_id;
      
+     cout<<" num_kernel: " <<h<<"offset: "<<offset_for_bytes<<" size:"<< size;
+     cout<<"\n gws[0]:"<<m_gws[0]<<"gws[1]:"<<m_gws[1];
+
+     cout<<"-lws[0]: "<<m_lws[0]<<"lws[1]"<<m_lws[1]<<"\n";
+    #endif
       {  
       status=m_queue[h].enqueueNDRangeKernel(
                               m_kernel[h], cl::NullRange, 
                               cl::NDRange(m_gws[0],m_gws[1],m_gws[2]), 
-    //                          cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
+                              cl::NDRange(m_lws[0],m_lws[1],m_lws[2]),
 
-                              cl::NullRange,
+//                              cl::NullRange,
                               nullptr ,
-//			      &(m_event_kernel)
+			  #if ECL_PROFILING ==1
+			      &(m_event_kernel)
+                          #else
 			      nullptr
+                          #endif
 				);
-//      clGetProfileInfoIntelFPGA((cl_event)(&m_event_kernel));                            
         CL_CHECK_ERROR(status,"NDRange problem");
+ 	#if ECL_PROFILING ==1
+    //  		clGetProfileInfoIntelFPGA((cl_event)(&m_event_kernel));                            
+        #endif
       }
-     cout<<" num_kernel: " <<h<<"offset: "<<offset+h*iterations<<" size:"<< size<<"\n gws:"<<m_gws[0]<<"-lws: "<<m_lws[0]<<"\n";
    }
 
-   //change the output buffer to overlap kernel and read execution
-    switch_out=(switch_out^1)&0x01;
 #endif
-  
-  //Conditional Read to overlapping in a Kernel_i with read_i-1
-  //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
-  readBuffers();
-  m_prev_readParams[0]=size; 
-  m_prev_readParams[1]=offset_for_bytes;
-  
-  for (int h=0;h<m_num_kernel;h++){
-      m_queue[h].finish();
-  }
-#if ECL_OPERATION_BLOCKING_READ == 1
-  
-  //wait finish kernel
- // m_queue.finish();
-  
   #if ECL_PROFILING ==1
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
-  
+ for (uint h=0;h<m_num_kernel;h++){
+      m_queue[h].finish();
+  }
   time_skrn=m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
   time_stkrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_START>();
   time_ekrn= m_event_kernel.getProfilingInfo<CL_PROFILING_COMMAND_END>();
   cout<<"**time_krn "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
   #endif
+
+
+ 
+  //Conditional Read to overlapping in a Kernel_i with read_i-1
+  //*NOTE: to avoid overlapping init in sched the vector m_Prev_readParams
+  #if ECL_NOOVERLAP ==0
+  readBuffers();
+  m_prev_readParams[0]=size; 
+  m_prev_readParams[1]=offset_for_bytes;
+  for (uint h=0;h<m_num_kernel;h++){
+      m_queue[h].finish();
+  }
+  #else
+  m_prev_readParams[0]=size; 
+  m_prev_readParams[1]=offset_for_bytes;
+  for (uint h=0;h<m_num_kernel;h++){
+      m_queue[h].finish();
+  }
+  readBuffers();
+  m_queueRead.finish();
+  #endif
+  //change the output buffer to overlap kernel and read execution
+    switch_out=(switch_out^1)&0x01;
+
+#if ECL_OPERATION_BLOCKING_READ == 1
+  
   ecl::Scheduler* sched = getScheduler();
   sched->callback(queue_index);
-  saveDuration(ecl::ActionType::completeWork);
+//  saveDuration(ecl::ActionType::completeWork);
 
 #else
   auto cbdata = new CBData(queue_index, this);
- // exit(0);
+  exit(0);
  //evread.setCallback(CL_COMPLETE, callbackRead, cbdata);
   for (int h=0;h<m_num_kernel;h++)
     m_queue[h].flush();
@@ -629,10 +692,10 @@ Device::initBuffers()
     IF_LOGGING(cout << "in [data] " << data << "\n");
     IF_LOGGING(cout << "in [address] " << b.get() << "\n");
     IF_LOGGING(cout << "in [size] " << b.size() << "\n");
-    uint lim_size=getLimMemory();
+    size_t lim_size=getLimMemory();
     auto constant_size=b.constant();
     
-    if (constant_size){
+    if (constant_size | (b.bytes()<lim_size)){
        lim_size=b.bytes();
     } 
     IF_LOGGING(cout << "in [bytes] " <<  lim_size << "\n");
@@ -649,7 +712,9 @@ Device::initBuffers()
     IF_LOGGING(cout << "out [data] " << data << "\n");
     IF_LOGGING(cout << "out [address] " << b.get() << "\n");
     IF_LOGGING(cout << "out [size] " << b.size() << "\n");
-    uint lim_size=getLimMemory();
+    size_t lim_size=getLimMemory();
+    if( b.bytes()<lim_size)
+        lim_size=b.bytes();
     IF_LOGGING(cout << "out [bytes] " << lim_size << "\n");
     cl::Buffer tmp_buffer(m_context, buffer_out_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
@@ -663,8 +728,10 @@ Device::initBuffers()
     IF_LOGGING(cout << "out [data] " << data << "\n");
     IF_LOGGING(cout << "out [address] " << b.get() << "\n");
     IF_LOGGING(cout << "out [size] " << b.size() << "\n");
-    uint lim_size=getLimMemory();
-    IF_LOGGING(cout << "out [bytes] " <<  lim_size<< "\n");
+    size_t lim_size=getLimMemory();
+     if( b.bytes()<lim_size)
+        lim_size=b.bytes();
+IF_LOGGING(cout << "out [bytes] " <<  lim_size<< "\n");
     cl::Buffer tmp_buffer(m_context, buffer_outaux_flags, lim_size, NULL);
     CL_CHECK_ERROR(cl_err, "out buffer " + i);
     m_out_aux_buffers.push_back(move(tmp_buffer));
@@ -674,8 +741,11 @@ Device::initBuffers()
 void
 Device::writeBuffers(size_t size, size_t offset)
 {
-  auto len = m_in_ecl_buffers.size();
-  cout<<"len"<<len<<"\n"; 
+   #if ECL_PROFILING == 1
+  cl::Event m_event_write;
+  #endif
+
+ auto len = m_in_ecl_buffers.size();
   for (uint i = 0; i < len; i++) {
   cout<<"for\n"; 
     Buffer& b = m_in_ecl_buffers[i];
@@ -683,11 +753,30 @@ Device::writeBuffers(size_t size, size_t offset)
    if ((b.constant()==0)){
     auto data= b.dataWithOffset(offset);//*m_internal_chunk);
     size_t size_bytes = b.byBytes(size)*(m_internal_chunk);
-//  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
-//                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
+  IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
+                   << &m_in_buffers[i] << " size: " << size_bytes << " bytes: " << b.bytes() << "\n");
      cout<<"bytes:"<<size_bytes<<"\n";
      CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
-      m_in_buffers[i], CL_TRUE, 0, size_bytes, data, NULL,NULL ));//
+      m_in_buffers[i], CL_TRUE, 0, size_bytes, data, nullptr,
+   				#if ECL_PROFILING == 1
+				&m_event_write
+				#else
+				nullptr
+				#endif
+ 				));
+ #if ECL_PROFILING ==1
+  m_queue[0].finish();
+   //   clGetProfileInfoIntelFPGA((cl_event)(&m_event_write));                            
+  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  time_skrn=m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
+  time_qkrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
+  time_stkrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  time_ekrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cout<<"**time_wr "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  #endif
+
+
+
    }
     else writeBuffers(); 
    }
@@ -696,6 +785,9 @@ void
 Device::writeBuffers(bool /* dummy */)
 {
  // IF_LOGGING(cout << "writeBuffers\n");
+  #if ECL_PROFILING == 1
+  cl::Event m_event_write;
+  #endif
 
   auto len = m_in_ecl_buffers.size();
   m_prev_events.reserve(len);
@@ -708,9 +800,26 @@ Device::writeBuffers(bool /* dummy */)
    // IF_LOGGING(cout << "writeBuffers [array] " << b.get() << " data: " << data << " buffer: "
   //                  << &m_in_buffers[i] << " size: " << size << " bytes: " << b.bytes() << "\n");
     CL_CHECK_ERROR(m_queue[0].enqueueWriteBuffer(
-      m_in_buffers[i], CL_TRUE, 0, b.bytes(), data, NULL,NULL ));//&(m_prev_events.data()[i])));
-  }}
+     				 m_in_buffers[i], CL_TRUE, 
+				0, b.bytes(), data, nullptr,
+  				#if ECL_PROFILING == 1
+				&m_event_write
+				#else
+				nullptr
+				#endif
+				));
   m_queue[0].finish();
+ #if ECL_PROFILING ==1
+      clGetProfileInfoIntelFPGA((cl_event)(&m_event_write));                            
+  ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
+  time_skrn=m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
+  time_qkrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
+  time_stkrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+  time_ekrn= m_event_write.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+  cout<<"**time_wr "<<getID()<<": "<<time_qkrn<<","<<time_skrn<<","<<time_stkrn<<","<<time_ekrn<<" \n";
+  #endif
+
+ }}
 }
 
 void
@@ -724,11 +833,11 @@ Device::readBuffers()
   auto len = m_out_ecl_buffers.size();
   cl_int status;
   if(sizeR!=0)
-  {cout<<"reading";
+  {
     for (uint i = 0; i < len; ++i) {
         Buffer& b = m_out_ecl_buffers[i];
         size_t size_bytes = b.byBytes(sizeR)*m_internal_chunk;
-        assert(size_bytes<m_lim_memory);
+        assert(size_bytes<(size_t)m_lim_memory);
         auto offset_bytes = b.byBytes(offsetR)*m_internal_chunk;
       auto address= offset_bytes;
       if(address & 0x3){
@@ -749,7 +858,6 @@ Device::readBuffers()
                                   nullptr);
                             #endif
                               
-//      clGetProfileInfoIntelFPGA((cl_event)(&m_event_read);                            
       }else{
     
          status= m_queueRead.enqueueReadBuffer(m_out_aux_buffers[i],
@@ -764,10 +872,15 @@ Device::readBuffers()
                                   nullptr);
                             #endif
       }
-        //CL_CHECK_ERROR(status,"Reading memory problem");
+        CL_CHECK_ERROR(status,"Reading memory problem");
       }
   }
   #if ECL_PROFILING == 1
+  for (uint h=0;h<m_num_kernel;h++){
+      m_queue[h].finish();
+  }
+   m_queueRead.finish();
+      clGetProfileInfoIntelFPGA((cl_event)(&m_event_read));                            
   ulong time_qkrn, time_skrn,time_stkrn, time_ekrn;
   time_skrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_SUBMIT>();
   time_qkrn=  m_event_read.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>();
@@ -794,9 +907,9 @@ Device::initKernel()
   if (m_program_type == ProgramType::CustomBinary) {
     IF_LOGGING(cout << "size: " << m_program_binary.size() << "\n");
     binaries.push_back({ m_program_binary.data(), m_program_binary.size() });
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
     vector<cl_int> status = { -1 };
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
     program = move(cl::Program(m_context, { m_device }, binaries, &status, &cl_err));
     CL_CHECK_ERROR(cl_err, "building program from binary failed for device " + to_string(m_id));
   } else {
@@ -984,11 +1097,11 @@ Device::getInternalChunk(){
 }
 
 void
-Device::setLimMemory(int limit_memory){
+Device::setLimMemory(size_t limit_memory){
     m_lim_memory=limit_memory;
 }
 
-int
+size_t
 Device::getLimMemory(){
     return m_lim_memory;
 }

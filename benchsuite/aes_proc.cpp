@@ -82,7 +82,7 @@ static void rotate(unsigned char *in) {
 }
 
 void schedule_core(unsigned char *in, unsigned char i) {
-  char a;
+  uint a;
   /* Rotate the input 8 bits to the left */
   rotate(in);
   /* Apply Rijndael's s-box on all 4 bytes */
@@ -217,14 +217,14 @@ int aesecb_encrypt(unsigned char *key, unsigned char *input, unsigned char *outp
   size_t j,k;
   size_t blocks = inputsize / blocksize;
   unsigned char block[blocksize];
-  for(i=0;i<blocks;i++){
+  for(i=0;i<(size_t)blocks;i++){
 
     for(j=0;j<blocksize;j++) block[j]=input[i*blocksize+j];
 
     //InitialRound
     AddRoundKey(block,0,roundkey);
     //Rounds 
-    for(j=0;j<rounds-1;j++){
+    for(j=0;j<(size_t)(rounds-1);j++){
       //SubBytes
       for(k=0;k<blocksize;k++) block[k]=sbox[block[k]];
       //ShiftRows

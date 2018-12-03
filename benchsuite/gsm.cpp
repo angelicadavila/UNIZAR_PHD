@@ -42,7 +42,7 @@ Gsm::init_voice()
 string
 Gsm::get_kernel_str()
 {
-
+   return 0;
 }
 
 // Dump frame data in PPM format.
@@ -69,11 +69,11 @@ do_gsm(int tscheduler,
 
     string kernel = file_read("support/kernels/gsm.cl");
 
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
  auto input = shared_ptr<vector<short,vecAllocator<short>>>(&gsm._input);
  auto output1 = shared_ptr<vector<short,vecAllocator<short>>>(&gsm._out1);
  auto output2 = shared_ptr<vector<short,vecAllocator<short>>>(&gsm._out2);
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
   
   int problem_size =in_size;//gsm._total_size;
 cout<<"problem_size"<<problem_size<<"\n";

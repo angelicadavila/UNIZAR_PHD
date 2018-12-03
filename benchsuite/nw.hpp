@@ -54,12 +54,12 @@ public:
 
   // private:
   int _total_size, _max_cols, _max_rows;
-#pragma GCC diagnostic ignored "-Wignored-attributes"
+//#pragma GCC diagnostic ignored "-Wignored-attributes"
   vector<int,vecAllocator<int>> _input_itemsets;  
   vector<int,vecAllocator<int>> _reference;  
   vector<int,vecAllocator<int>> _output_itemsets;  
   vector<int,vecAllocator<int>> _output_itemsets_aux;  
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 };
 
 #endif /* CLBALANCER_BENCHS_NW_HPP */

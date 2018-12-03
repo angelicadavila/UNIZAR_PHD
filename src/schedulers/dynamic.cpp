@@ -12,8 +12,8 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-//#define  FRAMES 10
-#define  FRAMES 1
+#define  FRAMES 20
+//#define  FRAMES 1
 //#define  FRAMES 20 //for AES
 namespace ecl {
 
@@ -56,7 +56,7 @@ DynamicScheduler::DynamicScheduler(WorkSplit wsplit)
   m_time = std::chrono::system_clock::now().time_since_epoch();
   m_duration_actions.reserve(8);        // NOTE to improve
   m_duration_offset_actions.reserve(8); // NOTE to improve
-  m_frames=FRAMES;
+  //m_frames=FRAMES;
 }
 
 DynamicScheduler::~DynamicScheduler()
@@ -110,6 +110,7 @@ DynamicScheduler::printStats()
   auto time_run_sched=(std::get<0>(m_duration_offset_actions[last_item]))-init_time;
   cout<< "imbalanceKernel: "<<((double)time_imbalance/(double)time_run_sched)*100<<" %.\n"; 
   cout<< "executionKernel: "<<time_run_sched<<" us.\n"; 
+  cout<< "executionKernel: "<<time_run_sched/1000<<" ms.\n"; 
 }
 
 void
@@ -140,6 +141,12 @@ DynamicScheduler::saveDurationOffset(ActionType action)
   size_t diff_ms = std::chrono::duration_cast<std::chrono::microseconds>(t2 - m_time_init).count();
   m_duration_offset_actions.push_back(make_tuple(diff_ms, action));
 }
+void
+DynamicScheduler::setWorkSize(size_t size,size_t frame)
+{
+  setWorkSize(size);
+  m_frames=frame;
+}
 
 void
 DynamicScheduler::setWorkSize(size_t size)
@@ -167,14 +174,8 @@ DynamicScheduler::setWorkSize(size_t size)
     m_work_last = rest;
   }
   m_worksize = given;
-  //if ((m_worksize % m_lws) != 0) {
-  //  throw runtime_error("m_worksize % lws: " + to_string(m_worksize) + " % " + to_string(m_lws));
- // }
-
-   /*//static
-    
-
-   */
+  
+  m_frames=FRAMES;
   IF_LOGGING(cout << "m_worksize (chunk size): " << m_worksize << "\n");
 }
 
@@ -350,7 +351,7 @@ DynamicScheduler::enq_work(Device* device)
       {
          size=m_size_rem;
       }
-     if (offset==(m_size/FRAMES)){  
+     if (offset==(m_size/m_frames)){  
           if (m_frames>0){
                 m_frames--;
                 offset=0;
@@ -360,12 +361,12 @@ DynamicScheduler::enq_work(Device* device)
      }
  
      tmp_cond=offset+size;
-     if(tmp_cond>=(m_size/FRAMES)){
-         size=(m_size/FRAMES)-offset;
+     if(tmp_cond>=(m_size/m_frames)){
+         size=(m_size/m_frames)-offset;
            
-         if (size<0){
+         if (m_size/m_frames<offset){
              size=m_size_rem;
-         }
+          }
       }
             m_size_rem -= size;
       m_size_given += size;
@@ -389,7 +390,7 @@ void
 DynamicScheduler::req_work(Device* device)
 {
 
-  auto time1 = std::chrono::system_clock::now().time_since_epoch();
+  //auto time1 = std::chrono::system_clock::now().time_since_epoch();
   saveDuration(ActionType::schedulerStart);
   saveDurationOffset(ActionType::schedulerStart);
 

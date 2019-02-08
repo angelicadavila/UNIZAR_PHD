@@ -1,4 +1,4 @@
-# Copyright (c) 2017  Raúl Nozal <raul.nozal@unican.es>
+# Copyright (c) 2018  unizar
 # This file is part of EngineCL which is released under MIT License.
 # See file LICENSE for full license details.
 
@@ -18,11 +18,12 @@ message("src_dir: ${ROOT_DIR}")
 
 execute_process(COMMAND aocl compile-config OUTPUT_VARIABLE AOCL_COMPILE_CONFIG)
 include_directories(${AOCL_COMPILE_CONFIG})
-include_directories("/opt/intelFPGA/17.1/hld/host/include")
-set(AOCL_COMPILE_CONFIG "/opt/intelFPGA/17.1/hld/host/include")
+include_directories("/opt/intelFPGA/18.1/hld/host/include")
+set(AOCL_COMPILE_CONFIG "/opt/intelFPGA/18.1/hld/host/include")
 include_directories()
-link_directories("/opt/intelFPGA/16.1/hld/board/terasic/de5net/linux64/lib" "/opt/intelFPGA/17.1/hld/host/linux64/lib")
-set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -lterasic_apb_16_1_mmd -lelf") 
+link_directories("/opt/intelFPGA/18.1/hld/board/terasic/de5net/linux64/lib" "/opt/intelFPGA/18.1/hld/host/linux64/lib")
+#set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -libterasic_s5_mmd -lelf") 
+set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -lelf") 
 
 
 list(APPEND CMAKE_MODULE_PATH "${ROOT_DIR}/cmake/modules")

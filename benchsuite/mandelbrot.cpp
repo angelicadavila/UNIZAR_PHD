@@ -75,20 +75,14 @@ do_mandelbrot(int tscheduler,
 
   vector<ecl::Device> devices;
 
-  #if ECL_GRENDEL == 1 
-  auto platform_cpu = 2;
-  auto platform_gpu = 0;
-  auto platform_fpga= 1;
-  #else
-  auto platform_cpu = 3;
-  auto platform_gpu = 1;
-  auto platform_fpga= 2;
-  #endif
+  auto platform_cpu = ECL_CPU;
+  auto platform_gpu = ECL_GPU;
+  auto platform_fpga= ECL_FPGA;
   auto cmp_cpu  =0x01;  
   auto cmp_gpu  =0x02;  
   auto cmp_fpga=0x04;  
 
-
+  auto num_in_buff=2;
 // 64 its the block size
 // C=A*B
   vector <size_t>gws=vector <size_t>(3,1);
@@ -105,7 +99,8 @@ do_mandelbrot(int tscheduler,
     //binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_kernel.aocx"); 
     binary_file =file_read_binary("./benchsuite/altera_kernel/mandelbrot_prof.aocx"); 
     device2.setKernel(binary_file,gws,lws);
-    device2.setLimMemory(2000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_FPGA)*1000000/num_in_buff;
+    device2.setLimMemory(mem_lim);
     device2.setGwsDim(1);
 //    device2.setKernel(binary_file,gws,lws); 
     devices.push_back(move(device2));
@@ -115,7 +110,8 @@ do_mandelbrot(int tscheduler,
 //    lws[0]=32; lws[1]=32;
     ecl::Device device(platform_cpu,0);
     //device.setLimMemory(6000000000);
-    device.setLimMemory(2000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_CPU)*1000000/num_in_buff;
+    device.setLimMemory(mem_lim);
     device.setKernel(kernel, gws, lws);
     device.setGwsDim(1);
     devices.push_back(move(device));
@@ -123,7 +119,8 @@ do_mandelbrot(int tscheduler,
   if (tdevices &cmp_gpu){  
 //    lws[0]=32; lws[1]=32;
     ecl::Device device1(platform_gpu,0);
-    device1.setLimMemory(500000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_GPU)*1000000/num_in_buff;
+    device1.setLimMemory(mem_lim);
     device1.setKernel(kernel,gws,lws);
     device1.setGwsDim(1);
     devices.push_back(move(device1));

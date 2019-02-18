@@ -6,6 +6,8 @@
 #ifndef ENGINECL_DEVICE_HPP
 #define ENGINECL_DEVICE_HPP 1
 
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+#undef CL_VERSION_1_2
 #include <CL/cl.hpp>
 #include <algorithm>
 #include <chrono>
@@ -245,8 +247,8 @@ public:
 
   void setKernelArgLocalAlloc(cl_uint index, const uint bytes);
   
-  void notifyEvent();
-  void waitEvent();
+//  void notifyEvent();
+//  void waitEvent();
 
   void notifyRun();
   void waitRun();
@@ -338,7 +340,7 @@ private:
   cl::Context m_context;
   vector<cl::CommandQueue> m_queue;
   cl::CommandQueue m_queueRead;
-  cl::UserEvent m_end;
+//  cl::UserEvent m_end;
   //string m_kernel_str;
   vector<string> m_kernel_str;
   vector<cl::Kernel> m_kernel;

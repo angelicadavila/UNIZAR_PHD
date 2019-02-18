@@ -3,7 +3,8 @@
 #include <fstream>
 
 #define GROUP 64
-#define FRAME 1
+//#define FRAME 5
+#define FRAME 10
 //#define FRAME 20
 void
 Nearest::init_data(uint dim)
@@ -36,8 +37,8 @@ do_nearest(int tscheduler,
   //distance to..
   float lat=10.5;
   float lng=50.4;
-  size_t frame=1;
-//  size_t frame=1;
+  //size_t frame=4;
+  size_t frame=4;
   N_data=49000;
   N_data=N_data*4096;
   int worksize = chunksize;
@@ -52,33 +53,24 @@ do_nearest(int tscheduler,
  auto output_aux = shared_ptr<vector<float,vecAllocator<float>>>(&nearest._distance_aux);
 //#pragma GCC diagnostic pop
   
-  //size_t problem_size = 4014080000;
+  size_t problem_size = 4014080000;
   //size_t problem_size = 1003520000*frame;
-  size_t problem_size = N_data*frame;
+  //size_t problem_size = N_data*frame;
 
 //1949696000;
 //1130496000;
  //nearest._total_size*FRAME*(2);
   cout<<"problem size"<<problem_size<<"\n";
   vector<ecl::Device> devices;
-
-  #if ECL_GRENDEL == 1 
-  auto platform_cpu = 2;
-  auto platform_gpu = 0;
-  auto platform_fpga= 1;
-  auto cmp_cpu  =0x01;  
-  auto cmp_gpu  =0x02;  
-  auto cmp_fpga=0x04;  
-#else
-  auto platform_cpu = 3;
-  auto platform_gpu = 1;
-  auto platform_fpga= 2;
+//exit(0);
+  auto platform_cpu = ECL_CPU;
+  auto platform_gpu = ECL_GPU;
+  auto platform_fpga= ECL_FPGA;
   auto cmp_cpu =0x01;  
   auto cmp_gpu =0x02;  
   auto cmp_fpga=0x04;  
-  #endif
 
-
+  auto num_in_buff=3;
  // Mersenne twister is a unitary kernel pipeline or Task execution
 
   vector <char> binary_file;
@@ -87,10 +79,15 @@ do_nearest(int tscheduler,
  
  if (tdevices &cmp_fpga){  
     ecl::Device device2(platform_fpga,0);
-    //binary_file =file_read_binary("./benchsuite/altera_kernel/nn.aocx"); 
-    binary_file =file_read_binary("./benchsuite/altera_kernel/nn_prof.aocx"); 
-    device2.setKernel(binary_file,gws,gws); 
-   	device2.setLimMemory(1400000000);
+    binary_file =file_read_binary("./benchsuite/altera_kernel/nn.aocx"); 
+//    binary_file =file_read_binary("./benchsuite/altera_kernel/nn_prof.aocx"); 
+    device2.setKernel(binary_file,gws,gws);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_FPGA)*1000000/num_in_buff; 
+    cout<<"mem_lim "<< mem_lim<<"\n";
+    mem_lim=ceil(mem_lim/401536)*401536;
+    cout<<"mem_lim round "<< mem_lim<<"\n";
+    //exit(0);
+    device2.setLimMemory(mem_lim);
    	//device2.setChunkSize(67108864);
     devices.push_back(move(device2));
   }
@@ -99,14 +96,16 @@ do_nearest(int tscheduler,
  if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
     device.setKernel(kernel,gws,gws);
-  	device.setLimMemory (3000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_CPU)*1000000/num_in_buff; 
+  	device.setLimMemory (mem_lim);
    	//device.setChunkSize(2097152);
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
     device1.setKernel(kernel,gws,gws);
-  	device1.setLimMemory (3000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_GPU)*1000000/num_in_buff; 
+    device1.setLimMemory (mem_lim);
    	//device1.setChunkSize(33554432);
     devices.push_back(move(device1));
   }
@@ -134,7 +133,7 @@ cout<<"Manual proportions!";
     dynSched.setWorkSize(worksize,FRAME);
   } else { // tscheduler == 2
     runtime.setScheduler(&hgSched);
-   // hgSched.setWorkSize(worksize);
+    hgSched.setWorkSize(worksize,FRAME);
    if (tdevices==7)
       //hgSched.setRawProportions({0.47 ,0.38 ,0.16});
       hgSched.setRawProportions({0.16,0.47 ,0.38});

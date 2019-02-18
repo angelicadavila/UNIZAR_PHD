@@ -45,7 +45,7 @@ set(SOURCES
   nw.cpp
   nn.cpp
   mandelbrot.cpp
-  ray.cpp
+#  ray.cpp
   utils/rand.cpp
   utils/io.cpp
 )
@@ -73,7 +73,7 @@ set(HEADERS
   nw.hpp
   nn.hpp
   mandelbrot.hpp
-  ray.hpp
+#  ray.hpp
   utils/io.hpp
   utils/rand.hpp
   utils/memory.hpp

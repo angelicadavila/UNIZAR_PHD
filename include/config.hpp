@@ -3,9 +3,20 @@
 
 #define CL_LWS 128
 
+#define ECL_UNIZAR 3
+
+#define ECL_FPGA 0
+#define ECL_CPU  1 
+#define ECL_GPU 2
+
+//Maximun memory global size in MB
+#define ECL_mem_FPGA 2112
+#define ECL_mem_CPU  4000
+#define ECL_mem_GPU  12000
+
 #define ECL_GRENDEL 1
 #define ECL_NOOVERLAP 1
-#define ECL_PROFILING 1  
+#define ECL_PROFILING 0  
 // uncomment to use blocking calls:
 #define ECL_OPERATION_BLOCKING_READ 1
 #ifndef ECL_OPERATION_BLOCKING_READ

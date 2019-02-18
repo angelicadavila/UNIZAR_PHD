@@ -108,21 +108,14 @@ do_needleman(int tscheduler,
 
   vector<ecl::Device> devices;
 
-  #if ECL_GRENDEL == 1 
-  auto platform_cpu = 2;
-  auto platform_gpu = 0;
-  auto platform_fpga= 1;
-  auto cmp_cpu  =0x04;  
-  auto cmp_gpu  =0x01;  
-  auto cmp_fpga =0x02;  
-  #else
-  auto platform_cpu = 3;
-  auto platform_gpu = 1;
-  auto platform_fpga= 2;
+  auto platform_cpu = ECL_CPU;
+  auto platform_gpu = ECL_GPU;
+  auto platform_fpga= ECL_FPGA;
   auto cmp_cpu =0x01;  
   auto cmp_gpu =0x02;  
-  auto cmp_fpga=0x04;  
-  #endif
+  auto cmp_fpga=0x04; 
+
+  auto num_in_buff=4; 
 
   vector <char> binary_file;
   vector <size_t>gws=vector <size_t>(3,1);
@@ -131,7 +124,8 @@ do_needleman(int tscheduler,
     ecl::Device device2(platform_fpga,0);
     binary_file	=file_read_binary("./benchsuite/altera_kernel/nw_16.aocx"); 
     device2.setKernel(binary_file,gws,gws);
-   	device2.setLimMemory(1000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_FPGA)*1000000/num_in_buff;
+    device2.setLimMemory(mem_lim);
     devices.push_back(move(device2));
   }
 
@@ -139,14 +133,16 @@ do_needleman(int tscheduler,
     ecl::Device device(platform_cpu,0);
     gws[0]=0; lws[0]=BLOCK_SIZE;
     device.setKernel(kernel,gws,lws);
-  	device.setLimMemory (3000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_CPU)*1000000/num_in_buff;
+    device.setLimMemory (mem_lim);
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
     gws[0]=0;lws[0]=BLOCK_SIZE;
     device1.setKernel(kernel,gws,lws);
-  	device1.setLimMemory (3000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_GPU)*1000000/num_in_buff;
+    device1.setLimMemory (mem_lim);
     devices.push_back(move(device1));
   }
 

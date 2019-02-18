@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#define FRAMES 1
+#define FRAMES  10
 void
 Mersenne::init_seed()
 {
@@ -35,8 +35,8 @@ do_mersenne(int tscheduler,
   int worksize = chunksize;
   //JSC
   //
-//  size_t frames=4;
-  size_t frames=1;
+  size_t frames=4;
+//  size_t frames=1;
   size_t dim=static_cast<int>(N_rand);
   Mersenne mersenne(N_rand*64*frames);
 
@@ -52,22 +52,14 @@ do_mersenne(int tscheduler,
   
   vector<ecl::Device> devices;
 
-   #if ECL_GRENDEL == 1 
-  auto platform_cpu = 2;
-  auto platform_gpu = 0;
-  auto platform_fpga= 1;
-  auto cmp_cpu  =0x01;  
-  auto cmp_gpu  =0x02;  
-  auto cmp_fpga=0x04;  
-#else
-  auto platform_cpu = 3;
-  auto platform_gpu = 1;
-  auto platform_fpga= 2;
+  auto platform_cpu = ECL_CPU;
+  auto platform_gpu = ECL_GPU;
+  auto platform_fpga= ECL_FPGA;
   auto cmp_cpu =0x01;  
   auto cmp_gpu =0x02;  
   auto cmp_fpga=0x04;  
-  #endif
 
+  auto num_in_buff=2;
 
  // Mersenne twister is a unitary kernel pipeline or Task execution
 
@@ -78,19 +70,22 @@ do_mersenne(int tscheduler,
     //binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_fpr.aocx"); 
     binary_file	=file_read_binary("./benchsuite/altera_kernel/mersenne_kernel_box.aocx"); 
     device2.setKernel(binary_file,gws,gws); 
-   	device2.setLimMemory(2000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_FPGA)*1000000/num_in_buff;
+    device2.setLimMemory(mem_lim);
     devices.push_back(move(device2));
   }
   if (tdevices &cmp_cpu){  
     ecl::Device device(platform_cpu,0);
     device.setKernel(kernel,gws,gws);
-  	device.setLimMemory ((uint)6000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_CPU)*1000000/num_in_buff;
+    device.setLimMemory (mem_lim);
     devices.push_back(move(device));
   }
   if (tdevices &cmp_gpu){  
     ecl::Device device1(platform_gpu,0);
     device1.setKernel(kernel,gws,gws);
-  	device1.setLimMemory ((uint)6000000000);
+    size_t mem_lim=static_cast<size_t>(ECL_mem_GPU)*1000000/num_in_buff;
+    device1.setLimMemory (mem_lim);
     devices.push_back(move(device1));
   }
 

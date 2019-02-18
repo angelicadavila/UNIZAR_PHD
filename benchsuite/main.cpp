@@ -16,7 +16,7 @@
 //#include "gaussian.hpp"
 //#include "mandelbrot.hpp"
 //#include "nbody.hpp"
-#include "ray.hpp"
+//#include "ray.hpp"
 //#include "saxpy.hpp"
 // #include "taylor.hpp"
 // #include "vecadd.hpp"
@@ -143,9 +143,9 @@ main(int argc, char* argv[])
    do_mandelbrot(tscheduler, tdevices, check, size, chunksize, prop, atoi(argv[8]));
   } 
   else if (tbench == 13){
-       auto image_width = size;
-       auto scene_path = string(argv[8]);
-       do_ray(tscheduler, tdevices, check, image_width, chunksize, prop,atoi(argv[8]));
+      // auto image_width = size;
+      // auto scene_path = string(argv[8]);
+      // do_ray(tscheduler, tdevices, check, image_width, chunksize, prop,atoi(argv[8]));
   }
 
   return 0;

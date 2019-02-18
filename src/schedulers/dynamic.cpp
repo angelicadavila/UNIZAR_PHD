@@ -12,7 +12,7 @@
 
 #define ATOMIC 1
 // #define ATOMIC 0
-#define  FRAMES 20
+//#define  FRAMES 1
 //#define  FRAMES 1
 //#define  FRAMES 20 //for AES
 namespace ecl {
@@ -120,7 +120,7 @@ DynamicScheduler::notifyDevices()
     dev->notifyWork();
   }
   for (auto dev : m_devices) {
-    dev->notifyEvent();
+    //dev->notifyEvent();
   }
 }
 
@@ -175,7 +175,7 @@ DynamicScheduler::setWorkSize(size_t size)
   }
   m_worksize = given;
   
-  m_frames=FRAMES;
+  m_frames=1;//FRAMES;
   IF_LOGGING(cout << "m_worksize (chunk size): " << m_worksize << "\n");
 }
 
@@ -347,10 +347,13 @@ DynamicScheduler::enq_work(Device* device)
     {
       lock_guard<mutex> guard(m_mutex_work);
       size_t offset = m_size_given;
-      if(offset+size>=m_size)
+     //if the new chunk is large that total size, use remaining size 
+   /*  if(offset+size>=m_size)
       {
          size=m_size_rem;
+       cout<<"\n------- 1\n";
       }
+    */
      if (offset==(m_size/m_frames)){  
           if (m_frames>0){
                 m_frames--;
@@ -358,17 +361,31 @@ DynamicScheduler::enq_work(Device* device)
                 size = m_worksize;//test if it is necessary
                 m_size_given =0;
             }
+       cout<<"\n------- 3\n";
      }
  
      tmp_cond=offset+size;
      if(tmp_cond>=(m_size/m_frames)){
-         size=(m_size/m_frames)-offset;
-           
-         if (m_size/m_frames<offset){
+         //size=(m_size/m_frames)-offset;
+         //size=ceil(size/128)*128;  
+         offset=0;
+	 if (m_size/m_frames<offset){
              size=m_size_rem;
+             cout<<"\n------- 21\n";
           }
+       cout<<"\n------- 21\n";
       }
-            m_size_rem -= size;
+     if(offset+size>=m_size)
+      {
+         size=m_size_rem;
+       cout<<"\n------- 1\n";
+      }
+
+     if (size>m_size_rem)
+         size=m_size_rem;
+      cout<<"m_size_rem "<<m_size_rem<<"\n m_size "<<m_size <<"\n";
+      cout<<"offset"<<offset<<"\n";
+      m_size_rem -= size;
       m_size_given += size;
       index = m_queue_work.size();
       m_queue_work.push_back(Work(id, offset, size, m_ws_bound));

@@ -314,7 +314,7 @@ StaticScheduler::callback(int queue_index)
       Device* device = m_devices[id];
       m_devices_working--;
       device->notifyWork();
-      device->notifyEvent();
+//      device->notifyEvent();
       if (m_devices_working == 0) {
         notifyCallbacks();
       }

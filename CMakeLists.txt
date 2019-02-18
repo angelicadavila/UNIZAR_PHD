@@ -18,12 +18,15 @@ message("src_dir: ${ROOT_DIR}")
 
 execute_process(COMMAND aocl compile-config OUTPUT_VARIABLE AOCL_COMPILE_CONFIG)
 include_directories(${AOCL_COMPILE_CONFIG})
-include_directories("/opt/intelFPGA/18.1/hld/host/include")
-set(AOCL_COMPILE_CONFIG "/opt/intelFPGA/18.1/hld/host/include")
+include_directories("/opt/IntelFPGA/18.1/hld/host/include")
+set(AOCL_COMPILE_CONFIG "/opt/IntelFPGA/18.1/hld/host/include")
 include_directories()
-link_directories("/opt/intelFPGA/18.1/hld/board/terasic/de5net/linux64/lib" "/opt/intelFPGA/18.1/hld/host/linux64/lib")
+link_directories("/opt/IntelFPGA/18.1/hld/host/linux64/lib")
+
 #set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -libterasic_s5_mmd -lelf") 
-set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lalteracl -lelf") 
+#set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -lealteracl -libaltera_s10_ref_mmd -lelf") 
+#set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed -libaltera_s10_ref_mmd") 
+set (AOC_LINK_CONFIG "-lOpenCL -Wl,--no-as-needed") 
 
 
 list(APPEND CMAKE_MODULE_PATH "${ROOT_DIR}/cmake/modules")

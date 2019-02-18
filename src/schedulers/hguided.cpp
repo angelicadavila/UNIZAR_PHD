@@ -112,7 +112,7 @@ HGuidedScheduler::notifyDevices()
     dev->notifyWork();
   }
   for (auto dev : m_devices) {
-    dev->notifyEvent();
+    //dev->notifyEvent();
   }
 }
 

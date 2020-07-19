@@ -1,5 +1,5 @@
 # EngineCL
-
+Designed for Stratix10 MX
 This repository is a basic mirror of `EngineCL`. Only the minimal runnable part of the project is clonned in this repository to avoid struggling with many not so relevant files.
 
 **Work In Progress**.
@@ -80,3 +80,4 @@ MIT License.
 Copyright (c) 2017. Raúl Nozal <raul.nozal@unican.es>
 
 See LICENSE file.
+# CMMSE202

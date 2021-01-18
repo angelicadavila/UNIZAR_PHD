@@ -1,6 +1,15 @@
 # EngineCL
 Designed for Stratix10 MX
+
 This repository is a basic mirror of `EngineCL`. Only the minimal runnable part of the project is clonned in this repository to avoid struggling with many not so relevant files.
+
+# EngineCL + FPGA 
+
+The original EngineCL needs adaptations for FPGAs. 
+
+1. The synchornization mechanisms shoud be change for blocking commands instead of callbacks
+1. The load needs to be partitioned and constrained due memory capacity restrictions in FPGA compared with CPU and GPU devices
+1. FPGA programming are moved out of the load balancing loop since inital bitstream programming is slow
 
 **Work In Progress**.
 
@@ -72,6 +81,11 @@ scheds=(0 1) its=10 prop=0.01 timeout=15; for sched in ${scheds[@]}; do echo "sc
 ## Author
 
 Raúl Nozal <raul.nozal@unican.es>
+
+
+## Author of FPGA adaptations
+
+Maria Angélica Dávila <angelicadgl@unizar.es>
 
 ## License
 
